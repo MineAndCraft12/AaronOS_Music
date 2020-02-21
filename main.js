@@ -6,7 +6,7 @@ const {
 function createWindow() {
     let win = new BrowserWindow({
         width: 1048,
-        height: 650,
+        height: 632,
         webPreferences: {
             nodeIntegration: true
         },
@@ -17,6 +17,9 @@ function createWindow() {
     win.once('ready-to-show', () => {
         win.show();
     });
+
+    //win.setMenu(null);
+    win.setMenuBarVisibility(false);
 
     win.loadFile('index.html');
 }

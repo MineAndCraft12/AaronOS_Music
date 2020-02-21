@@ -3,6 +3,23 @@ const {
     desktopCapturer
 } = require('electron');
 
+// prevent the display from going to sleep
+var preventingSleep = 0;
+var sleepID = null;
+function blockSleep(){
+    if(!preventingSleep){
+        sleepID = remote.powerSaveBlocker.start("prevent-display-sleep");
+        preventingSleep = 1;
+    }
+}
+function unblockSleep(){
+    if(preventingSleep){
+        remote.powerSaveBlocker.stop(sleepID);
+        sleepID = null;
+        preventingSleep = 0;
+    }
+}
+
 window.onerror = function(errorMsg, url, lineNumber){
     console.log("oof, u got a error\n\n" + url + '[' + lineNumber + ']:\n' + errorMsg);
 }
@@ -354,6 +371,7 @@ function loadMicrophone(event){
     requestAnimationFrame(function(){
         setVis("spikes");
     })
+    blockSleep();
 }
 
 function loadSystemAudio(event){
@@ -430,7 +448,8 @@ function loadSystemAudio(event){
                     requestAnimationFrame(globalFrame);
                     requestAnimationFrame(function(){
                         setVis("spikes");
-                    })
+                    });
+                    blockSleep();
                 }catch(e){
                     alert("Error loading system audio.\n" + e);
                 }
@@ -458,6 +477,7 @@ function selectSong(id){
     audio.pause();
     audio.currentTime = 0;
     audio.src = fileNames[id][2];
+    blockSleep();
     getId("currentlyPlaying").innerHTML = fileNames[id][1] + ": " + fileNames[id][0];
     document.title = fileNames[id][0] + " - AaronOS Music Player";
     if(iframeMode){
@@ -483,6 +503,7 @@ function play(){
             selectSong(0);
         }else{
             audio.play();
+            blockSleep();
         }
         getId("playbutton").innerHTML = "<b>&nbsp;||&nbsp;</b>";
     }
@@ -490,6 +511,7 @@ function play(){
 function pause(){
     if(!microphoneActive){
         audio.pause();
+        unblockSleep();
         getId("playbutton").innerHTML = "&#9658;";
     }
 }
@@ -558,6 +580,7 @@ function shuffle(){
 }
 
 function refresh(){
+    unblockSleep();
     window.location = "?refresh=" + (new Date()).getTime();
 }
 
@@ -720,7 +743,7 @@ function globalFrame(){
                 tempArr[i] = visData[i];
             }
             if(performanceMode){
-                for(var j = 0; j < Math.min(size[0], visData.length); j++){
+                for(var j = 0; j < Math.min(size[0] * 2, visData.length); j++){
                     visData[j] = tempArr[Math.floor(j / 16)];
                 }
             }else{
@@ -4323,9 +4346,9 @@ resizeSmoke();
 
 var featuredVis = {
     monstercat: 1,
-    spikes1to1: 1,
-    bassCircle: 1,
-    layerCircle: 1
+    spikes: 1,
+    circle: 1,
+    bassCircle: 1
 };
 
 function openVisualizerMenu(){
@@ -4473,7 +4496,7 @@ function toggleTaskbarMode(){
         */
         remote.BrowserWindow.getFocusedWindow().setBounds({
             x: (screen.width - 1048) / 2,
-            y: (screen.height - 650) / 2,
+            y: (screen.height - 632) / 2,
             width: 1048,
             height: 650
         });
@@ -4484,9 +4507,9 @@ function toggleTaskbarMode(){
         */
         remote.BrowserWindow.getFocusedWindow().setBounds({
             x: -12,
-            y: screen.height - 160,
+            y: screen.height - 142,
             width: screen.width + 24,
-            height: 172
+            height: 154
         });
         taskbarMode = 1;
         overrideVis("spectrumBass");

@@ -1,10 +1,14 @@
 {
   "name": "aaronos_music",
+  "productName": "AaronOS Music Player",
   "version": "1.0.0",
   "description": "Music Player and Visualizer written in JavaScript",
   "main": "main.js",
   "scripts": {
-    "start": "electron ."
+    "start": "electron .",
+    "package-mac": "electron-packager . --overwrite -- platform=darwin --arch=x64 --icon-assets=mac_icon.incs --prune=true --out=release-builds",
+    "package-win": "electron-packager . aaronos_music --overwrite --asar=true --platform=win32 --arch=ia32 --icon=win_icon.ico --prune=true --out=release-builds --version-string.CompanyName=\"Aaron Adams\" --version-string.FileDescription=\"Music Player from AaronOS\" --version-string.ProductName=\"AaronOS Music\"",
+    "package-linux": "electron-packager . aaronos_music --overwrite --asar=true --platform=linux --arch=x64 --icon=app_icon.png --prune=true --out=release-builds"
   },
   "repository": {
     "type": "git",
@@ -17,6 +21,7 @@
   },
   "homepage": "https://github.com/MineAndCraft12/AaronOS_Music#readme",
   "devDependencies": {
-    "electron": "^8.0.1"
+    "electron": "^8.0.1",
+    "electron-packager": "^14.2.1"
   }
 }
