@@ -11,7 +11,8 @@ function createWindow() {
             nodeIntegration: true
         },
         show: false,
-        backgroundColor: "rgb(32, 32, 32)"
+        backgroundColor: "rgb(32, 32, 32)",
+        icon: "app_icon.png"
     });
 
     win.once('ready-to-show', () => {

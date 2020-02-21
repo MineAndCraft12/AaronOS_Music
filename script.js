@@ -39,9 +39,16 @@ function recieveWindowBorders(response){
 
 var iframeMode = 1;
 getId("tskbrModeButton").style.display = "";
-if(remote.nativeTheme.shouldUseDarkColors){
-    document.body.classList.add("darkMode");
+
+function checkDarkTheme(){
+    if(remote.nativeTheme.shouldUseDarkColors){
+        document.body.classList.add("darkMode");
+    }else{
+        document.body.classList.remove("darkMode");
+    }
 }
+checkDarkTheme();
+remote.nativeTheme.on('updated', checkDarkTheme);
 /* above replaces this
 window.aosTools_connectFailListener = function(){
     var aosStylesheet = document.createElement("link");
