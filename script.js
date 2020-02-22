@@ -91,6 +91,7 @@ function setDelay(newDelay){
 
 var analyser;
 
+var visDataBuffer;
 var visData;
 
 var microphone;
@@ -162,6 +163,7 @@ function loadFolder(event){
         smokeScreen1.classList.add("disabled");
         smokeScreen2.classList.add("disabled");
     }
+    getId("liveControls").classList.add("disabled");
     
     audioContext = new AudioContext();
     mediaSource = audioContext.createMediaElementSource(audio);
@@ -228,6 +230,12 @@ function loadFiles(event){
     while(disabledElements.length > 0){
         disabledElements[0].classList.remove('disabled');
     }
+    if(!smokeEnabled){
+        smokeElement.classList.add("disabled");
+        smokeScreen1.classList.add("disabled");
+        smokeScreen2.classList.add("disabled");
+    }
+    getId("liveControls").classList.add("disabled");
     
     audioContext = new AudioContext();
     mediaSource = audioContext.createMediaElementSource(audio);
@@ -290,6 +298,12 @@ function loadWeirdFiles(event){
     while(disabledElements.length > 0){
         disabledElements[0].classList.remove('disabled');
     }
+    if(!smokeEnabled){
+        smokeElement.classList.add("disabled");
+        smokeScreen1.classList.add("disabled");
+        smokeScreen2.classList.add("disabled");
+    }
+    getId("liveControls").classList.add("disabled");
     
     audioContext = new AudioContext();
     mediaSource = audioContext.createMediaElementSource(audio);
@@ -326,6 +340,39 @@ function loadWeirdFiles(event){
 
 var microphoneActive = 0;
 var systemAudioActive = 0;
+var latencyReduction = 0;
+
+function setLatency(newLatency){
+    switch(newLatency){
+        case 0: // full fftsize
+            latencyReduction = 0;
+            analyser.fftSize = 32768;
+            analyser.smoothingTimeConstant = 0;
+            analyser.maxDecibels = -30;
+            analyser.minDecibels = -70;
+            visData = new Uint8Array(analyser.frequencyBinCount);
+            break;
+        case 1:
+            latencyReduction = 1;
+            analyser.fftSize = 2048;
+            analyser.smoothingTimeConstant = 0.8;
+            analyser.maxDecibels = -20;
+            analyser.minDecibels = -60;
+            visData = new Uint8Array(analyser.frequencyBinCount);
+            break;
+        case 2:
+            latencyReduction = 2;
+            analyser.fftSize = 1024;
+            analyser.smoothingTimeConstant = 0.8;
+            analyser.maxDecibels = -20;
+            analyser.minDecibels = -60;
+            visDataBuffer = new Uint8Array(analyser.frequencyBinCount);
+            visData = new Uint8Array(analyser.frequencyBinCount * 2);
+            break;
+        default:
+            // do nothing?
+    }
+}
 
 function loadMicrophone(event){
     audio.pause();
@@ -347,6 +394,8 @@ function loadMicrophone(event){
     
     analyser = audioContext.createAnalyser();
     //analyser.fftSize = 32768;
+    analyser.fftSize = 2048;
+    latencyReduction = 1;
     analyser.maxDecibels = -20;
     analyser.minDecibels = -60;
     //analyser.smoothingTimeConstant = 0;
@@ -376,7 +425,9 @@ function loadMicrophone(event){
     
     requestAnimationFrame(globalFrame);
     requestAnimationFrame(function(){
-        setVis("spikes");
+        overrideVis("spikes");
+        overrideMod("powSin");
+        overrideColor("beta");
     })
     blockSleep();
 }
@@ -389,6 +440,8 @@ function loadSystemAudio(event){
     
     analyser = audioContext.createAnalyser();
     //analyser.fftSize = 32768;
+    analyser.fftSize = 2048;
+    latencyReduction = 1;
     analyser.maxDecibels = -20;
     analyser.minDecibels = -60;
     //analyser.smoothingTimeConstant = 0;
@@ -454,7 +507,9 @@ function loadSystemAudio(event){
                     
                     requestAnimationFrame(globalFrame);
                     requestAnimationFrame(function(){
-                        setVis("spikes");
+                        overrideVis("spikes");
+                        overrideMod("powSin");
+                        overrideColor("beta");
                     });
                     blockSleep();
                 }catch(e){
@@ -743,26 +798,52 @@ function globalFrame(){
         }
     }
     if(currVis !== "none"){
-        analyser.getByteFrequencyData(visData);
+        if(latencyReduction !== 2){
+            analyser.getByteFrequencyData(visData);
+        }else{
+            analyser.getByteFrequencyData(visDataBuffer);
+        }
         if(microphoneActive){
             var tempArr = [];
-            for(var i = 0; i < 128; i++){
-                tempArr[i] = visData[i];
-            }
-            if(performanceMode){
-                for(var j = 0; j < Math.min(size[0] * 2, visData.length); j++){
-                    visData[j] = tempArr[Math.floor(j / 16)];
+            if(latencyReduction === 1){
+                for(var i = 0; i < 128; i++){
+                    tempArr[i] = visData[i];
                 }
-            }else{
-                for(var j = 0; j < Math.min(size[0], visData.length); j++){
-                    var approx = Math.floor(j / 16);
-                    var p1 = tempArr[approx];
-                    var p2 = tempArr[approx + 1];
-                    //if(p2 === undefined){
-                    //    p2 = p1;
-                    //}
-                    var u = (j % 16) / 16;
-                    visData[j] = ((1 - u) * p1) + (u * p2);
+                if(performanceMode){
+                    for(var j = 0; j < visData.length; j++){
+                        visData[j] = tempArr[Math.floor(j / 16)];
+                    }
+                }else{
+                    for(var j = 0; j < visData.length; j++){
+                        var approx = Math.floor(j / 16);
+                        var p1 = tempArr[approx];
+                        var p2 = tempArr[approx + 1];
+                        //if(p2 === undefined){
+                        //    p2 = p1;
+                        //}
+                        var u = (j % 16) / 16;
+                        visData[j] = ((1 - u) * p1) + (u * p2);
+                    }
+                }
+            }else if(latencyReduction === 2){
+                for(var i = 0; i < 64; i++){
+                    tempArr[i] = visDataBuffer[i];
+                }
+                if(performanceMode){
+                    for(var j = 0; j < visData.length; j++){
+                        visData[j] = tempArr[Math.floor(j / 32)];
+                    }
+                }else{
+                    for(var j = 0; j < visData.length; j++){
+                        var approx = Math.floor(j / 32);
+                        var p1 = tempArr[approx];
+                        var p2 = tempArr[approx + 1];
+                        //if(p2 === undefined){
+                        //    p2 = p1;
+                        //}
+                        var u = (j % 32) / 32;
+                        visData[j] = ((1 - u) * p1) + (u * p2);
+                    }
                 }
             }
         }
@@ -780,8 +861,18 @@ function globalFrame(){
         
         if(debugEnabled && currMod){
             var oldVisData = [];
-            for(var i = 0; i < 1024; i++){
-                oldVisData[i] = visData[i];
+            if(latencyReduction === 1){
+                for(var i = 0; i < 1024; i++){
+                    oldVisData[i] = visData[Math.floor(i / 16) * 16];
+                }
+            }else if(latencyReduction === 2){
+                for(var i = 0; i < 1024; i++){
+                    oldVisData[i] = visData[Math.floor(i / 32) * 32];
+                }
+            }else{
+                for(var i = 0; i < 1024; i++){
+                    oldVisData[i] = visData[i];
+                }
             }
         }
         
@@ -1951,7 +2042,67 @@ var vis = {
             var step = size[0] / 1024;
             var last = -1;
             var heightFactor = size[1] / 255;
-            var widthFactor = 255 / size[0];
+            var widthFactor = 1024 / size[0];
+
+            if(widthFactor !== 1){
+                var tempLines = [];
+                var tempMax = 0;
+                if(widthFactor < 1){
+                    for(var i = 0; i < size[0]; i++){
+                        // width is larger than data
+                        var pcnt = i / size[0];
+                        var closestPoint = visData[Math.floor(pcnt * 1024)];
+                        var nextPoint = visData[Math.floor(pcnt * 1024) + 1];
+                        if(nextPoint === undefined){
+                            nextPoint = closestPoint;
+                        }
+                        var u = pcnt * 1024 - Math.floor(pcnt * 1024);
+                        tempLines[i] = ((1 - u) * closestPoint) + (u * nextPoint);
+                    }
+                }else{
+                    for(var i = 0; i < size[0]; i++){
+                        // width is smaller than data
+                        var firstPcnt = i / size[0];
+                        var lastPcnt = (i + 1) / size[0];
+                        var firstPlace = firstPcnt * 1024;
+                        var lastPlace = lastPcnt * 1024;
+                        var pointRange = [];
+                        for(var j = Math.floor(firstPlace); j <= Math.ceil(lastPlace); j++){
+                            pointRange.push(j);
+                        }
+                        var totalAvg = 0;
+                        var totalPoints = 0;
+                        var firstU = firstPlace - Math.floor(firstPlace);
+                        var lastU = lastPlace - Math.floor(lastPlace);
+                        var lastValue = visData[pointRange[pointRange.length - 1]];
+                        if(lastValue === undefined){
+                            lastValue = visData[pointRange[pointRange.length - 2]];
+                        }
+                        totalAvg += (1 - firstU) * visData[pointRange[0]] + lastU * lastValue;
+                        totalPoints += (1 - firstU) + lastU;
+                        if(pointRange.length > 2){
+                            for(var j = 1; j < pointRange.length - 1; j++){
+                                totalAvg += visData[pointRange[j]];
+                                totalPoints++;
+                            }
+                        }
+                        tempLines[i] = totalAvg / totalPoints;
+                    }
+                }
+            }
+            if(widthFactor === 1){
+                for(var curr = 0; curr < size[0]; curr++){
+                    var strength = visData[curr];
+                    this.drawLine(curr, strength, heightFactor, widthFactor);
+                }
+            }else{
+                for(var curr = 0; curr < size[0]; curr++){
+                    var strength = tempLines[curr];
+                    this.drawLine(curr, strength, heightFactor, widthFactor);
+                }
+            }
+
+            /*
             for(var i = 0; i < 1024; i++){
                 var strength = 0;
                 if(i === 0){
@@ -1983,13 +2134,14 @@ var vis = {
                     }
                 }
             }
+            */
             //updateSmoke();
         },
         stop: function(){
             
         },
         drawLine: function(x, h, fact, widthFact){
-            var fillColor = getColor(h, x * widthFact);
+            var fillColor = getColor(h, x / size[0] * 255);
             canvas.fillStyle = fillColor;
             canvas.fillRect(x, (255 - h)  * fact, 1, size[1] - (255 - h) * fact);
             if(smokeEnabled){
