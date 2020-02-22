@@ -3,6 +3,24 @@ const {
     desktopCapturer
 } = require('electron');
 
+/* TODO
+    Mac, check if these work:
+        no System Audio button
+        live switching between light/dark mode
+        does microphone work?
+            function loadMicrophone
+                => call to navigator.webkitGetUserMedia
+        does the default delay in Folder mode make the audio match up with the visual?
+            delay is applied to the AUDIO, not the visualizer
+        optional, for me to package together at some point:
+            maybe some screenshots of selecting a folder and selecting some individual files from Finder
+            if it's a thing, maybe a screenshot of the speaker settings icon and microphone settings icon from system prefs
+        
+    On Not Windows, check if these work:
+        no Taskbar Mode button
+*/
+
+
 // prevent the display from going to sleep
 var preventingSleep = 0;
 var sleepID = null;
@@ -18,6 +36,15 @@ function unblockSleep(){
         sleepID = null;
         preventingSleep = 0;
     }
+}
+
+// disable system audio icon on mac because it's not allowed
+if(navigator.platform.indexOf("Mac") === 0){
+    getId("systemAudioIcon").style.display = "none";
+}
+
+if(navigator.platform.indexOf("Win") !== 0){
+    getId("tskbrModeRange").style.display = "none";
 }
 
 window.onerror = function(errorMsg, url, lineNumber){
@@ -38,7 +65,7 @@ function recieveWindowBorders(response){
 }
 
 var iframeMode = 1;
-getId("tskbrModeButton").style.display = "";
+getId("tskbrModeRange").style.display = "";
 
 function checkDarkTheme(){
     if(remote.nativeTheme.shouldUseDarkColors){
