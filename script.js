@@ -351,6 +351,9 @@ function setLatency(newLatency){
             analyser.maxDecibels = -30;
             analyser.minDecibels = -70;
             visData = new Uint8Array(analyser.frequencyBinCount);
+            getId("latencyButton0").style.borderColor = "#0A0";
+            getId("latencyButton1").style.borderColor = "#C00";
+            getId("latencyButton2").style.borderColor = "#C00";
             break;
         case 1:
             latencyReduction = 1;
@@ -359,6 +362,9 @@ function setLatency(newLatency){
             analyser.maxDecibels = -20;
             analyser.minDecibels = -60;
             visData = new Uint8Array(analyser.frequencyBinCount);
+            getId("latencyButton0").style.borderColor = "#C00";
+            getId("latencyButton1").style.borderColor = "#0A0";
+            getId("latencyButton2").style.borderColor = "#C00";
             break;
         case 2:
             latencyReduction = 2;
@@ -368,6 +374,9 @@ function setLatency(newLatency){
             analyser.minDecibels = -60;
             visDataBuffer = new Uint8Array(analyser.frequencyBinCount);
             visData = new Uint8Array(analyser.frequencyBinCount * 2);
+            getId("latencyButton0").style.borderColor = "#C00";
+            getId("latencyButton1").style.borderColor = "#C00";
+            getId("latencyButton2").style.borderColor = "#0C0";
             break;
         default:
             // do nothing?
@@ -658,6 +667,7 @@ function togglePerformance(){
             getId("smokeCanvas").width = size[0];
             getId("smokeCanvas").height = size[1];
             getId("smokeCanvas").style.imageRendering = "";
+            getId("performanceButton").style.borderColor = "#C00";
         }
     }else{
         if(currVis !== "none"){
@@ -669,6 +679,7 @@ function togglePerformance(){
             getId("smokeCanvas").width = size[0];
             getId("smokeCanvas").height = size[1];
             getId("smokeCanvas").style.imageRendering = "pixelated";
+            getId("performanceButton").style.borderColor = "#0A0";
         }
     }
     performanceMode = Math.abs(performanceMode - 1);
@@ -731,8 +742,10 @@ var currFPS = "0";
 var lastSecond = 0;
 var fpsEnabled = 0;
 var debugForce = 0;
+var debugColors = ["#C00", "#0A0"];
 function toggleFPS(){
     debugForce = Math.abs(debugForce - 1);
+    getId("debugButton").style.borderColor = debugColors[debugForce];
 }
 
 var canvasElement = getId("visCanvas");
@@ -4451,6 +4464,7 @@ function toggleSmoke(){
         smokeElement.classList.add("disabled");
         smokeScreen1.classList.add("disabled");
         smokeScreen2.classList.add("disabled");
+        getId("smokeButton").style.borderColor = "#C00";
         /*
         canvasElement.style.backgroundPosition = "";
         canvasElement.style.backgroundImage = "";
@@ -4460,6 +4474,7 @@ function toggleSmoke(){
         smokeElement.classList.remove("disabled");
         smokeScreen1.classList.remove("disabled");
         smokeScreen2.classList.remove("disabled");
+        getId("smokeButton").style.borderColor = "#0A0";
         /*
         canvasElement.style.backgroundPosition = "0px 0px";
         canvasElement.style.backgroundImage = "url(smoke_transparent.png)";
@@ -4643,6 +4658,7 @@ function closeMenu(){
 }
 
 var taskbarMode = 0;
+var previousVis = "";
 function toggleTaskbarMode(){
     if(taskbarMode){
         /*
@@ -4660,6 +4676,10 @@ function toggleTaskbarMode(){
             height: 650
         });
         taskbarMode = 0;
+        getId("taskbarButton").style.borderColor = "#C00";
+        if(currVis === "spectrumBass"){
+            overrideVis(previousVis);
+        }
     }else{
         /*
         aosTools.getScreenDims(finishSettingTaskbarMode);
@@ -4671,6 +4691,8 @@ function toggleTaskbarMode(){
             height: 154
         });
         taskbarMode = 1;
+        getId("taskbarButton").style.borderColor = "#0A0";
+        previousVis = currVis;
         overrideVis("spectrumBass");
     }
 }
