@@ -13,20 +13,20 @@
                 <div style="text-align:center; position:relative; margin-top:-16px; margin-bottom:-16px;">
                     <div class="selectIcon">
                         <input type="file" id="folderInput" webkitdirectory directory multiple onchange="loadFolder()">
-                        <img src="icons/folder.png" style="pointer-events:none;">
+                        <img id="folderIcon" src="icons/folder.png" style="pointer-events:none;">
                         <span>Folder</span>
                     </div>
                     <div class="selectIcon">
                         <input type="file" id="fileInput" multiple accept="audio/*" onchange="loadFiles()">
-                        <img src="icons/files.png" style="pointer-events:none;">
+                        <img id="filesIcon" src="icons/files.png" style="pointer-events:none;">
                         <span>Files</span>
-                    </div>
+                    </div><!--
                     <div class="selectIcon" id="systemAudioIcon">
                         <img class="cursorPointer" src="icons/system.png" onclick="loadSystemAudio()">
                         <span>System</span>
-                    </div>
+                    </div>-->
                     <div class="selectIcon">
-                        <img class="cursorPointer" src="icons/microphone.png" onclick="loadMicrophone()">
+                        <img id="microphoneIcon" class="cursorPointer" src="icons/microphone.png" onclick="loadMicrophone()">
                         <span>Microphone</span>
                     </div>
                 </div>
@@ -65,12 +65,12 @@
                 <button onclick="toggleTaskbarMode()" id="taskbarButton" style="border-color:#C00">Taskbar Mode</button></span>
                 <br>
 
-                Visuals: <select id="visfield" onchange="setVis(this.value)" onmousedown="if(!taskbarMode){requestAnimationFrame(()=>{this.blur()});}" onclick="if(!taskbarMode){openVisualizerMenu();}"></select>
+                Visuals: <select id="visfield" onchange="setVis(this.value)" onmousedown="if(!taskbarMode){requestAnimationFrame(()=>{this.blur()}); event.preventDefault();}" onclick="if(!taskbarMode){openVisualizerMenu(); event.preventDefault();}"></select>
                 <button id="smokeButton" onclick="toggleSmoke()" style="border-color:#C00">Smoke</button> &nbsp; &nbsp; &nbsp;
 
-                Colors: <select id="colorfield" onchange="setColor(this.value)" onmousedown="if(!taskbarMode){requestAnimationFrame(()=>{this.blur()});}" onclick="if(!taskbarMode){openColorMenu();}"></select> &nbsp; &nbsp; &nbsp;
+                Colors: <select id="colorfield" onchange="setColor(this.value)" onmousedown="if(!taskbarMode){requestAnimationFrame(()=>{this.blur()}); event.preventDefault();}" onclick="if(!taskbarMode){openColorMenu(); event.preventDefault();}"></select> &nbsp; &nbsp; &nbsp;
 
-                Mod: <select id="modfield" onchange="selectMod(this.value)" onmousedown="if(!taskbarMode){requestAnimationFrame(()=>{this.blur()});}" onclick="if(!taskbarMode){openModMenu();}">
+                Mod: <select id="modfield" onchange="selectMod(this.value)" onmousedown="if(!taskbarMode){requestAnimationFrame(()=>{this.blur()}); event.preventDefault();}" onclick="if(!taskbarMode){openModMenu(); event.preventDefault();}">
                     <option value="null">None</option>
                 </select>
 
