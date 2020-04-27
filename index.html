@@ -40,37 +40,51 @@
             <div id="currentlyPlaying" class="disabled">No Song Playing</div>
             <div id="controls" class="disabled">
 
-                <button onclick="refresh()">Reset</button> &nbsp; &nbsp; &nbsp;
+                <button onclick="refresh()" title="Return to welcome screen and select a new set of songs.">Reset</button> &nbsp; &nbsp; &nbsp;
+
+                <button onclick="openSettingsMenu()">Settings</button> &nbsp; &nbsp; &nbsp;
 
                 <span id="nonLiveControls">
-                    Delay: <input style="width: 50px" type="number" id="delayinput" min="0" max="1" value="0.25" step="0.01" onchange="setDelay(this.value)"> &nbsp; &nbsp; &nbsp;
+                    <!--
+                        Delay: <input style="width: 50px" type="number" id="delayinput" min="0" max="1" value="0.25" step="0.01" onchange="setDelay(this.value)"> &nbsp; &nbsp; &nbsp;
+                    -->
 
-                    <button onclick="shuffle()">Shuffle</button> &nbsp; &nbsp; &nbsp;
+                    Volume: <input style="width:40px" type="number" value="1" min="0" max="1" step="0.1" onchange="setVolume(this.value)" title="Can affect visualizer quality."> &nbsp; &nbsp; &nbsp;
 
                     <button onclick="back()"><b>|</b>&#9668;</button>
                     <button onclick="if(audio.paused){play();}else{pause();}" id="playbutton">&#9658;</button>
                     <button onclick="next()">&#9658;<b>|</b></button> &nbsp; &nbsp; &nbsp;
+
+                    <button onclick="shuffle()">Shuffle</button> &nbsp; &nbsp; &nbsp;
                 </span>
 
-                <span id="liveControls">
+                <span id="liveControls" title="High setting raises visualizer detail to maximum, but introduces lots of latency. Low setting removes most of the detail, but is nearly instant.">
                     Latency / Detail:
                     <button id="latencyButton0" onclick="setLatency(0)" style="border-color:#C00">High</button>
                     <button id="latencyButton1" onclick="setLatency(1)" style="border-color:#0A0">Default</button>
                     <button id="latencyButton2" onclick="setLatency(2)" style="border-color:#C00">Low</button> &nbsp; &nbsp; &nbsp;
                 </span>
 
-                <button onclick="toggleFPS()" id="debugButton" style="border-color:#C00">Debug</button>
-                <button onclick="togglePerformance()" id="performanceButton" style="border-color:#C00">Fast Mode</button><span style="display:none" id="tskbrModeRange"> &nbsp; &nbsp; &nbsp;
-                    
-                <button onclick="toggleTaskbarMode()" id="taskbarButton" style="border-color:#C00">Taskbar Mode</button></span>
+                <button id="ambienceButton" onclick="toggleAmbience()" style="border-color:#C00" title="Random delay of silence after every song, up to five minutes. Randomly selects the next song.">Ambience Mode</button>
+
+                <!--
+                    <button onclick="toggleFPS()" id="debugButton" style="border-color:#C00">Debug</button>
+                    <button onclick="togglePerformance()" id="performanceButton" style="border-color:#C00">Fast Mode</button>
+                -->
+
+                <span style="display:none" id="tskbrModeRange"><span id="ambienceSpacing"> &nbsp; &nbsp; &nbsp;</span>
+                    <button onclick="toggleTaskbarMode()" id="taskbarButton" style="border-color:#C00" title="Fit the visualizer to your taskbar, good for background music while working.">Taskbar</button>
+                </span>
+
+                
                 <br>
 
                 Visuals: <select id="visfield" onchange="setVis(this.value)" onmousedown="if(!taskbarMode){requestAnimationFrame(()=>{this.blur()}); event.preventDefault();}" onclick="if(!taskbarMode){openVisualizerMenu(); event.preventDefault();}"></select>
-                <button id="smokeButton" onclick="toggleSmoke()" style="border-color:#C00">Smoke</button> &nbsp; &nbsp; &nbsp;
+                <button id="smokeButton" onclick="toggleSmoke()" style="border-color:#C00" title="Adds a smoke and glow effect to visualizers.">Smoke</button> &nbsp; &nbsp; &nbsp;
 
                 Colors: <select id="colorfield" onchange="setColor(this.value)" onmousedown="if(!taskbarMode){requestAnimationFrame(()=>{this.blur()}); event.preventDefault();}" onclick="if(!taskbarMode){openColorMenu(); event.preventDefault();}"></select> &nbsp; &nbsp; &nbsp;
 
-                Mod: <select id="modfield" onchange="selectMod(this.value)" onmousedown="if(!taskbarMode){requestAnimationFrame(()=>{this.blur()}); event.preventDefault();}" onclick="if(!taskbarMode){openModMenu(); event.preventDefault();}">
+                Mod: <select id="modfield" onchange="selectMod(this.value)" onmousedown="if(!taskbarMode){requestAnimationFrame(()=>{this.blur()}); event.preventDefault();}" onclick="if(!taskbarMode){openModMenu(); event.preventDefault();}" title="Processes visualizer data to increase or decrease power of visualizer movement. Power Sine tends to work best.">
                     <option value="null">None</option>
                 </select>
 

@@ -103,6 +103,10 @@ function setDelay(newDelay){
     delayNode.delayTime.value = (newDelay || 0);
 }
 
+function setVolume(newVolume){
+    audio.volume = newVolume;
+}
+
 var analyser;
 
 var visDataBuffer;
@@ -411,6 +415,8 @@ function loadMicrophone(event){
         smokeScreen2.classList.add("disabled");
     }
     getId("nonLiveControls").classList.add("disabled");
+    getId("ambienceButton").classList.add("disabled");
+    getId("ambienceSpacing").classList.add("disabled");
     getId("currentlyPlaying").innerHTML = "Microphone";
     
     audioContext = new AudioContext();
@@ -526,6 +532,8 @@ function loadSystemAudio(event){
                         smokeScreen2.classList.add("disabled");
                     }
                     getId("nonLiveControls").classList.add("disabled");
+                    getId("ambienceButton").classList.add("disabled");
+                    getId("ambienceSpacing").classList.add("disabled");
                     getId("currentlyPlaying").innerHTML = "System Audio";
                     
                     requestAnimationFrame(globalFrame);
@@ -590,6 +598,11 @@ function play(){
             audio.play();
             blockSleep();
         }
+        if(ambienceWaiting){
+            ambienceWaiting = 0;
+            clearTimeout(ambienceTimeout);
+            getId("currentlyPlaying").innerHTML = fileNames[currentSong][1] + ": " + fileNames[currentSong][0];
+        }
         getId("playbutton").innerHTML = "<b>&nbsp;||&nbsp;</b>";
     }
 }
@@ -616,6 +629,11 @@ function setProgress(e){
         timeToSet /= size[0];
         timeToSet *= audio.duration;
         audio.currentTime = timeToSet;
+        if(ambienceWaiting){
+            ambienceWaiting = 0;
+            clearTimeout(ambienceTimeout);
+            getId("currentlyPlaying").innerHTML = fileNames[currentSong][1] + ": " + fileNames[currentSong][0];
+        }
     }
 }
 
@@ -629,19 +647,75 @@ function back(){
             selectSong(currentSong);
         }else{
             audio.currentTime = 0;
+            if(ambienceWaiting){
+                ambienceWaiting = 0;
+                clearTimeout(ambienceTimeout);
+                getId("currentlyPlaying").innerHTML = fileNames[currentSong][1] + ": " + fileNames[currentSong][0];
+            }
         }
     }
 }
+
+var ambienceWaiting = 0;
+var ambienceTimeout = null;
+
 function next(){
     if(!microphoneActive){
-        currentSong++;
-        if(currentSong > fileNames.length - 1){
-            currentSong = 0;
+        if(ambienceMode){
+            if(ambienceWaiting){
+                ambienceWaiting = 0;
+                clearTimeout(ambienceTimeout);
+            }
+            var nextAmbienceSong = Math.floor(Math.random() * fileNames.length);
+            if(fileNames.length !== 1){
+                while(nextAmbienceSong === currentSong){
+                    nextAmbienceSong = Math.floor(Math.random() * fileNames.length);
+                }
+            }
+            currentSong = nextAmbienceSong;
+        }else{
+            currentSong++;
+            if(currentSong > fileNames.length - 1){
+                currentSong = 0;
+            }
         }
         selectSong(currentSong);
     }
 }
-audio.addEventListener("ended", next);
+
+function ambienceNext(){
+    if(!microphoneActive){
+        if(ambienceWaiting){
+            ambienceWaiting = 0;
+            clearTimeout(ambienceTimeout);
+        }
+        var nextAmbienceSong = Math.floor(Math.random() * fileNames.length);
+        if(fileNames.length !== 1){
+            while(nextAmbienceSong === currentSong){
+                nextAmbienceSong = Math.floor(Math.random() * fileNames.length);
+            }
+        }
+        currentSong = nextAmbienceSong;
+        selectSong(currentSong);
+    }
+}
+
+function songEnd(){
+    if(ambienceMode){
+        var randomTime = Math.floor(Math.random() * 300000) + 1;
+        var randomTimeSeconds = Math.floor(randomTime / 1000);
+        var randomTimeMinutes = Math.floor(randomTimeSeconds / 60);
+        randomTimeSeconds -= randomTimeMinutes * 60;
+        getId("currentlyPlaying").innerHTML = "Next song in " + randomTimeMinutes + ":" + randomTimeSeconds;
+        ambienceTimeout = setTimeout(ambienceNext, randomTime);
+        ambienceWaiting = 1;
+        getId("playbutton").innerHTML = "&#9658;";
+    }else{
+        next();
+    }
+}
+
+audio.addEventListener("ended", songEnd);
 
 // courtesy Stack Overflow
 function shuffleArray(array){
@@ -669,6 +743,17 @@ function refresh(){
     window.location = "?refresh=" + (new Date()).getTime();
 }
 
+var ambienceMode = 0;
+function toggleAmbience(){
+    ambienceMode = Math.abs(ambienceMode - 1);
+    if(getId("ambienceButton")){
+        getId("ambienceButton").style.borderColor = debugColors[ambienceMode];
+    }
+    if(ambienceMode && currentSong === -1){
+        songEnd();
+    }
+}
+
 var performanceMode = 0;
 function togglePerformance(){
     if(performanceMode){
@@ -681,7 +766,9 @@ function togglePerformance(){
             getId("smokeCanvas").width = size[0];
             getId("smokeCanvas").height = size[1];
             getId("smokeCanvas").style.imageRendering = "";
-            getId("performanceButton").style.borderColor = "#C00";
+            if(getId("performanceButton")){
+                getId("performanceButton").style.borderColor = "#C00";
+            }
         }
     }else{
         if(currVis !== "none"){
@@ -693,7 +780,9 @@ function togglePerformance(){
             getId("smokeCanvas").width = size[0];
             getId("smokeCanvas").height = size[1];
             getId("smokeCanvas").style.imageRendering = "pixelated";
-            getId("performanceButton").style.borderColor = "#0A0";
+            if(getId("performanceButton")){
+                getId("performanceButton").style.borderColor = "#0A0";
+            }
         }
     }
     performanceMode = Math.abs(performanceMode - 1);
@@ -759,7 +848,9 @@ var debugForce = 0;
 var debugColors = ["#C00", "#0A0"];
 function toggleFPS(){
     debugForce = Math.abs(debugForce - 1);
-    getId("debugButton").style.borderColor = debugColors[debugForce];
+    if(getId("debugButton")){
+        getId("debugButton").style.borderColor = debugColors[debugForce];
+    }
 }
 
 var canvasElement = getId("visCanvas");
@@ -871,6 +962,16 @@ function globalFrame(){
                         var u = (j % 32) / 32;
                         visData[j] = ((1 - u) * p1) + (u * p2);
                     }
+                }
+            }
+        }else{
+            // if the audio's volume is lowered, the visualizer can't hear it
+            // attempt to artificially bring the volume back up to full
+            // very mixed results
+            if(audio.volume < 0.9){
+                var gainFactor = 0.9 - audio.volume + 1;
+                for(var i = 0; i < visData.length; i++){
+                    visData[i] = Math.floor(visData[i] * gainFactor);
                 }
             }
         }
@@ -4664,6 +4765,32 @@ function overrideMod(selectedMod){
     getId("modfield").value = selectedMod;
     closeMenu();
     getId("modfield").onchange();
+}
+
+function openSettingsMenu(){
+    if(getId("selectOverlay").classList.contains("disabled")){
+        getId("selectOverlay").classList.remove("disabled");
+        var tempHTML = '<div style="font-size:0.5em;background:transparent">';
+
+        if(!microphoneActive){
+            tempHTML += "<p style='font-size:2em'>Audio Delay</p>" +
+                'Seconds: <input style="width: 50px" type="number" id="delayinput" min="0" max="1" value="' + delayNode.delayTime.value + '" step="0.01" onchange="setDelay(this.value)"></input>' +
+                "<p>If the visualizer and the music don't line up, try changing this.<br>Larger numbers delay the audible music more.</p>";
+        }
+        tempHTML += "<br><br><p style='font-size:2em'>Fast Mode</p>" +
+            '<button onclick="toggleFPS()" id="debugButton" style="border-color:' + debugColors[debugForce] + '">Toggle</button>' +
+            "<p>If performance is slow, this option lowers quality to help weaker devices.</p>";
+
+        tempHTML += "<br><br><p style='font-size:2em'>Debug Mode</p>" +
+            '<button onclick="togglePerformance()" id="performanceButton" style="border-color:' + debugColors[performanceMode] + '">Fast Mode</button>' +
+            "<p>Intended for developer use. Enables various debug overlays.</p>";
+
+        tempHTML += "</div>";
+        getId("selectContent").innerHTML = tempHTML;
+        getId("selectContent").scrollTop = 0;
+    }else{
+        closeMenu();
+    }
 }
 
 function closeMenu(){
