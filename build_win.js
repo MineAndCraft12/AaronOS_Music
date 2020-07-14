@@ -11,7 +11,7 @@ var options_win = {
     arch: "ia32",
     asar: true,
     platform: "win32",
-    //icon: "win_icon.ico",
+    icon: "win_icon.ico",
     out: "release-builds/win",
     overwrite: "true"
 };
