@@ -701,17 +701,20 @@ function ambienceNext(){
 }
 
 function songEnd(){
-    if(ambienceMode){
-        var randomTime = Math.floor(Math.random() * 300000) + 1;
-        var randomTimeSeconds = Math.floor(randomTime / 1000);
-        var randomTimeMinutes = Math.floor(randomTimeSeconds / 60);
-        randomTimeSeconds -= randomTimeMinutes * 60;
-        getId("currentlyPlaying").innerHTML = "Next song in " + randomTimeMinutes + ":" + randomTimeSeconds;
-        ambienceTimeout = setTimeout(ambienceNext, randomTime);
-        ambienceWaiting = 1;
-        getId("playbutton").innerHTML = "&#9658;";
-    }else{
-        next();
+    var windowWillClose = checkSelfClose();
+    if(!windowWillClose){
+        if(ambienceMode){
+            var randomTime = Math.floor(Math.random() * 300000) + 1;
+            var randomTimeSeconds = Math.floor(randomTime / 1000);
+            var randomTimeMinutes = Math.floor(randomTimeSeconds / 60);
+            randomTimeSeconds -= randomTimeMinutes * 60;
+            getId("currentlyPlaying").innerHTML = "Next song in " + randomTimeMinutes + ":" + randomTimeSeconds;
+            ambienceTimeout = setTimeout(ambienceNext, randomTime);
+            ambienceWaiting = 1;
+            getId("playbutton").innerHTML = "&#9658;";
+        }else{
+            next();
+        }
     }
 }
 
@@ -4773,7 +4776,12 @@ function openSettingsMenu(){
         var tempHTML = '<div style="font-size:0.5em;background:transparent">';
 
         if(!microphoneActive){
-            tempHTML += "<p style='font-size:2em'>Audio Delay</p>" +
+            tempHTML += "<p style='font-size:2em'>Self-Close</p>" +
+                'Songs: <input style="width:50px" type="number" id="selfcloseinput" min="1" max="9999" value="' + selfCloseSongs + '" step="1" onchange="selfCloseSongs = this.value;"></input>' +
+                ' <button onclick="toggleSelfClose()" id="selfclosebutton" style="border-color:' + debugColors[selfCloseEnabled] + '">Toggle</button>' +
+                "<p>The music player will close itself after playing a number of songs.</p>";
+
+            tempHTML += "<br><br><p style='font-size:2em'>Audio Delay</p>" +
                 'Seconds: <input style="width: 50px" type="number" id="delayinput" min="0" max="1" value="' + delayNode.delayTime.value + '" step="0.01" onchange="setDelay(this.value)"></input>' +
                 "<p>If the visualizer and the music don't line up, try changing this.<br>Larger numbers delay the audible music more.</p>";
         }
@@ -4798,6 +4806,31 @@ function closeMenu(){
     getId("selectOverlay").classList.add("disabled");
 }
 
+var selfCloseEnabled = 0;
+var selfCloseSongs = 10;
+function toggleSelfClose(){
+    selfCloseEnabled = Math.abs(selfCloseEnabled - 1);
+    if(getId("selfclosebutton")){
+        getId("selfclosebutton").style.borderColor = debugColors[selfCloseEnabled];
+    }
+}
+function checkSelfClose(){
+    if(selfCloseEnabled){
+        selfCloseSongs--;
+        if(selfCloseSongs <= 0){
+            getId("currentlyPlaying").innerHTML = "Window will close in 5 seconds."
+            setTimeout(() => {
+                remote.getCurrentWindow().close();
+            }, 5000);
+            return 1;
+        }else{
+            return 0;
+        }
+    }else{
+        return 0;
+    }
+}
+
 var taskbarMode = 0;
 var previousVis = "";
 function toggleTaskbarMode(){
@@ -4810,7 +4843,7 @@ function toggleTaskbarMode(){
             height: 626
         });
         */
-        remote.BrowserWindow.getFocusedWindow().setBounds({
+        remote.getCurrentWindow().setBounds({
             x: (screen.width - 1048) / 2,
             y: (screen.height - 632) / 2,
             width: 1048,
@@ -4825,11 +4858,11 @@ function toggleTaskbarMode(){
         /*
         aosTools.getScreenDims(finishSettingTaskbarMode);
         */
-        remote.BrowserWindow.getFocusedWindow().setBounds({
-            x: -12,
-            y: screen.height - 142,
-            width: screen.width + 24,
-            height: 154
+        remote.getCurrentWindow().setBounds({
+            x: -9,
+            y: screen.height - 148,
+            width: screen.width + 17,
+            height: 160
         });
         taskbarMode = 1;
         getId("taskbarButton").style.borderColor = "#0A0";
