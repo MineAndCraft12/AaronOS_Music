@@ -47,6 +47,13 @@ div{
     padding-top:0.5em;
 }
 
+#autoColorCanvas{
+    position:absolute;
+    display:block;
+    bottom:32px;
+    right:32px;
+}
+
 #progressContainer{
     background:#000;
     width:100%;

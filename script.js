@@ -126,6 +126,7 @@ var currentlyPlaying = getId("currentlyPlaying");
 var files = [];
 var filesAmount = 0;
 var fileNames = [];
+var fileInfo = {};
 var filesLength = 0;
 
 var supportedFormats = ['aac', 'aiff', 'wav', 'm4a', 'mp3', 'amr', 'au', 'weba', 'oga', 'wma', 'flac', 'ogg', 'opus', 'webm'];
@@ -140,7 +141,65 @@ function listSongs(){
     songList.innerHTML = str;
 }
 
+function generateSongInfo(){
+    var tempFileInfo = {
+        _color_tutorial: {
+            colorTypes: ['gradient', 'peak', 'solid'],
+            colorTypesExplanations: {
+                gradient: 'All colors are evenly distributed.',
+                peak: 'Same as gradient, but the last color is used as a peak of sorts, at very high volumes.',
+                solid: 'Solid color, no gradient'
+            },
+            colorFormat: [
+                "Each file requires a colorType and list of colors.",
+                "The _default_colors are selected when a specific song has no colors.",
+                [
+                    'Red Channel',
+                    'Green Channel',
+                    'Blue Channel',
+                    'Alpha Channel'
+                ],
+                [
+                    127,
+                    255,
+                    204,
+                    0.8
+                ]
+            ]
+        },
+        _default_colors: {
+            colorType: 'peak',
+            colors: [
+                [0, 0, 255, 1],
+                [0, 255, 0, 1],
+                [255, 0, 0, 1]
+            ]
+        }
+    };
+    for(var i in fileNames){
+        tempFileInfo[fileNames[i][0]] = {
+            colorType: '',
+            colors: []
+        };
+    }
+    for(var i in fileInfo){
+        tempFileInfo[i] = fileInfo[i];
+    }
+    getId("songInfoTemplate").value = JSON.stringify(tempFileInfo, null, '\t');
+}
+
+var fileInfoError = 0;
+function readFileInfo(event){
+    try{
+        fileInfo = JSON.parse(event.target.result);
+    }catch(err){
+        console.log("Error parsing file info");
+        fileInfoError = 1;
+    }
+}
+
 function loadFolder(event){
+    automaticColorCtx = getId('autoColorCanvas').getContext('2d');
     audio.pause();
     currentSong = -1;
     files = folderInput.files;
@@ -169,6 +228,11 @@ function loadFolder(event){
                 }
                 fileNames.push([fileName.join('.'), i, URL.createObjectURL(files[i]), filePath]);
             }
+        }else if(files[i].webkitRelativePath.split('/').length === 2 && files[i].webkitRelativePath.split('/').pop() === "_songInfo.txt"){
+            var reader = new FileReader();
+            reader.onload = readFileInfo;
+            reader.readAsText(files[i]);
+            setTimeout(function(){getId('colorfield').value="autoFileInfo";setColor('autoFileInfo');}, 100);
         }
     }
     listSongs();
@@ -588,6 +652,91 @@ function selectSong(id){
         // no song is selected
     }
     getId("song" + id).classList.add("selected");
+
+    if(automaticColorCtx){
+        var autoColorPassed = 0;
+        if(fileInfo[fileNames[id][0]]){
+            automaticColor = {
+                colorType: fileInfo[fileNames[id][0]].colorType,
+                colorArr: fileInfo[fileNames[id][0]].colors
+            };
+            autoColorPassed = 1;
+        }else if(fileInfo['_default_colors']){
+            automaticColor = {
+                colorType: fileInfo['_default_colors'].colorType,
+                colorArr: fileInfo['_default_colors'].colors
+            }
+            autoColorPassed = 1;
+        }else{
+            automaticColor = {
+                colorType: 'gradient',
+                colorArr: [
+                    [0, 64, 0],
+                    [0, 255, 0]
+                ]
+            };
+            autoColorPassed = 1;
+        }
+        if(automaticColor.colorArr.length === 0){
+            if(fileInfo['_default_colors']){
+                automaticColor = {
+                    colorType: fileInfo['_default_colors'].colorType,
+                    colorArr: fileInfo['_default_colors'].colors
+                }
+                autoColorPassed = 1;
+            }else{
+                automaticColor = {
+                    colorType: 'gradient',
+                    colorArr: [
+                        [0, 64, 0],
+                        [0, 255, 0]
+                    ]
+                };
+                autoColorPassed = 1;
+            }
+        }
+        if(autoColorPassed){
+            if(automaticColor.colorArr.length === 1){
+                automaticColorCtx.fillColor = 'rgba(' + automaticColor.colorArr[0][0] + ',' + automaticColor.colorArr[0][1] + ',' + automaticColor.colorArr[0][2] + (automaticColor.colorArr[0][3] || 1) + ')';
+                automaticColorCtx.fillRect(0, 0, 512, 0);
+            }else{
+                var newGradient = automaticColorCtx.createLinearGradient(0, 0, 512, 0);
+                if(automaticColor.colorType === "gradient"){
+                    for(var i = 0; i < automaticColor.colorArr.length; i++){
+                        newGradient.addColorStop(
+                            i / (automaticColor.colorArr.length - 1),
+                            'rgba(' + automaticColor.colorArr[i][0] + ',' + automaticColor.colorArr[i][1] + ',' + automaticColor.colorArr[i][2] + ',' + (automaticColor.colorArr[i][3] || 1) + ')'
+                        );
+                    }
+                }else if(automaticColor.colorType === "peak"){
+                    if(automaticColor.colorArr.length === 2){
+                        newGradient.addColorStop(
+                            0.85,
+                            'rgba(' + automaticColor.colorArr[i][0] + ',' + automaticColor.colorArr[i][1] + ',' + automaticColor.colorArr[i][2] + ',' + (automaticColor.colorArr[i][3] || 1) + ')'
+                        );
+                    }else{
+                        for(var i = 0; i < automaticColor.colorArr.length - 1; i++){
+                            newGradient.addColorStop(
+                                (i / (automaticColor.colorArr.length - 2)) * 0.85,
+                                'rgba(' + automaticColor.colorArr[i][0] + ',' + automaticColor.colorArr[i][1] + ',' + automaticColor.colorArr[i][2] + ',' + (automaticColor.colorArr[i][3] || 1) + ')'
+                            );
+                        }
+                    }
+                    newGradient.addColorStop(
+                        1,
+                        'rgba(' + automaticColor.colorArr[i][0] + ',' + automaticColor.colorArr[i][1] + ',' + automaticColor.colorArr[i][2] + ',' + (automaticColor.colorArr[i][3] || 1) + ')'
+                    );
+                }
+                automaticColorCtx.fillStyle = newGradient;
+                automaticColorCtx.fillRect(0, 0, 512, 1);
+            }
+            automaticColor.resultList = [];
+            for(var i = 0; i < 512; i++){
+                var rgbaResult = automaticColorCtx.getImageData(i, 0, 1, 1).data;
+                automaticColor.resultList.push('rgba(' + rgbaResult[0] + ',' + rgbaResult[1] + ',' + rgbaResult[2] + ',' + rgbaResult[3] + ')');
+            }
+        }
+    }
 }
 
 function play(){
@@ -1142,6 +1291,13 @@ function selectMod(newMod){
     }
 }
 
+var automaticColorCtx = null;
+var automaticColor = {
+    colorType: 'peak',
+    colorArr: ['#005500', '#00FF00', '#FF0000'],
+    resultList: new Array(512)
+}
+
 var colors = {
     bluegreenred: {
         name: "Default",
@@ -1219,17 +1375,11 @@ var colors = {
             }
         }
     },
-    triColor: {
-        name: "RGB (for Spikes)",
+    autoFileInfo: {
+        name: "Automatic (File Info)",
         image: "colors/triColor.png",
-        func: function(amount, position){
-            if(Math.round(position / 255 * 1024) % 3 === 0){
-                return '#F00';
-            }else if(Math.round(position / 255 * 1024) % 3 === 1){
-                return '#0F0';
-            }else{
-                return '#00F';
-            }
+        func: function(amount){
+            return automaticColor.resultList[Math.round(amount * 2)];
         }
     },
     'SEPARATOR_THEMES" disabled="': {
@@ -3538,7 +3688,7 @@ var vis = {
                 laserOwner = undefined;
             }
             if(!laserColor){
-                laserColor = this.settings.laserColor;
+                laserColor = getColor(255, 255);//this.settings.laserColor;
             }
             if(!laserSize){
                 laserSize = this.settings.laserSize;
@@ -4784,13 +4934,19 @@ function openSettingsMenu(){
             tempHTML += "<br><br><p style='font-size:2em'>Audio Delay</p>" +
                 'Seconds: <input style="width: 50px" type="number" id="delayinput" min="0" max="1" value="' + delayNode.delayTime.value + '" step="0.01" onchange="setDelay(this.value)"></input>' +
                 "<p>If the visualizer and the music don't line up, try changing this.<br>Larger numbers delay the audible music more.</p>";
+
+            tempHTML += '<br><br><p style="font-size:2em">Song Info</p>' +
+                'Info detected: ' + (['No', 'Yes'])[0 + (fileInfo.hasOwnProperty('_default_colors'))] + '<br>' +
+                '<button onclick="generateSongInfo()">Generate Info</button><br>' +
+                'Select-All + Copy generated info from below, save to "_songInfo.txt" in your music\'s main folder, modify as you see fit.<br>' +
+                '<textarea id="songInfoTemplate" style="height:64px;"></textarea>'
         }
         tempHTML += "<br><br><p style='font-size:2em'>Fast Mode</p>" +
-            '<button onclick="toggleFPS()" id="debugButton" style="border-color:' + debugColors[debugForce] + '">Toggle</button>' +
+        '<button onclick="togglePerformance()" id="performanceButton" style="border-color:' + debugColors[performanceMode] + '">Toggle</button>' +
             "<p>If performance is slow, this option lowers quality to help weaker devices.</p>";
 
         tempHTML += "<br><br><p style='font-size:2em'>Debug Mode</p>" +
-            '<button onclick="togglePerformance()" id="performanceButton" style="border-color:' + debugColors[performanceMode] + '">Fast Mode</button>' +
+        '<button onclick="toggleFPS()" id="debugButton" style="border-color:' + debugColors[debugForce] + '">Toggle</button>' +
             "<p>Intended for developer use. Enables various debug overlays.</p>";
 
         tempHTML += "</div>";
