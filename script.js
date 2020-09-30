@@ -1,7 +1,20 @@
 const {
     remote,
+    ipcRenderer,
     desktopCapturer
 } = require('electron');
+
+// ask for window type
+var windowType = "opaque";
+ipcRenderer.on("giveWindowType", function(event, arg){
+    windowType = arg.windowType;
+    updateWindowType();
+    remote.getCurrentWindow.setIgnoreMouseEvents(false);
+});
+function sendTypeRequest(){
+    ipcRenderer.send("getWindowType");
+}
+window.requestAnimationFrame(sendTypeRequest);
 
 // prevent the display from going to sleep
 var preventingSleep = 0;
@@ -947,46 +960,60 @@ var winsize = [window.innerWidth, window.innerHeight];
 var size = [window.innerWidth - 8, window.innerHeight - 81];
 var fullscreen = 0;
 function toggleFullscreen(){
-    if(fullscreen){
-        size = [window.innerWidth - 8, window.innerHeight - 81];
-        if(performanceMode){
-            size[0] /= 2;
-            size[1] /= 2;
-        }
-        getId("visualizer").style.border = "";
-        getId("visualizer").style.bottom = "";
-        getId("visualizer").style.left = "";
-        getId("visualizer").style.width = "";
-        getId("visualizer").style.height = "";
-        getId("visCanvas").width = size[0];
-        getId("visCanvas").height = size[1];
-        document.body.style.background = '';
-        fullscreen = 0;
-        if(currVis !== "none"){
-            resizeSmoke();
-            if(vis[currVis].sizechange){
-                vis[currVis].sizechange();
+    if(getId("introduction").classList.contains("disabled")){
+        if(fullscreen){
+            size = [window.innerWidth - 8, window.innerHeight - 81];
+            if(performanceMode){
+                size[0] /= 2;
+                size[1] /= 2;
             }
-        }
-    }else{
-        size = [window.innerWidth, window.innerHeight];
-        if(performanceMode){
-            size[0] /= 2;
-            size[1] /= 2;
-        }
-        getId("visualizer").style.border = "none";
-        getId("visualizer").style.bottom = "0";
-        getId("visualizer").style.left = "0";
-        getId("visualizer").style.width = "100%";
-        getId("visualizer").style.height = "100%";
-        getId("visCanvas").width = size[0];
-        getId("visCanvas").height = size[1];
-        document.body.style.background = '#000';
-        fullscreen = 1;
-        if(currVis !== "none"){
-            resizeSmoke();
-            if(vis[currVis].sizechange){
-                vis[currVis].sizechange();
+            getId("visualizer").style.border = "";
+            getId("visualizer").style.bottom = "";
+            getId("visualizer").style.left = "";
+            getId("visualizer").style.width = "";
+            getId("visualizer").style.height = "";
+            getId("visCanvas").width = size[0];
+            getId("visCanvas").height = size[1];
+            getId("currentlyPlaying").classList.remove("disabled");
+            getId("controls").classList.remove("disabled");
+            getId("progressContainer").classList.remove("disabled");
+            document.body.style.background = '';
+            fullscreen = 0;
+            if(currVis !== "none"){
+                resizeSmoke();
+                if(vis[currVis].sizechange){
+                    vis[currVis].sizechange();
+                }
+            }
+            if(transparentMode){
+                remote.getCurrentWindow().setIgnoreMouseEvents(false);
+            }
+        }else{
+            size = [window.innerWidth, window.innerHeight];
+            if(performanceMode){
+                size[0] /= 2;
+                size[1] /= 2;
+            }
+            getId("visualizer").style.border = "none";
+            getId("visualizer").style.bottom = "0";
+            getId("visualizer").style.left = "0";
+            getId("visualizer").style.width = "100%";
+            getId("visualizer").style.height = "100%";
+            getId("visCanvas").width = size[0];
+            getId("visCanvas").height = size[1];
+            getId("currentlyPlaying").classList.add("disabled");
+            getId("controls").classList.add("disabled");
+            getId("progressContainer").classList.add("disabled");
+            document.body.style.background = '#000';
+            fullscreen = 1;
+            if(currVis !== "none"){
+                resizeSmoke();
+                if(vis[currVis].sizechange){
+                    vis[currVis].sizechange();
+                }
+            }
+            if(transparentMode){
+                remote.getCurrentWindow().setIgnoreMouseEvents(true);
             }
         }
     }
@@ -3177,6 +3204,386 @@ var vis = {
         },
         ratio_360_1024: 360 / 1024
     },
+    'SEPARATOR_EDGES" disabled="': {
+        name: "Edges",
+        start: function(){
+
+        },
+        frame: function(){
+
+        },
+        stop: function(){
+
+        }
+    },
+    edgeBars: {
+        name: "Edge Bars",
+        image: "visualizers/edgeBars.png",
+        start: function(){
+            
+        },
+        frame: function(){
+            canvas.clearRect(0, 0, size[0], size[1]);
+            if(smokeEnabled){
+                smoke.clearRect(0, 0, size[0], size[1]);
+            }
+            var left = size[1] * 0.1;
+            var maxWidth = size[1] * 0.8;
+            var barWidth = maxWidth / 96;
+            var barSpacing = maxWidth / 64;
+            var maxHeight = size[0] * 0.025;
+            
+            //var monstercatGradient = canvas.createLinearGradient(0, Math.round(size[1] / 2) + 4, 0, size[1]);
+            //monstercatGradient.addColorStop(0, 'rgba(0, 0, 0, 0.8)'); // 0.8
+            //monstercatGradient.addColorStop(0.025, 'rgba(0, 0, 0, 0.9)'); // 0.9
+            //monstercatGradient.addColorStop(0.1, 'rgba(0, 0, 0, 1)');// 1
+            
+            for(var i = 0; i < 64; i++){
+                var strength = 0;
+                for(var j = 0; j < 16; j++){
+                    //strength = Math.max(visData[i * 16 + j], strength);
+                    //strength += visData[i * 16 + j];
+                    //strength += Math.pow(visData[i * 16 + j], 2) / 255;
+                    strength += Math.sqrt(visData[i * 16 + j]) * this.sqrt255;
+                }
+                strength = Math.round(strength / 16);
+                
+                var fillColor = getColor(strength, i * 4);
+                canvas.fillStyle = fillColor;
+                canvas.fillRect(
+                    //Math.floor(size[0] / 2) - Math.round(strength / 255 * maxHeight),
+                    0,
+                    Math.round(size[1] - (left + i * barSpacing)),
+                    Math.round(strength / 255 * maxHeight + 3),
+                    Math.round(barWidth)
+                );
+                canvas.fillRect(
+                    Math.floor(size[0] - Math.round(strength / 255 * maxHeight) - 3),
+                    Math.round(size[1] - (left + i * barSpacing)),
+                    Math.round(strength / 255 * maxHeight + 3),
+                    Math.round(barWidth)
+                );
+                if(smokeEnabled){
+                    smoke.fillStyle = fillColor;
+                    smoke.fillRect(
+                        //Math.floor(size[0] / 2) - Math.round(strength / 255 * maxHeight),
+                        0,
+                        Math.round(size[1] - (left + i * barSpacing)),
+                        Math.round(strength / 255 * maxHeight + 3),
+                        Math.round(barWidth)
+                    );
+                    smoke.fillRect(
+                        Math.floor(size[0] - Math.round(strength / 255 * maxHeight) - 3),
+                        Math.round(size[1] - (left + i * barSpacing)),
+                        Math.round(strength / 255 * maxHeight + 3),
+                        Math.round(barWidth)
+                    );
+                }
+            }
+        },
+        stop: function(){
+            
+        },
+        sqrt255: Math.sqrt(255)
+    },
+    bottomBars: {
+        name: "Bottom Bars",
+        image: "visualizers/bottomBars.png",
+        start: function(){
+            
+        },
+        frame: function(){
+            canvas.clearRect(0, 0, size[0], size[1]);
+            if(smokeEnabled){
+                smoke.clearRect(0, 0, size[0], size[1]);
+            }
+            var left = size[0] * 0.1;
+            var maxWidth = size[0] * 0.8;
+            var barWidth = maxWidth / 96;
+            var barSpacing = maxWidth / 64;
+            var maxHeight = size[1] * 0.05;
+            
+            //var monstercatGradient = canvas.createLinearGradient(0, Math.round(size[1] / 2) + 4, 0, size[1]);
+            //monstercatGradient.addColorStop(0, 'rgba(0, 0, 0, 0.8)'); // 0.8
+            //monstercatGradient.addColorStop(0.025, 'rgba(0, 0, 0, 0.9)'); // 0.9
+            //monstercatGradient.addColorStop(0.1, 'rgba(0, 0, 0, 1)');// 1
+            
+            for(var i = 0; i < 64; i++){
+                var strength = 0;
+                for(var j = 0; j < 16; j++){
+                    //strength = Math.max(visData[i * 16 + j], strength);
+                    //strength += visData[i * 16 + j];
+                    //strength += Math.pow(visData[i * 16 + j], 2) / 255;
+                    strength += Math.sqrt(visData[i * 16 + j]) * this.sqrt255;
+                }
+                strength = Math.round(strength / 16);
+                
+                var fillColor = getColor(strength, i * 4);
+                canvas.fillStyle = fillColor;
+                canvas.fillRect(
+                    //Math.floor(size[0] / 2) - Math.round(strength / 255 * maxHeight),
+                    Math.round(left + i * barSpacing),
+                    size[1] - (strength / 255 * maxHeight + 3),
+                    Math.round(barWidth),
+                    (strength / 255 * maxHeight + 3)
+                );
+                if(smokeEnabled){
+                    smoke.fillStyle = fillColor;
+                    smoke.fillRect(
+                        //Math.floor(size[0] / 2) - Math.round(strength / 255 * maxHeight),
+                        Math.round(left + i * barSpacing),
+                        size[1] - (strength / 255 * maxHeight + 3),
+                        Math.round(barWidth),
+                        (strength / 255 * maxHeight + 3)
+                    );
+                }
+            }
+        },
+        stop: function(){
+            
+        },
+        sqrt255: Math.sqrt(255)
+    },
+    edgeSpectrum: {
+        name: "Edge Spectrum",
+        image: "visualizers/edgeSpectrum.png",
+        start: function(){
+            
+        },
+        frame: function(){
+            canvas.clearRect(0, 0, size[0], size[1]);
+            smoke.clearRect(0, 0, size[0], size[1]);
+            var step = size[1] / 1024;
+            var last = -1;
+            for(var i = 0; i < 1025; i++){
+                var strength = 0;
+                if(i === 0){
+                    strength = visData[i];
+                    this.drawLine(0, strength);
+                }else{
+                    var last = Math.floor(step * (i - 1));
+                    var curr = Math.floor(step * i);
+                    var next = Math.floor(step * (i + 1));
+                    if(last < curr - 1){
+                        // stretched
+                        for(var j = 0; j < curr - last - 1; j++){
+                            //strength = ((j + 1) / (curr - last + 1) * visData[i - 1] + (curr - last - j + 1) / (curr - last + 1) * visData[i]);
+                            strength = (visData[i] + visData[i - 1]) / 2;
+                            this.drawLine(curr - 1, strength);
+                        }
+                        strength = visData[i];
+                        this.drawLine(curr, strength);
+                    }else if(curr === last && next > curr){
+                        // compressed
+                        for(var j = 0; j < (1 / step); j++){
+                            strength += visData[i - j];
+                        }
+                        strength /= Math.floor(1 / step) + 1;
+                        this.drawLine(curr, strength);
+                    }else if(last === curr - 1){
+                        strength = visData[i];
+                        this.drawLine(curr, strength);
+                    }
+                }
+            }
+        },
+        stop: function(){
+            
+        },
+        drawLine: function(x, colorAmount){
+            if(smokeEnabled){
+                smoke.fillStyle = getColor(colorAmount);
+                smoke.fillRect(0, size[1] - x, colorAmount / 16 + 1, 1);
+                smoke.fillRect(size[0] - (colorAmount / 16 + 1), size[1] - x, colorAmount / 16 + 1, 1);
+            }
+            canvas.fillStyle = getColor(colorAmount);
+            canvas.fillRect(0, size[1] - x, colorAmount / 16 + 1, 1);
+            canvas.fillRect(size[0] - (colorAmount / 16 + 1), size[1] - x, colorAmount / 16 + 1, 1);
+        }
+    },
+    bottomSpectrum: {
+        name: "Bottom Spectrum",
+        image: "visualizers/bottomSpectrum.png",
+        start: function(){
+            
+        },
+        frame: function(){
+            canvas.clearRect(0, 0, size[0], size[1]);
+            smoke.clearRect(0, 0, size[0], size[1]);
+            var step = size[0] / 1024;
+            var last = -1;
+            for(var i = 0; i < 1025; i++){
+                var strength = 0;
+                if(i === 0){
+                    strength = visData[i];
+                    this.drawLine(0, strength);
+                }else{
+                    var last = Math.floor(step * (i - 1));
+                    var curr = Math.floor(step * i);
+                    var next = Math.floor(step * (i + 1));
+                    if(last < curr - 1){
+                        // stretched
+                        for(var j = 0; j < curr - last - 1; j++){
+                            //strength = ((j + 1) / (curr - last + 1) * visData[i - 1] + (curr - last - j + 1) / (curr - last + 1) * visData[i]);
+                            strength = (visData[i] + visData[i - 1]) / 2;
+                            this.drawLine(curr - 1, strength);
+                        }
+                        strength = visData[i];
+                        this.drawLine(curr, strength);
+                    }else if(curr === last && next > curr){
+                        // compressed
+                        for(var j = 0; j < (1 / step); j++){
+                            strength += visData[i - j];
+                        }
+                        strength /= Math.floor(1 / step) + 1;
+                        this.drawLine(curr, strength);
+                    }else if(last === curr - 1){
+                        strength = visData[i];
+                        this.drawLine(curr, strength);
+                    }
+                }
+            }
+        },
+        stop: function(){
+            
+        },
+        drawLine: function(x, colorAmount){
+            if(smokeEnabled){
+                smoke.fillStyle = getColor(colorAmount);
+                smoke.fillRect(x, size[1] - (colorAmount / 16 + 1), 1, colorAmount / 16 + 1);
+            }
+            canvas.fillStyle = getColor(colorAmount);
+            canvas.fillRect(x, size[1] - (colorAmount / 16 + 1), 1, colorAmount / 16 + 1);
+        }
+    },
+    bottomBassSpectrum: {
+        name: "Bottom Bass Spectrum",
+        image: "visualizers/bottomBassSpectrum.png",
+        start: function(){
+            
+        },
+        frame: function(){
+            canvas.clearRect(0, 0, size[0], size[1]);
+            smoke.clearRect(0, 0, size[0], size[1]);
+            var step = size[0] / 180;
+            var last = -1;
+            for(var i = 0; i < 181; i++){
+                var strength = 0;
+                if(i === 0){
+                    strength = visData[i];
+                    this.drawLine(0, strength);
+                }else{
+                    var last = Math.floor(step * (i - 1));
+                    var curr = Math.floor(step * i);
+                    var next = Math.floor(step * (i + 1));
+                    if(last < curr - 1){
+                        // stretched
+                        for(var j = 0; j < curr - last - 1; j++){
+                            //strength = ((j + 1) / (curr - last + 1) * visData[i - 1] + (curr - last - j + 1) / (curr - last + 1) * visData[i]);
+                            var pcntBetween = j / (curr - last - 1);
+                            strength = visData[i] * pcntBetween + visData[i - 1] * (1 - pcntBetween);
+                            this.drawLine(curr - (curr - last - 1 - j), strength);
+                        }
+                        strength = visData[i];
+                        this.drawLine(curr, strength);
+                    }else if(curr === last && next > curr){
+                        // compressed
+                        for(var j = 0; j < (1 / step); j++){
+                            strength += visData[i - j];
+                        }
+                        strength /= Math.floor(1 / step) + 1;
+                        this.drawLine(curr, strength);
+                    }else if(last === curr - 1){
+                        strength = visData[i];
+                        this.drawLine(curr, strength);
+                    }
+                }
+            }
+        },
+        stop: function(){
+            
+        },
+        drawLine: function(x, colorAmount){
+            if(smokeEnabled){
+                smoke.fillStyle = getColor(colorAmount);
+                smoke.fillRect(x, size[1] - (colorAmount / 16 + 1), 1, colorAmount / 16 + 1);
+            }
+            canvas.fillStyle = getColor(colorAmount);
+            canvas.fillRect(x, size[1] - (colorAmount / 16 + 1), 1, colorAmount / 16 + 1);
+        }
+    },
+    fullEdge: {
+        name: "Full Edge",
+        image: "visualizers/fullEdge.png",
+        start: function(){
+            
+        },
+        frame: function(){
+            var avg = 0;
+            var avgtotal = 0;
+            for(var i = 0; i < 1024; i++){
+                avg += Math.sqrt(visData[i]) * this.sqrt255;
+            }
+            //avg /= 180;
+            avg /= 1024;
+            //avg *= 255;
+            canvas.clearRect(0, 0, size[0], size[1]);
+            if(smokeEnabled){
+                smoke.clearRect(0, 0, size[0], size[1]);
+                smoke.fillStyle = getColor(avg);
+                smoke.fillRect(0, 0, size[0], 5);
+                smoke.fillRect(0, 0, 5, size[1]);
+                smoke.fillRect(0, size[1] - 5, size[0], 5);
+                smoke.fillRect(size[0] - 5, 0, 5, size[1]);
+            }else{
+                canvas.fillStyle = getColor(avg);
+                canvas.fillRect(0, 0, size[0], 5);
+                canvas.fillRect(0, 0, 5, size[1]);
+                canvas.fillRect(0, size[1] - 5, size[0], 5);
+                canvas.fillRect(size[0] - 5, 0, 5, size[1]);
+            }
+        },
+        stop: function(){
+            
+        },
+        sqrt255: Math.sqrt(255)
+    },
+    fullBassEdge: {
+        name: "Full Bass Edge",
+        image: "visualizers/fullBassEdge.png",
+        start: function(){
+            
+        },
+        frame: function(){
+            var avg = 0;
+            var avgtotal = 0;
+            for(var i = 0; i < 180; i++){
+                avg += Math.sqrt(visData[i]) * this.sqrt255;
+            }
+            avg /= 180;
+            //avg /= 1024;
+            //avg *= 255;
+            canvas.clearRect(0, 0, size[0], size[1]);
+            if(smokeEnabled){
+                smoke.clearRect(0, 0, size[0], size[1]);
+                smoke.fillStyle = getColor(avg);
+                smoke.fillRect(0, 0, size[0], 5);
+                smoke.fillRect(0, 0, 5, size[1]);
+                smoke.fillRect(0, size[1] - 5, size[0], 5);
+                smoke.fillRect(size[0] - 5, 0, 5, size[1]);
+            }else{
+                canvas.fillStyle = getColor(avg);
+                canvas.fillRect(0, 0, size[0], 5);
+                canvas.fillRect(0, 0, 5, size[1]);
+                canvas.fillRect(0, size[1] - 5, size[0], 5);
+                canvas.fillRect(size[0] - 5, 0, 5, size[1]);
+            }
+        },
+        stop: function(){
+            
+        },
+        sqrt255: Math.sqrt(255)
+    },
     'SEPARATOR_FULL_SCREEN" disabled="': {
         name: 'Full',
         start: function(){
@@ -4740,8 +5147,10 @@ function toggleSmoke(){
         smokeEnabled = 0;
     }else{
         smokeElement.classList.remove("disabled");
-        smokeScreen1.classList.remove("disabled");
-        smokeScreen2.classList.remove("disabled");
+        if(!transparentMode){
+            smokeScreen1.classList.remove("disabled");
+            smokeScreen2.classList.remove("disabled");
+        }
         getId("smokeButton").style.borderColor = "#0A0";
         /*
         canvasElement.style.backgroundPosition = "0px 0px";
@@ -4758,10 +5167,18 @@ function resizeSmoke(){
     smokeElement.width = size[0];
     smokeElement.height = size[1];
     if(smokeEnabled){
-        if(performanceMode){
-            smokeElement.style.filter = "blur(" + Math.round((size[0] * 2 + size[1] * 2) / 50) + "px) brightness(4)";
+        if(transparentMode){
+            if(performanceMode){
+                smokeElement.style.filter = "blur(" + Math.round((size[0] + size[1]) / 50) + "px) brightness(2)";
+            }else{
+                smokeElement.style.filter = "blur(" + Math.round((size[0] * 0.5 + size[1] * 0.5) / 50) + "px) brightness(2)";
+            }
         }else{
-            smokeElement.style.filter = "blur(" + Math.round((size[0] + size[1]) / 50) + "px) brightness(4)";
+            if(performanceMode){
+                smokeElement.style.filter = "blur(" + Math.round((size[0] * 2 + size[1] * 2) / 50) + "px) brightness(4)";
+            }else{
+                smokeElement.style.filter = "blur(" + Math.round((size[0] + size[1]) / 50) + "px) brightness(4)";
+            }
         }
     }
 }
@@ -4772,16 +5189,18 @@ function updateSmoke(leftpos, toppos, shortwidth, shortheight){
     }
 }
 function smokeFrame(){
-    smokePos[0] += 2 * fpsCompensation;
-    smokePos[1] += fpsCompensation;
-    if(smokePos[0] >= 1000){
-        smokePos[0] -= 1000;
+    if(!transparentMode){
+        smokePos[0] += 2 * fpsCompensation;
+        smokePos[1] += fpsCompensation;
+        if(smokePos[0] >= 1000){
+            smokePos[0] -= 1000;
+        }
+        if(smokePos[1] >= 1000){
+            smokePos[1] -= 1000;
+        }
+        smokeScreen1.style.backgroundPosition = smokePos[0] + "px " + smokePos[1] + "px";
+        smokeScreen2.style.backgroundPosition = (smokePos[1] + 250) + "px " + (smokePos[0] - 175) + "px";
     }
-    if(smokePos[1] >= 1000){
-        smokePos[1] -= 1000;
-    }
-    smokeScreen1.style.backgroundPosition = smokePos[0] + "px " + smokePos[1] + "px";
-    smokeScreen2.style.backgroundPosition = (smokePos[1] + 250) + "px " + (smokePos[0] - 175) + "px";
 }
 
 resizeSmoke();
@@ -4941,6 +5360,10 @@ function openSettingsMenu(){
                 'Select-All + Copy generated info from below, save to "_songInfo.txt" in your music\'s main folder, modify as you see fit.<br>' +
                 '<textarea id="songInfoTemplate" style="height:64px;"></textarea>'
         }
+        tempHTML += '<br><br><p style="font-size:2em">Transparent Mode</p>' +
+        'Current Mode: ' + windowType + '<br>' +
+        '<button onclick="ipcRenderer.send(\'toggle-transparent\', {x: screen.width, y: screen.height})">Toggle</button>';
+
         tempHTML += "<br><br><p style='font-size:2em'>Fast Mode</p>" +
         '<button onclick="togglePerformance()" id="performanceButton" style="border-color:' + debugColors[performanceMode] + '">Toggle</button>' +
             "<p>If performance is slow, this option lowers quality to help weaker devices.</p>";
@@ -4984,6 +5407,39 @@ function checkSelfClose(){
         }
     }else{
         return 0;
+    }
+}
+
+var transparentMode = 0;
+function updateWindowType(){
+    /*if(windowType === "opaque"){
+        transparentMode = 0;
+        document.body.classList.remove("transparent");
+        document.body.parentNode.classList.remove("transparent");
+        document.getElementsByClassName("winHTML")[0].classList.remove("transparent");
+    }else */
+    if(windowType === "transparent"){
+        transparentMode = 1;
+        document.body.classList.add("transparent");
+        document.body.parentNode.classList.add("transparent");
+        document.getElementsByClassName("winHTML")[0].classList.add("transparent");
+        getId("introduction").classList.add("transparentPlatform");
+        getId("currentlyPlaying").classList.add("transparentPlatform");
+        getId("controls").classList.add("transparentPlatform");
+        getId("songList").classList.add("transparentPlatform");
+        getId("visualizer").classList.add("transparent");
+        getId("smokeButton").innerHTML = "Glow";
+        remote.getCurrentWindow().setIgnoreMouseEvents(false);
+
+        featuredVis = {
+            edgeSpectrum: 1,
+            bottomSpectrum: 1,
+            fullBassEdge: 1,
+            edgeBars: 1,
+            bottomBars: 1,
+            fullEdge: 1
+        }
+        setVis("edgeSpectrum");
     }
 }
 
@@ -5037,3 +5493,9 @@ function finishSettingTaskbarMode(res){
     */
     overrideVis("spectrumBass");
 }
+
+window.addEventListener("keypress", function(event){
+    if(event.key.toLowerCase() === "f"){
+        toggleFullscreen();
+    }
+});

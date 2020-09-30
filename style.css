@@ -12,6 +12,22 @@ html, body{
     font-family:sans-serif;
 }
 
+.transparent{
+    background: transparent !important;
+}
+.transparentDisable{
+    display: none !important;
+}
+.transparentNoClick{
+    pointer-events: none !important;
+}
+.transparentPlatform{
+    background:#FFF;
+}
+    .darkMode .transparentPlatform{
+        background:#272727;
+    }
+
 div{
     position:relative;
 }
