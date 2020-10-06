@@ -24,7 +24,7 @@
   },
   "homepage": "https://github.com/MineAndCraft12/AaronOS_Music#readme",
   "devDependencies": {
-    "electron": "^8.2.4",
+    "electron": "^8.5.2",
     "electron-packager": "^14.2.1"
   }
 }
