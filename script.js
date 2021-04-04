@@ -1678,6 +1678,60 @@ var colors = {
         func: function(amount){
             return '#4B0082';
         }
+    },
+    'SEPARATOR_TECHNICAL_COLORS" disabled="': {
+        name: "---------------",
+        func: function(){
+            return '#000';
+        }
+    },
+    rgbsequence: {
+        name: "RGB (Sequence)",
+        image: "colors/triColor.png",
+        lastPosition: -1,
+        sequence: -1,
+        func: function(amount, position){
+            if(position > this.lastPosition){
+                this.lastPosition = position;
+                this.sequence++;
+            }else{
+                this.lastPosition = -1;
+                this.sequence = 0;
+            }
+            return 'hsl(' + (this.sequence % 3 * 120) + ', 100%, ' + (amount / 5.12) + '%)';
+        }
+    },
+    rgbsequencesolid: {
+        name: "RGB (Sequence) Solid",
+        image: "colors/triColor.png",
+        lastPosition: -1,
+        sequence: -1,
+        func: function(amount, position){
+            if(position > this.lastPosition){
+                this.lastPosition = position;
+                this.sequence++;
+            }else{
+                this.lastPosition = -1;
+                this.sequence = 0;
+            }
+            return 'hsl(' + (this.sequence % 3 * 120) + ', 100%, 50%)';
+        }
+    },
+    rgbMath: {
+        name: 'RGB (Math)',
+        image: "colors/tricolor.png",
+        func: function(amount, position){
+            return 'hsl(' + (position * this.multiplier % 3 * 120) + ', 100%, ' + (amount / 5.12) + '%)';
+        },
+        multiplier: 1024 / 256
+    },
+    rgbMathSolid: {
+        name: 'RGB (Math) Solid',
+        image: "colors/tricolor.png",
+        func: function(amount, position){
+            return 'hsl(' + (position * this.multiplier % 3 * 120) + ', 100%, 50%)';
+        },
+        multiplier: 1024 / 256
     }
 }
 
@@ -3872,7 +3926,7 @@ var vis = {
             var strength = 0;
             for(var i = 0; i < 1024; i++){
                 strength = visData[i];
-                canvas.fillStyle = getColor(strength);
+                canvas.fillStyle = getColor(strength, i / 4);
                 canvas.fillRect(left + i, size[1] - 1, 1, 1);
             }
         },
