@@ -1,48 +1,93 @@
-const {
-    remote,
-    ipcRenderer,
-    desktopCapturer
-} = require('electron');
+var webVersion = 0;
+var aosToolsConnected = 0;
+//let remote, ipcRenderer, desktopCapturer = null;
+try{
+    var {
+        remote,
+        ipcRenderer,
+        desktopCapturer
+    } = require('electron');
+}catch(err){
+    console.log("Error requiring electron -- assuming web version");
+    webVersion = 1;
+    var newScriptTag = document.createElement("script");
+    newScriptTag.setAttribute("data-light", "true");
+    newScriptTag.src = "aosTools.js";
+    document.head.appendChild(newScriptTag);
+}
+
+window.aosTools_connectListener = function(){
+    aosTools.openWindow();
+    aosToolsConnected = 1;
+    getId("tskbrModeRange").style.display = "none";
+    aosTools.getBorders(recieveWindowBorders);
+    aosTools.updateStyle = checkDarkTheme;
+    checkDarkTheme();
+}
 
 // ask for window type
 var windowType = "opaque";
-ipcRenderer.on("giveWindowType", function(event, arg){
-    windowType = arg.windowType;
-    updateWindowType();
-    remote.getCurrentWindow.setIgnoreMouseEvents(false);
-});
-function sendTypeRequest(){
-    ipcRenderer.send("getWindowType");
+if(!webVersion){
+    ipcRenderer.on("giveWindowType", function(event, arg){
+        windowType = arg.windowType;
+        updateWindowType();
+        remote.getCurrentWindow().setIgnoreMouseEvents(false);
+    });
+    function sendTypeRequest(){
+        ipcRenderer.send("getWindowType");
+    }
+    window.requestAnimationFrame(sendTypeRequest);
 }
-window.requestAnimationFrame(sendTypeRequest);
 
 // prevent the display from going to sleep
 var preventingSleep = 0;
 var sleepID = null;
 function blockSleep(){
     if(!preventingSleep){
-        sleepID = remote.powerSaveBlocker.start("prevent-display-sleep");
-        preventingSleep = 1;
+        if(webVersion){
+            if(aosToolsConnected){
+                aosTools.blockScreensaver(() => {});
+                preventingSleep = 1;
+            }
+        }else{
+            sleepID = remote.powerSaveBlocker.start("prevent-display-sleep");
+            preventingSleep = 1;
+        }
     }
 }
 function unblockSleep(){
     if(preventingSleep){
-        remote.powerSaveBlocker.stop(sleepID);
-        sleepID = null;
-        preventingSleep = 0;
+        if(webVersion){
+            if(aosToolsConnected){
+                aosTools.unblockScreensaver(() => {});
+                preventingSleep = 0;
+            }
+        }else{
+            remote.powerSaveBlocker.stop(sleepID);
+            sleepID = null;
+            preventingSleep = 0;
+        }
     }
 }
 
-// disable system audio icon on mac because it's not allowed
-if(navigator.platform.indexOf("Mac") === 0){
+if(webVersion){
+    // web version can't be transparent or use system audio
     getId("systemAudioIcon").style.display = "none";
-    getId("filesIcon").src = "icons/mac_files.png";
-    getId("folderIcon").src = "icons/mac_folder.png";
-    getId("microphoneIcon").src = "icons/mac_microphone.png";
-}
-
-if(navigator.platform.indexOf("Win") !== 0){
+    getId("transparentModeIcon").style.display = "none";
     getId("tskbrModeRange").style.display = "none";
+}else{
+    // disable system audio icon on mac because it's not allowed
+    if(navigator.platform.indexOf("Mac") === 0){
+        getId("systemAudioIcon").style.display = "none";
+        getId("filesIcon").src = "icons/mac_files.png";
+        getId("folderIcon").src = "icons/mac_folder.png";
+        getId("microphoneIcon").src = "icons/mac_microphone.png";
+    }
+
+    // taskbar mode is designed with windows taskbar
+    if(navigator.platform.indexOf("Win") !== 0){
+        getId("tskbrModeRange").style.display = "none";
+    }
 }
 
 window.onerror = function(errorMsg, url, lineNumber){
@@ -63,39 +108,33 @@ function recieveWindowBorders(response){
 }
 
 var iframeMode = 1;
-if(navigator.platform.indexOf("Win") === 0){
+if(navigator.platform.indexOf("Win") === 0 && !webVersion){
     getId("tskbrModeRange").style.display = "";
 }
 
 function checkDarkTheme(){
-    if(remote.nativeTheme.shouldUseDarkColors){
-        document.body.classList.add("darkMode");
+    if(webVersion){
+        if(aosToolsConnected){
+            aosTools.getDarkMode((response) => {
+                if(response.content === true){
+                    document.body.classList.add("darkMode");
+                }else{
+                    document.body.classList.remove("darkMode");
+                }
+            });
+        }
     }else{
-        document.body.classList.remove("darkMode");
+        if(remote.nativeTheme.shouldUseDarkColors){
+            document.body.classList.add("darkMode");
+        }else{
+            document.body.classList.remove("darkMode");
+        }
     }
 }
 checkDarkTheme();
-remote.nativeTheme.on('updated', checkDarkTheme);
-/* above replaces this
-window.aosTools_connectFailListener = function(){
-    var aosStylesheet = document.createElement("link");
-    aosStylesheet.rel = "stylesheet";
-    aosStylesheet.href = "styleBeta.css";
-    document.head.prepend(aosStylesheet);
-    iframeMode = 0;
+if(!webVersion){
+    remote.nativeTheme.on('updated', checkDarkTheme);
 }
-window.aosTools_connectListener = function(){
-    aosTools.sendRequest({
-        action: "appwindow:open_window"
-    }, console.log);
-    iframeMode = 1;
-    getId("tskbrModeButton").style.display = "";
-    aosTools.getBorders(recieveWindowBorders);
-}
-if(window.aosTools){
-    aosTools.testConnection();
-}
-*/
 
 var audio = new Audio();
 var audioDuration = 1;
@@ -650,14 +689,12 @@ function selectSong(id){
     blockSleep();
     getId("currentlyPlaying").innerHTML = fileNames[id][1] + ": " + fileNames[id][0];
     document.title = fileNames[id][0] + " - AaronOS Music Player";
-    if(iframeMode){
-        /*
+    if(webVersion && aosToolsConnected){
         aosTools.sendRequest({
             action: "appwindow:set_caption",
             content: "Music Player - " + fileNames[id][0],
             conversation: "set_caption"
         });
-        */
     }
     try{
         document.getElementsByClassName("selected")[0].classList.remove("selected");
@@ -3841,6 +3878,74 @@ var vis = {
         tiles: [],
         boxSize: []
     },
+    windowRecolor: {
+        name: "Window Color",
+        image: "visualizers/windowColor.png",
+        start: function(){
+            
+        },
+        frame: function(){
+            var avg = 0;
+            var avgtotal = 0;
+            for(var i = 0; i < 1024; i++){
+                avg += Math.sqrt(visData[i]) * this.sqrt255;
+            }
+            avg /= 1024;
+            //avg /= 1024;
+            //avg *= 255;
+            canvas.clearRect(0, 0, size[0], size[1]);
+            if(smokeEnabled){
+                smoke.clearRect(0, 0, size[0], size[1]);
+                smoke.fillStyle = getColor(avg);
+                smoke.fillRect(0, 0, size[0], size[1]);
+            }else{
+                canvas.fillStyle = getColor(avg);
+                canvas.fillRect(0, 0, size[0], size[1]);
+            }
+            canvas.fillStyle = "#FFF";
+            canvas.font = "12px aosProFont, Courier, monospace";
+            canvas.fillText("Load this visualizer in AaronOS and your window borders will color themselves to the beat.", 10.5, 20);
+            document.title = "WindowRecolor:" + getColor(avg);
+        },
+        stop: function(){
+            document.title = "AaronOS Music Player";
+        },
+        sqrt255: Math.sqrt(255)
+    },
+    bassWindowRecolor: {
+        name: "Bass Window Color",
+        image: "visualizers/bassWindowColor.png",
+        start: function(){
+            
+        },
+        frame: function(){
+            var avg = 0;
+            var avgtotal = 0;
+            for(var i = 0; i < 180; i++){
+                avg += Math.sqrt(visData[i]) * this.sqrt255;
+            }
+            avg /= 180;
+            //avg /= 1024;
+            //avg *= 255;
+            canvas.clearRect(0, 0, size[0], size[1]);
+            if(smokeEnabled){
+                smoke.clearRect(0, 0, size[0], size[1]);
+                smoke.fillStyle = getColor(avg);
+                smoke.fillRect(0, 0, size[0], size[1]);
+            }else{
+                canvas.fillStyle = getColor(avg);
+                canvas.fillRect(0, 0, size[0], size[1]);
+            }
+            canvas.fillStyle = "#FFF";
+            canvas.font = "12px aosProFont, Courier, monospace";
+            canvas.fillText("Load this visualizer in AaronOS and your window borders will color themselves to the beat.", 10.5, 20);
+            document.title = "WindowRecolor:" + getColor(avg);
+        },
+        stop: function(){
+            document.title = "AaronOS Music Player";
+        },
+        sqrt255: Math.sqrt(255)
+    },
     solidColor: {
         name: "Solid Color",
         image: "visualizers/solidColor.png",
@@ -5399,10 +5504,12 @@ function openSettingsMenu(){
         var tempHTML = '<div style="font-size:0.5em;background:transparent">';
 
         if(!microphoneActive){
-            tempHTML += "<p style='font-size:2em'>Self-Close</p>" +
-                'Songs: <input style="width:50px" type="number" id="selfcloseinput" min="1" max="9999" value="' + selfCloseSongs + '" step="1" onchange="selfCloseSongs = this.value;"></input>' +
-                ' <button onclick="toggleSelfClose()" id="selfclosebutton" style="border-color:' + debugColors[selfCloseEnabled] + '">Toggle</button>' +
-                "<p>The music player will close itself after playing a number of songs.</p>";
+            if(!webVersion){
+                tempHTML += "<p style='font-size:2em'>Self-Close</p>" +
+                    'Songs: <input style="width:50px" type="number" id="selfcloseinput" min="1" max="9999" value="' + selfCloseSongs + '" step="1" onchange="selfCloseSongs = this.value;"></input>' +
+                    ' <button onclick="toggleSelfClose()" id="selfclosebutton" style="border-color:' + debugColors[selfCloseEnabled] + '">Toggle</button>' +
+                    "<p>The music player will close itself after playing a number of songs.</p>";
+            }
 
             tempHTML += "<br><br><p style='font-size:2em'>Audio Delay</p>" +
                 'Seconds: <input style="width: 50px" type="number" id="delayinput" min="0" max="1" value="' + delayNode.delayTime.value + '" step="0.01" onchange="setDelay(this.value)"></input>' +
@@ -5553,3 +5660,8 @@ window.addEventListener("keypress", function(event){
         toggleFullscreen();
     }
 });
+
+if(!webVersion){
+    delete vis.windowRecolor;
+    delete vis.bassWindowRecolor;
+}
