@@ -5664,4 +5664,5 @@ window.addEventListener("keypress", function(event){
 if(!webVersion){
     delete vis.windowRecolor;
     delete vis.bassWindowRecolor;
+    getId("filesNotUploadedDisclaimer").style.display = "none";
 }
