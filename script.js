@@ -297,19 +297,22 @@ function loadFolder(event){
         smokeScreen1.classList.add("disabled");
         smokeScreen2.classList.add("disabled");
     }
-    getId("liveControls").classList.add("disabled");
+    //getId("liveControls").classList.add("disabled");
     
     audioContext = new AudioContext();
     mediaSource = audioContext.createMediaElementSource(audio);
     
     delayNode = audioContext.createDelay();
-    delayNode.delayTime.value = 0.25;
+    delayNode.delayTime.value = 0.03;
     delayNode.connect(audioContext.destination);
     
     analyser = audioContext.createAnalyser();
-    analyser.fftSize = 32768;
-    analyser.minDecibels = -70;
-    analyser.smoothingTimeConstant = 0;
+    //analyser.fftSize = 32768;
+    analyser.fftSize = 2048;
+    latencyReduction = 1;
+    analyser.maxDecibels = -20;
+    analyser.minDecibels = -60;
+    //analyser.smoothingTimeConstant = 0;
     mediaSource.connect(analyser);
     analyser.connect(delayNode);
     
@@ -369,19 +372,22 @@ function loadFiles(event){
         smokeScreen1.classList.add("disabled");
         smokeScreen2.classList.add("disabled");
     }
-    getId("liveControls").classList.add("disabled");
+    //getId("liveControls").classList.add("disabled");
     
     audioContext = new AudioContext();
     mediaSource = audioContext.createMediaElementSource(audio);
     
     delayNode = audioContext.createDelay();
-    delayNode.delayTime.value = 0.25;
+    delayNode.delayTime.value = 0.03;
     delayNode.connect(audioContext.destination);
     
     analyser = audioContext.createAnalyser();
-    analyser.fftSize = 32768;
-    analyser.minDecibels = -70;
-    analyser.smoothingTimeConstant = 0;
+    //analyser.fftSize = 32768;
+    analyser.fftSize = 2048;
+    latencyReduction = 1;
+    analyser.maxDecibels = -20;
+    analyser.minDecibels = -60;
+    //analyser.smoothingTimeConstant = 0;
     mediaSource.connect(analyser);
     analyser.connect(delayNode);
     
@@ -437,19 +443,22 @@ function loadWeirdFiles(event){
         smokeScreen1.classList.add("disabled");
         smokeScreen2.classList.add("disabled");
     }
-    getId("liveControls").classList.add("disabled");
+    //getId("liveControls").classList.add("disabled");
     
     audioContext = new AudioContext();
     mediaSource = audioContext.createMediaElementSource(audio);
     
     delayNode = audioContext.createDelay();
-    delayNode.delayTime.value = 0.25;
+    delayNode.delayTime.value = 0.03;
     delayNode.connect(audioContext.destination);
     
     analyser = audioContext.createAnalyser();
-    analyser.fftSize = 32768;
-    analyser.minDecibels = -70;
-    analyser.smoothingTimeConstant = 0;
+    //analyser.fftSize = 32768;
+    analyser.fftSize = 2048;
+    latencyReduction = 1;
+    analyser.maxDecibels = -20;
+    analyser.minDecibels = -60;
+    //analyser.smoothingTimeConstant = 0;
     mediaSource.connect(analyser);
     analyser.connect(delayNode);
     
@@ -489,7 +498,7 @@ function setLatency(newLatency){
             getId("latencyButton1").style.borderColor = "#C00";
             getId("latencyButton2").style.borderColor = "#C00";
             break;
-        case 1:
+        case 1: // after sep. 22 2021 this is the only option
             latencyReduction = 1;
             analyser.fftSize = 2048;
             analyser.smoothingTimeConstant = 0.8;
@@ -530,9 +539,9 @@ function loadMicrophone(event){
         smokeScreen1.classList.add("disabled");
         smokeScreen2.classList.add("disabled");
     }
-    getId("nonLiveControls").classList.add("disabled");
-    getId("ambienceButton").classList.add("disabled");
-    getId("ambienceSpacing").classList.add("disabled");
+    getId("nonLiveControls").classList.add("unclickable");
+    getId("ambienceButton").classList.add("unclickable");
+    getId("ambienceSpacing").classList.add("unclickable");
     getId("currentlyPlaying").innerHTML = "Microphone";
     
     audioContext = new AudioContext();
@@ -610,7 +619,7 @@ function loadSystemAudio(event){
     desktopCapturer.getSources({types: ['screen']}).then(async sources => {
         for(const source of sources){
             console.log(source);
-            if(source.name === "Entire Screen"){
+            if(source.name === "Entire Screen" || source.name === "Screen 1"){
                 try{
                     systemVideo = await navigator.mediaDevices.getUserMedia({
                         audio: {
@@ -647,9 +656,9 @@ function loadSystemAudio(event){
                         smokeScreen1.classList.add("disabled");
                         smokeScreen2.classList.add("disabled");
                     }
-                    getId("nonLiveControls").classList.add("disabled");
-                    getId("ambienceButton").classList.add("disabled");
-                    getId("ambienceSpacing").classList.add("disabled");
+                    getId("nonLiveControls").classList.add("unclickable");
+                    getId("ambienceButton").classList.add("unclickable");
+                    getId("ambienceSpacing").classList.add("unclickable");
                     getId("currentlyPlaying").innerHTML = "System Audio";
                     
                     requestAnimationFrame(globalFrame);
@@ -1139,6 +1148,8 @@ function globalFrame(){
         }
         if(microphoneActive){
             var tempArr = [];
+            // after sep 22 2021 this is default
+            /*
             if(latencyReduction === 1){
                 for(var i = 0; i < 128; i++){
                     tempArr[i] = visData[i];
@@ -1159,7 +1170,8 @@ function globalFrame(){
                         visData[j] = ((1 - u) * p1) + (u * p2);
                     }
                 }
-            }else if(latencyReduction === 2){
+            }else */
+            if(latencyReduction === 2){
                 for(var i = 0; i < 64; i++){
                     tempArr[i] = visDataBuffer[i];
                 }
@@ -1191,12 +1203,14 @@ function globalFrame(){
                 }
             }
         }
+        /*
         if(highFreqRange){
             var tempsize = size[0];
             for(var i = 0; i < tempsize; i++){
                 visData[i] = Math.max(visData[i * 2], visData[i * 2 + 1]);
             }
         }
+        */
         if(smokeEnabled){
             smokeFrame();
         }
@@ -1205,19 +1219,21 @@ function globalFrame(){
         
         if(debugEnabled && currMod){
             var oldVisData = [];
-            if(latencyReduction === 1){
-                for(var i = 0; i < 1024; i++){
-                    oldVisData[i] = visData[Math.floor(i / 16) * 16];
-                }
+            //if(latencyReduction === 1){
+            for(var i = 0; i < 64; i++){
+                oldVisData[i] = visData[i];
+            }
+            /*
             }else if(latencyReduction === 2){
-                for(var i = 0; i < 1024; i++){
+                for(var i = 0; i < 64; i++){
                     oldVisData[i] = visData[Math.floor(i / 32) * 32];
                 }
             }else{
-                for(var i = 0; i < 1024; i++){
+                for(var i = 0; i < 64; i++){
                     oldVisData[i] = visData[i];
                 }
             }
+            */
         }
         
         // if mod is selected, modify the data values
@@ -1245,13 +1261,13 @@ function globalFrame(){
             if(currMod){
                 canvas.strokeStyle = "#FFF";
                 canvas.lineWidth = 1;
-                var debugLeftBound = size[0] - 700;
-                canvas.strokeRect(size[0] - 700.5, 10.5, 342, 255);
-                // debug is supersampled -- rgb is 1, 2, 3
-                canvas.fillStyle = '#000';
-                for(var i = 0; i < 1023; i += 3){
-                    canvas.fillRect(debugLeftBound + (i / 3), 10 + (255 - Math.max(oldVisData[i], oldVisData[i + 1], oldVisData[i + 2])), 1, Math.max(oldVisData[i], oldVisData[i + 1], oldVisData[i + 2]));
+                var debugLeftBound = size[0] - 278;
+                canvas.strokeRect(size[0] - 278.5, 10.5, 128, 255);
+                canvas.fillStyle = '#FFF';
+                for(var i = 0; i < 64; i++){
+                    canvas.fillRect(debugLeftBound + (i * 2), 10 + (255 - oldVisData[i]), 2, oldVisData[i]);
                 }
+                /*
                 canvas.globalCompositeOperation = 'screen';
                 canvas.fillStyle = '#F00';
                 for(var i = 0; i < 1024; i += 3){
@@ -1266,16 +1282,18 @@ function globalFrame(){
                     canvas.fillRect(debugLeftBound + ((i - 2) / 3), 10 + (255 - oldVisData[i]), 1, oldVisData[i]);
                 }
                 canvas.globalCompositeOperation = 'normal';
+                */
             }
             canvas.strokeStyle = "#FFF";
             canvas.lineWidth = 1;
-            var debugLeftBound = size[0] - 352;
-            canvas.strokeRect(size[0] - 352.5, 10.5, 342, 255);
+            var debugLeftBound = size[0] - 139;
+            canvas.strokeRect(size[0] - 139.5, 10.5, 128, 255);
             // debug is supersampled -- rgb is 1, 2, 3
-            canvas.fillStyle = '#000';
-            for(var i = 0; i < 1023; i += 3){
-                canvas.fillRect(debugLeftBound + (i / 3), 10 + (255 - Math.max(visData[i], visData[i + 1], visData[i + 2])), 1, Math.max(visData[i], visData[i + 1], visData[i + 2]));
+            canvas.fillStyle = '#FFF';
+            for(var i = 0; i < 64; i++){
+                canvas.fillRect(debugLeftBound + (i * 2), 10 + (255 - visData[i]), 2, visData[i]);
             }
+            /*
             canvas.globalCompositeOperation = 'screen';
             canvas.fillStyle = '#F00';
             for(var i = 0; i < 1024; i += 3){
@@ -1290,6 +1308,7 @@ function globalFrame(){
                 canvas.fillRect(debugLeftBound + ((i - 2) / 3), 10 + (255 - visData[i]), 1, visData[i]);
             }
             canvas.globalCompositeOperation = 'normal';
+            */
         }
     }
 }
@@ -1300,7 +1319,7 @@ var mods = {
         name: "Power Sine",
         image: 'mods/powSin.png',
         mod: function(){
-            for(var i = 0; i < 1024; i++){
+            for(var i = 0; i < 128; i++){
                 visData[i] = Math.sin((Math.pow(visData[i], 2) / 255) / 255 * (Math.PI / 2)) * 255;
             }
         },
@@ -1313,7 +1332,7 @@ var mods = {
         name: "Bell",
         image: 'mods/ogive.png',
         mod: function(){
-            for(var i = 0; i < 1024; i++){
+            for(var i = 0; i < 128; i++){
                 visData[i] = visData[i] * ((510 - visData[i]) / 255);
             }
         },
@@ -1325,7 +1344,7 @@ var mods = {
         name: "Power (2)",
         image: 'mods/pow2.png',
         mod: function(){
-            for(var i = 0; i < 1024; i++){
+            for(var i = 0; i < 128; i++){
                 visData[i] = Math.pow(visData[i], 2) / 255;
             }
         },
@@ -1337,7 +1356,7 @@ var mods = {
         name: "Square Root",
         image: 'mods/sqrt.png',
         mod: function(){
-            for(var i = 0; i < 1024; i++){
+            for(var i = 0; i < 128; i++){
                 visData[i] = Math.sqrt(visData[i]) * this.sqrt255;
             }
         },
@@ -1781,6 +1800,9 @@ function setColor(newcolor){
         currColor = "redgreenblue";
     }
     progressBar.style.outline = "2px solid " + getColor(255);
+    if(vis[currVis].sizechange){
+        vis[currVis].sizechange();
+    }
 }
 function getColor(power, position){
     return colors[currColor].func(power, position);
@@ -1859,7 +1881,8 @@ var vis = {
             monstercatGradient.addColorStop(0.1, 'rgba(0, 0, 0, 1)');// 1
             
             for(var i = 0; i < 64; i++){
-                var strength = 0;
+                var strength = visData[i];
+                /*
                 for(var j = 0; j < 16; j++){
                     //strength = Math.max(visData[i * 16 + j], strength);
                     //strength += visData[i * 16 + j];
@@ -1867,6 +1890,7 @@ var vis = {
                     strength += Math.sqrt(visData[i * 16 + j]) * this.sqrt255;
                 }
                 strength = Math.round(strength / 16);
+                */
                 
                 var fillColor = getColor(strength, i * 4);
                 canvas.fillStyle = fillColor;
@@ -1946,7 +1970,8 @@ var vis = {
             canvas.fillRect(0, Math.round(size[1] / 2) + 4, size[0], Math.round(size[1] / 2) - 4);
 
             for(var i = 0; i < 64; i++){
-                var strength = 0;
+                var strength = visData[i];
+                /*
                 for(var j = 0; j < 16; j++){
                     //strength = Math.max(visData[i * 16 + j], strength);
                     //strength += visData[i * 16 + j];
@@ -1954,6 +1979,7 @@ var vis = {
                     strength += Math.sqrt(visData[i * 16 + j]) * this.sqrt255;
                 }
                 strength = Math.round(strength / 16);
+                */
                 
                 smoke.fillStyle = getColor(strength, i * 4);
                 smoke.fillRect(
@@ -2031,7 +2057,7 @@ var vis = {
             var xdist = size[0] / (this.lineCount + 2) / 2;
             var ydist = size[1] / (this.lineCount + 2) / 2;
             xdist = Math.min(xdist, ydist);
-            var datastep = 1024 / this.lineCount;
+            var datastep = 64 / this.lineCount;
             var colorstep = 255 / this.lineCount;
             var center = size[1] / 2;
             for(var i = 0; i < this.lineCount; i++){
@@ -2148,7 +2174,6 @@ var vis = {
         },
         piBy180: Math.PI / 180,
         circleFromThreePoints: function(p1, p2, p3) { // from Circle.js
-
             var x1 = p1.x;
             var y1 = p1.y;
             var x2 = p2.x;
@@ -2190,7 +2215,7 @@ var vis = {
             smoke.lineCap = "round";
             smoke.lineWidth = this.lineWidth - (performanceMode * 0.5 * this.lineWidth);
             var xdist = size[0] / (this.lineCount + 2);
-            var datastep = 1024 / this.lineCount;
+            var datastep = 64 / this.lineCount;
             var colorstep = 255 / this.lineCount;
             var center = size[1] / 2;
             for(var i = 0; i < this.lineCount; i++){
@@ -2258,7 +2283,7 @@ var vis = {
             canvas.clearRect(0, 0, size[0], size[1]);
             smoke.clearRect(0, 0, size[0], size[1]);
             var xdist = size[0] / (this.lineCount + 2);
-            var datastep = 1024 / this.lineCount;
+            var datastep = 64 / this.lineCount;
             var colorstep = 255 / this.lineCount;
             var caveCieling = Math.round(size[1] / 18);
             var center = size[1] / 2;
@@ -2320,86 +2345,8 @@ var vis = {
         lineCount: 18,
         sqrt255: Math.sqrt(255)
     },
-    seismograph: {
-        name: "Seismograph",
-        image: "visualizers/seismograph.png",
-        start: function(){
-            this.graph = [];
-        },
-        frame: function(){
-            canvas.clearRect(0, 0, size[0], size[1]);
-            smoke.clearRect(0, 0, size[0], size[1]);
-            var avg = 0;
-            for(var i = 0; i < 180; i++){
-                avg += visData[i];
-            }
-            avg /= 180;
-            this.graph.push(avg);
-            while(this.graph.length > size[0]){
-                this.graph.shift();
-            }
-            var graphLength = this.graph.length;
-            var multiplier = size[1] / 255;
-            canvas.lineWidth = 2;
-            smoke.lineWidth = 2;
-            for(var i = 0; i < graphLength; i++){
-                canvas.strokeStyle = getColor(this.graph[i], 255 - i / size[0] * 255);
-                canvas.beginPath();
-                canvas.moveTo(size[0] - i - 1.5, size[1] - (this.graph[i] * multiplier));
-                canvas.lineTo(size[0] - i - 0.5, size[1] - ((this.graph[i - 1] || this.graph[i]) * multiplier));
-                canvas.stroke();
-                //canvas.fillRect(graphLength - i - 1, size[1] - (this.graph[i] * multiplier), 1, 1);
-                if(smokeEnabled){
-                    smoke.strokeStyle = getColor(this.graph[i], 255 - i / size[0] * 255);
-                    smoke.beginPath();
-                    smoke.moveTo(size[0] - i - 1.5, size[1] - (this.graph[i] * multiplier));
-                    smoke.lineTo(size[0] - i - 1.5, size[1] - ((this.graph[i - 1] || this.graph[i]) * multiplier));
-                    smoke.stroke();
-                    //smoke.fillRect(graphLength - i - 1, size[1] - (this.graph[i] * multiplier), 1, 1);
-                }
-            }
-        },
-        stop: function(){
-            this.graph = [];
-        },
-        graph: []
-    },
-    barsmograph: {
-        name: "Barsmograph",
-        image: "visualizers/barsmograph.png",
-        start: function(){
-            this.graph = [];
-        },
-        frame: function(){
-            canvas.clearRect(0, 0, size[0], size[1]);
-            smoke.clearRect(0, 0, size[0], size[1]);
-            var avg = 0;
-            for(var i = 0; i < 180; i++){
-                avg += visData[i];
-            }
-            avg /= 180;
-            this.graph.push(avg);
-            while(this.graph.length > size[0]){
-                this.graph.shift();
-            }
-            var graphLength = this.graph.length;
-            var multiplier = size[1] / 255;
-            for(var i = 0; i < graphLength; i++){
-                canvas.fillStyle = getColor(this.graph[i], 255 - i / size[0] * 255);
-                canvas.fillRect(size[0] - i - 1, size[1] - (this.graph[i] * multiplier), 1, this.graph[i] * multiplier);
-                if(smokeEnabled){
-                    smoke.fillStyle = getColor(this.graph[i], 255 - i / size[0] * 255);
-                    smoke.fillRect(size[0] - i - 1, size[1] - (this.graph[i] * multiplier), 1, this.graph[i] * multiplier);
-                }
-            }
-        },
-        stop: function(){
-            this.graph = [];
-        },
-        graph: []
-    },
     spikes1to1: {
-        name: "Spikes Classic",
+        name: "Bars",
         image: "visualizers/spikesClassic.png",
         start: function(){
             
@@ -2409,10 +2356,12 @@ var vis = {
             canvas.fillStyle = "#000";
             canvas.fillRect(0, size[1] / 2 + 127, size[0], size[1] / 2 - 127);
             smoke.clearRect(0, 0, size[0], size[1]);
-            var left = size[0] / 2 - 512;
-            var top = size[1] / 2 - 128;
-            for(var i = 0; i < 1024; i++){
-                this.drawLine(i, visData[i], left, top);
+            //var left = size[0] / 2 - 512;
+            //var top = size[1] / 2 - 128;
+            var hfact = size[0] / 64;
+            var yfact = size[1] / 255;
+            for(var i = 0; i < 64; i++){
+                this.drawLine(i, visData[i], hfact, yfact);
             }
             //updateSmoke();
         },
@@ -2420,17 +2369,22 @@ var vis = {
             
         },
         drawLine: function(x, h, l, t){
-            var fillColor = getColor(h, x / 4);
+            var fillColor = getColor(h, x / 16);
             canvas.fillStyle = fillColor;
-            canvas.fillRect(l + x, t + (255 - h), 1, h);
+            var xtimesl = x * l;
+            var l2 = Math.floor(l);
+            if(xtimesl - Math.floor(xtimesl) >= 0.5){
+                l2 += 1;
+            }
+            canvas.fillRect(Math.floor(xtimesl), size[1] - (h * t), l2, h * t);
             if(smokeEnabled){
                 smoke.fillStyle = fillColor;
-                smoke.fillRect(l + x, t + (255 - h), 1, h * 2);
+                canvas.fillRect(Math.floor(xtimesl), size[1] - (h * t), l2, h * t);
             }
         }
     },
     spikes: {
-        name: "Spikes Stretch",
+        name: "Spikes",
         image: "visualizers/spikesStretch.png",
         start: function(){
             
@@ -2438,10 +2392,10 @@ var vis = {
         frame: function(){
             canvas.clearRect(0, 0, size[0], size[1]);
             smoke.clearRect(0, 0, size[0], size[1]);
-            var step = size[0] / 1024;
+            var step = size[0] / 64;
             var last = -1;
             var heightFactor = size[1] / 255;
-            var widthFactor = 1024 / size[0];
+            var widthFactor = 64 / size[0];
 
             if(widthFactor !== 1){
                 var tempLines = [];
@@ -2450,12 +2404,12 @@ var vis = {
                     for(var i = 0; i < size[0]; i++){
                         // width is larger than data
                         var pcnt = i / size[0];
-                        var closestPoint = visData[Math.floor(pcnt * 1024)];
-                        var nextPoint = visData[Math.floor(pcnt * 1024) + 1];
+                        var closestPoint = visData[Math.floor(pcnt * 64)];
+                        var nextPoint = visData[Math.floor(pcnt * 64) + 1];
                         if(nextPoint === undefined){
                             nextPoint = closestPoint;
                         }
-                        var u = pcnt * 1024 - Math.floor(pcnt * 1024);
+                        var u = pcnt * 64 - Math.floor(pcnt * 64);
                         tempLines[i] = ((1 - u) * closestPoint) + (u * nextPoint);
                     }
                 }else{
@@ -2463,8 +2417,8 @@ var vis = {
                         // width is smaller than data
                         var firstPcnt = i / size[0];
                         var lastPcnt = (i + 1) / size[0];
-                        var firstPlace = firstPcnt * 1024;
-                        var lastPlace = lastPcnt * 1024;
+                        var firstPlace = firstPcnt * 64;
+                        var lastPlace = lastPcnt * 64;
                         var pointRange = [];
                         for(var j = Math.floor(firstPlace); j <= Math.ceil(lastPlace); j++){
                             pointRange.push(j);
@@ -2500,41 +2454,6 @@ var vis = {
                     this.drawLine(curr, strength, heightFactor, widthFactor);
                 }
             }
-
-            /*
-            for(var i = 0; i < 1024; i++){
-                var strength = 0;
-                if(i === 0){
-                    strength = visData[i];
-                    this.drawLine(0, strength, heightFactor);
-                }else{
-                    var last = Math.floor(step * (i - 1));
-                    var curr = Math.floor(step * i);
-                    var next = Math.floor(step * (i + 1));
-                    if(last < curr - 1){
-                        // stretched
-                        for(var j = 0; j < curr - last - 1; j++){
-                            //strength = ((j + 1) / (curr - last + 1) * visData[i - 1] + (curr - last - j + 1) / (curr - last + 1) * visData[i]);
-                            strength = (visData[i] + visData[i - 1]) / 2;
-                            this.drawLine(curr - j - 1, strength, heightFactor, widthFactor);
-                        }
-                        strength = visData[i];
-                        this.drawLine(curr, strength, heightFactor, widthFactor);
-                    }else if(curr === last && next > curr){
-                        // compressed
-                        for(var j = 0; j < (1 / step); j++){
-                            strength += visData[i - j];
-                        }
-                        strength /= Math.floor(1 / step) + 1;
-                        this.drawLine(curr, strength, heightFactor, widthFactor);
-                    }else if(last === curr - 1){
-                        strength = visData[i];
-                        this.drawLine(curr, strength, heightFactor, widthFactor);
-                    }
-                }
-            }
-            */
-            //updateSmoke();
         },
         stop: function(){
             
@@ -2549,46 +2468,83 @@ var vis = {
             }
         }
     },
-    spikesAccumulate: {
-        name: "Spikes Accumulate",
-        image: "visualizers/spikesAccumulate.png",
+    seismograph: {
+        name: "Seismograph 1",
+        image: "visualizers/seismograph.png",
         start: function(){
-            this.totals = new Array(1024).fill(0);
-            this.max = 0;
+            this.graph = [];
         },
         frame: function(){
             canvas.clearRect(0, 0, size[0], size[1]);
             smoke.clearRect(0, 0, size[0], size[1]);
-            var left = size[0] / 2 - 512;
-            var top = 0;
-            for(var i = 0; i < 1024; i++){
-                this.totals[i] += visData[i];
-                if(this.totals[i] > this.max){
-                    this.max = this.totals[i];
-                }
-                if(this.max / 255 > size[1]){
-                    this.drawLine(i, this.totals[i] / this.max * size[1], left, top, visData[i]);
-                }else{
-                    this.drawLine(i, this.totals[i] / 255, left, top, visData[i]);
+            var avg = 0;
+            for(var i = 0; i < 12; i++){
+                avg += visData[i];
+            }
+            avg /= 12;
+            this.graph.push(avg);
+            while(this.graph.length > size[0]){
+                this.graph.shift();
+            }
+            var graphLength = this.graph.length;
+            var multiplier = size[1] / 255;
+            canvas.lineWidth = 2;
+            smoke.lineWidth = 2;
+            for(var i = 0; i < graphLength; i++){
+                canvas.strokeStyle = getColor(this.graph[i], 255 - i / size[0] * 255);
+                canvas.beginPath();
+                canvas.moveTo(size[0] - i - 1.5, size[1] - (this.graph[i] * multiplier));
+                canvas.lineTo(size[0] - i - 0.5, size[1] - ((this.graph[i - 1] || this.graph[i]) * multiplier));
+                canvas.stroke();
+                //canvas.fillRect(graphLength - i - 1, size[1] - (this.graph[i] * multiplier), 1, 1);
+                if(smokeEnabled){
+                    smoke.strokeStyle = getColor(this.graph[i], 255 - i / size[0] * 255);
+                    smoke.beginPath();
+                    smoke.moveTo(size[0] - i - 1.5, size[1] - (this.graph[i] * multiplier));
+                    smoke.lineTo(size[0] - i - 1.5, size[1] - ((this.graph[i - 1] || this.graph[i]) * multiplier));
+                    smoke.stroke();
+                    //smoke.fillRect(graphLength - i - 1, size[1] - (this.graph[i] * multiplier), 1, 1);
                 }
             }
-            //updateSmoke();
         },
         stop: function(){
-            this.totals = [];
-            this.max = 0;
+            this.graph = [];
         },
-        drawLine: function(x, h, l, t, c){
-            var fillColor = getColor(c, x / 4);
-            canvas.fillStyle = fillColor;
-            canvas.fillRect(l + x, t + (size[1] - h), 1, h);
-            if(smokeEnabled){
-                smoke.fillStyle = fillColor;
-                smoke.fillRect(l + x, t + (size[1] - h), 1, h * 2);
+        graph: []
+    },
+    barsmograph: {
+        name: "Seismograph 2",
+        image: "visualizers/barsmograph.png",
+        start: function(){
+            this.graph = [];
+        },
+        frame: function(){
+            canvas.clearRect(0, 0, size[0], size[1]);
+            smoke.clearRect(0, 0, size[0], size[1]);
+            var avg = 0;
+            for(var i = 0; i < 12; i++){
+                avg += visData[i];
+            }
+            avg /= 12;
+            this.graph.push(avg);
+            while(this.graph.length > size[0]){
+                this.graph.shift();
+            }
+            var graphLength = this.graph.length;
+            var multiplier = size[1] / 255;
+            for(var i = 0; i < graphLength; i++){
+                canvas.fillStyle = getColor(this.graph[i], 255 - i / size[0] * 255);
+                canvas.fillRect(size[0] - i - 1, size[1] - (this.graph[i] * multiplier), 1, this.graph[i] * multiplier);
+                if(smokeEnabled){
+                    smoke.fillStyle = getColor(this.graph[i], 255 - i / size[0] * 255);
+                    smoke.fillRect(size[0] - i - 1, size[1] - (this.graph[i] * multiplier), 1, this.graph[i] * multiplier);
+                }
             }
         },
-        max: 0,
-        totals: []
+        stop: function(){
+            this.graph = [];
+        },
+        graph: []
     },
     'SEPARATOR_CIRCLES" disabled="': {
         name: 'Circles',
@@ -2622,8 +2578,8 @@ var vis = {
             var ringPools = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
             //var ringAvgs = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
             var center = [Math.round(size[0] / 2), Math.round(size[1] / 2)];
-            for(var i = 0; i < 1024; i++){
-                var currPool = Math.floor(i / 102.4);
+            for(var i = 0; i < 64; i++){
+                var currPool = Math.floor(i / 6.4);
                 ringPools[currPool] = Math.max(visData[i], ringPools[currPool]);
                 //ringPools[currPool] += visData[i];
                 //ringAvgs[currPool]++;
@@ -2683,8 +2639,8 @@ var vis = {
             var ringPools = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
             //var ringAvgs = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
             var center = [Math.round(size[0] / 2), Math.round(size[1] / 2)];
-            for(var i = 0; i < 1024; i++){
-                var currPool = Math.floor(i / 102.4);
+            for(var i = 0; i < 64; i++){
+                var currPool = Math.floor(i / 6.4);
                 ringPools[currPool] = Math.max(visData[i], ringPools[currPool]);
                 //ringPools[currPool] += visData[i];
                 //ringAvgs[currPool]++;
@@ -2759,16 +2715,16 @@ var vis = {
             var ringMaxExpand = Math.round(Math.min(size[0], size[1]) * 0.2);
             var drumStrength = 0;
             var center = [Math.round(size[0] / 2), Math.round(size[1] / 2)];
-            for(var i = 0; i < 180; i++){
+            for(var i = 0; i < 12; i++){
                 drumStrength += Math.pow(visData[i], 2) / 255;
             }
-            drumStrength /= 180;
+            drumStrength /= 12;
 
             var randomOffset = [0, 0];
 
             var lineDist = 360 / this.lineCount;
             var colorDist = 255 / this.lineCount;
-            var dataDist = Math.round(1024 / this.lineCount);
+            var dataDist = Math.round(64 / this.lineCount);
             for(var i = 0; i < this.lineCount; i++){
                 var strength = 0;
                 var dataStop = (i + 1) * dataDist;
@@ -2861,47 +2817,47 @@ var vis = {
             var ringMinRadius = ringHeight * 0.25;
             var ringMaxExpand = Math.round(Math.min(size[0], size[1]) * 0.2);
             var randomShake = Math.round(Math.min(size[0], size[1]) * 0.03);
-            var drumStrength = 0; // drums is all under line 150... lmao i didnt even measure that it's just a total guess
+            var drumStrength = 0; // drums is all under line 12
             var center = [Math.round(size[0] / 2), Math.round(size[1] / 2)];
-            for(var i = 0; i < 180; i++){
+            for(var i = 0; i < 12; i++){
                 drumStrength += Math.pow(visData[i], 2) / 255;
             }
-            drumStrength /= 180;
+            drumStrength /= 12;
 
             var randomOffset = [(Math.random() - 0.5) * drumStrength / 255 * randomShake, (Math.random() - 0.5) * drumStrength / 255 * randomShake];
 
-            for(var i = 0; i < 844; i += 4){
-                var strength = (visData[i + 180] + visData[i + 181] + visData[i + 182] + visData[i + 183]) / 4;
-                canvas.fillStyle = getColor(strength, i * 0.3);
+            for(var i = 0; i < 52; i += 1){
+                var strength = visData[i + 12];
+                canvas.fillStyle = getColor(strength, i * 4.9);
                 this.degArc(
                     size[0] / 2 + randomOffset[0],
                     size[1] / 2 + randomOffset[1],
                     ringMinRadius + strength / 255 * ringMinRadius + drumStrength / 255 * ringMaxExpand,
-                    i / 844 * 180 + 90,
-                    (i + 4.1) / 844 * 180 + 90
+                    (i - 0.01) / 52 * 180 + 90,
+                    (i + 1.02) / 52 * 180 + 90
                 );
                 this.degArc(
                     size[0] / 2 + randomOffset[0],
                     size[1] / 2 + randomOffset[1],
                     ringMinRadius + strength / 255 * ringMinRadius + drumStrength / 255 * ringMaxExpand,
-                    90 - (i + 4.1) / 844 * 180,
-                    90 - i / 844 * 180
+                    90 - (i + 1.02) / 52 * 180,
+                    90 - (i - 0.01) / 52 * 180
                 );
                 if(smokeEnabled){
-                    smoke.fillStyle = getColor(strength, i * 0.3);
+                    smoke.fillStyle = getColor(strength, i * 4.9);
                     this.degArcSmoke(
                         size[0] / 2 + randomOffset[0],
                         size[1] / 2 + randomOffset[1],
                         ringMinRadius + strength / 255 * ringMinRadius + drumStrength / 255 * ringMaxExpand,
-                        i / 844 * 180 + 90,
-                        (i + 3.1) / 844 * 180 + 90
+                        (i - 0.01) / 52 * 180 + 90,
+                        (i + 1.02) / 52 * 180 + 90
                     );
                     this.degArcSmoke(
                         size[0] / 2 + randomOffset[0],
                         size[1] / 2 + randomOffset[1],
                         ringMinRadius + strength / 255 * ringMinRadius + drumStrength / 255 * ringMaxExpand,
-                        90 - (i + 4.1) / 844 * 180,
-                        90 - i / 844 * 180
+                        90 - (i + 1.02) / 52 * 180,
+                        90 - (i - 0.01) / 52 * 180
                     );
                 }
             }
@@ -2969,46 +2925,46 @@ var vis = {
             var ringMinRadius = ringHeight * 0.25;
             var ringMaxExpand = Math.round(Math.min(size[0], size[1]) * 0.2);
             var randomShake = Math.round(Math.min(size[0], size[1]) * 0.03);
-            var drumStrength = 0; // drums is all under line 150... lmao i didnt even measure that it's just a total guess
+            var drumStrength = 0; // drums is all under line 12
             var center = [Math.round(size[0] / 2), Math.round(size[1] / 2)];
-            for(var i = 0; i < 180; i++){
+            for(var i = 0; i < 12; i++){
                 drumStrength += Math.pow(visData[i], 2) / 255;
             }
-            drumStrength /= 180;
+            drumStrength /= 12;
 
             var randomOffset = [(Math.random() - 0.5) * drumStrength / 255 * randomShake, (Math.random() - 0.5) * drumStrength / 255 * randomShake];
 
-            for(var i = 0; i < 180; i++){
-                canvas.fillStyle = getColor(visData[i], i * 1.4);
+            for(var i = 0; i < 12; i++){
+                canvas.fillStyle = getColor(visData[i], i * 21.25);
                 this.degArc(
                     size[0] / 2 + randomOffset[0],
                     size[1] / 2 + randomOffset[1],
                     ringMinRadius + visData[i] / 255 * ringMinRadius + drumStrength / 255 * ringMaxExpand,
-                    i + 90,
-                    (i + 1.1) + 90
+                    (i - 0.01) / 12 * 180 + 90,
+                    (i + 1.01) / 12 * 180 + 90
                 );
                 this.degArc(
                     size[0] / 2 + randomOffset[0],
                     size[1] / 2 + randomOffset[1],
                     ringMinRadius + visData[i] / 255 * ringMinRadius + drumStrength / 255 * ringMaxExpand,
-                    90 - (i + 1.1),
-                    90 - i
+                    90 - (i + 1.01) / 12 * 180,
+                    90 - (i - 0.01) / 12 * 180
                 );
                 if(smokeEnabled){
-                    smoke.fillStyle = getColor(visData[i], i * 1.4);
+                    smoke.fillStyle = getColor(visData[i], i * 21.25);
                     this.degArcSmoke(
                         size[0] / 2 + randomOffset[0],
                         size[1] / 2 + randomOffset[1],
                         ringMinRadius + visData[i] / 255 * ringMinRadius + drumStrength / 255 * ringMaxExpand,
-                        i + 90,
-                        (i + 1.1) + 90
+                        (i - 0.01) / 12 * 180 + 90,
+                        (i + 1.01) / 12 * 180 + 90
                     );
                     this.degArcSmoke(
                         size[0] / 2 + randomOffset[0],
                         size[1] / 2 + randomOffset[1],
                         ringMinRadius + visData[i] / 255 * ringMinRadius + drumStrength / 255 * ringMaxExpand,
-                        90 - (i + 1.1),
-                        90 - i
+                        90 - (i + 1.01) / 12 * 180,
+                        90 - (i - 0.01) / 12 * 180
                     );
                 }
             }
@@ -3076,12 +3032,12 @@ var vis = {
             var ringMinRadius = ringHeight * 0.25;
             var ringMaxExpand = Math.round(Math.min(size[0], size[1]) * 0.2);
             var randomShake = Math.round(Math.min(size[0], size[1]) * 0.03);
-            var drumStrength = 0; // drums is all under line 150... lmao i didnt even measure that it's just a total guess
+            var drumStrength = 0; // drums is all under line 12
             var center = [Math.round(size[0] / 2), Math.round(size[1] / 2)];
-            for(var i = 0; i < 180; i++){
+            for(var i = 0; i < 12; i++){
                 drumStrength += Math.pow(visData[i], 2) / 255;
             }
-            drumStrength /= 180;
+            drumStrength /= 12;
 
             var randomOffset = [(Math.random() - 0.5) * drumStrength / 255 * randomShake, (Math.random() - 0.5) * drumStrength / 255 * randomShake];
 
@@ -3100,8 +3056,8 @@ var vis = {
                     size[0] / 2 + randomOffset[0],
                     size[1] / 2 + randomOffset[1],
                     ringMinRadius + visData[Math.abs(i)] / 255 * ringMinRadius + drumStrength / 255 * ringMaxExpand,
-                    i + 90,
-                    i + 90,
+                    i / 12 * 180 + 90,
+                    i / 12 * 180 + 90,
                     //(i + 1.1) + 90
                 );
                 //this.degArc(
@@ -3117,8 +3073,8 @@ var vis = {
                         size[0] / 2 + randomOffset[0],
                         size[1] / 2 + randomOffset[1],
                         ringMinRadius + visData[Math.abs(i)] / 255 * ringMinRadius + drumStrength / 255 * ringMaxExpand,
-                        i + 90,
-                        i + 90,
+                        i / 12 * 180 + 90,
+                        i / 12 * 180 + 90,
                         //(i + 1.1) + 90
                     );
                     //this.degArcSmoke(
@@ -3147,15 +3103,15 @@ var vis = {
                 smoke.moveTo(size[0] / 2, size[1] / 2);
             }
 
-            for(var i = -844; i < 845; i += 4){
-                var strength = (visData[Math.abs(i) + 180] + visData[Math.abs(i) + 181] + visData[Math.abs(i) + 182] + visData[Math.abs(i) + 183]) / 4;
+            for(var i = -52; i < 53; i++){
+                var strength = visData[Math.abs(i)];
                 
                 this.degArc(
                     size[0] / 2 + randomOffset[0],
                     size[1] / 2 + randomOffset[1],
                     ringMinRadius + strength / 255 * ringMinRadius + drumStrength / 255 * ringMaxExpand,
-                    i / 844 * 180 + 90,
-                    i / 844 * 180 + 90,
+                    i / 52 * 180 + 90,
+                    i / 52 * 180 + 90,
                     //(i + 4.1) / 844 * 180 + 90
                 );
                 //this.degArc(
@@ -3170,8 +3126,8 @@ var vis = {
                         size[0] / 2 + randomOffset[0],
                         size[1] / 2 + randomOffset[1],
                         ringMinRadius + strength / 255 * ringMinRadius + drumStrength / 255 * ringMaxExpand,
-                        i / 844 * 180 + 90,
-                        i / 844 * 180 + 90,
+                        i / 52 * 180 + 90,
+                        i / 52 * 180 + 90,
                         //(i + 3.1) / 844 * 180 + 90
                     );
                     //this.degArcSmoke(
@@ -3244,20 +3200,20 @@ var vis = {
             var strokePosition = ringWidth * 0.8;
             smoke.lineWidth = strokeWidth;
             var center = [Math.round(size[0] / 2), Math.round(size[1] / 2)];
-            for(var i = 510; i > -1; i -= 2){
-                var strength = Math.pow(Math.max(visData[i], visData[i + 1]), 2) / 255;
+            for(var i = 31; i > -1; i--){
+                var strength = visData[i];
                 smoke.strokeStyle = getColor(strength);
-                var linePosition = (i * 0.5) * this.ratio_360_1024;
+                var linePosition = (i * 0.5) * this.ratio_360_64;
                 this.degArcSmoke(center[0], center[1], strokePosition, linePosition + 90, linePosition + 91);
                 smoke.stroke();
                 linePosition *= -1;
                 this.degArcSmoke(center[0], center[1], strokePosition, linePosition + 90, linePosition + 91);
                 smoke.stroke();
             }
-            for(var i = 512; i < 1024; i += 2){
-                var strength = Math.pow(Math.max(visData[i], visData[i + 1]), 2) / 255;
+            for(var i = 32; i < 64; i++){
+                var strength = visData[i];
                 smoke.strokeStyle = getColor(strength);
-                var linePosition = (i * 0.5) * this.ratio_360_1024;
+                var linePosition = (i * 0.5) * this.ratio_360_64;
                 this.degArcSmoke(center[0], center[1], strokePosition, linePosition + 90, linePosition + 91);
                 smoke.stroke();
                 linePosition *= -1;
@@ -3293,7 +3249,8 @@ var vis = {
             smoke.beginPath();
             smoke.arc(x, y, r, (a / 360) * this.TAU, (b / 360) * this.TAU);
         },
-        ratio_360_1024: 360 / 1024
+        ratio_360_1024: 360 / 1024,
+        ratio_360_64: 360 / 64
     },
     'SEPARATOR_EDGES" disabled="': {
         name: "Edges",
@@ -3330,14 +3287,7 @@ var vis = {
             //monstercatGradient.addColorStop(0.1, 'rgba(0, 0, 0, 1)');// 1
             
             for(var i = 0; i < 64; i++){
-                var strength = 0;
-                for(var j = 0; j < 16; j++){
-                    //strength = Math.max(visData[i * 16 + j], strength);
-                    //strength += visData[i * 16 + j];
-                    //strength += Math.pow(visData[i * 16 + j], 2) / 255;
-                    strength += Math.sqrt(visData[i * 16 + j]) * this.sqrt255;
-                }
-                strength = Math.round(strength / 16);
+                strength = visData[i];
                 
                 var fillColor = getColor(strength, i * 4);
                 canvas.fillStyle = fillColor;
@@ -3400,14 +3350,7 @@ var vis = {
             //monstercatGradient.addColorStop(0.1, 'rgba(0, 0, 0, 1)');// 1
             
             for(var i = 0; i < 64; i++){
-                var strength = 0;
-                for(var j = 0; j < 16; j++){
-                    //strength = Math.max(visData[i * 16 + j], strength);
-                    //strength += visData[i * 16 + j];
-                    //strength += Math.pow(visData[i * 16 + j], 2) / 255;
-                    strength += Math.sqrt(visData[i * 16 + j]) * this.sqrt255;
-                }
-                strength = Math.round(strength / 16);
+                strength = visData[i];
                 
                 var fillColor = getColor(strength, i * 4);
                 canvas.fillStyle = fillColor;
@@ -3444,121 +3387,9 @@ var vis = {
         frame: function(){
             canvas.clearRect(0, 0, size[0], size[1]);
             smoke.clearRect(0, 0, size[0], size[1]);
-            var step = size[1] / 1024;
+            var step = size[1] / 64;
             var last = -1;
-            for(var i = 0; i < 1025; i++){
-                var strength = 0;
-                if(i === 0){
-                    strength = visData[i];
-                    this.drawLine(0, strength);
-                }else{
-                    var last = Math.floor(step * (i - 1));
-                    var curr = Math.floor(step * i);
-                    var next = Math.floor(step * (i + 1));
-                    if(last < curr - 1){
-                        // stretched
-                        for(var j = 0; j < curr - last - 1; j++){
-                            //strength = ((j + 1) / (curr - last + 1) * visData[i - 1] + (curr - last - j + 1) / (curr - last + 1) * visData[i]);
-                            strength = (visData[i] + visData[i - 1]) / 2;
-                            this.drawLine(curr - 1, strength);
-                        }
-                        strength = visData[i];
-                        this.drawLine(curr, strength);
-                    }else if(curr === last && next > curr){
-                        // compressed
-                        for(var j = 0; j < (1 / step); j++){
-                            strength += visData[i - j];
-                        }
-                        strength /= Math.floor(1 / step) + 1;
-                        this.drawLine(curr, strength);
-                    }else if(last === curr - 1){
-                        strength = visData[i];
-                        this.drawLine(curr, strength);
-                    }
-                }
-            }
-        },
-        stop: function(){
-            
-        },
-        drawLine: function(x, colorAmount){
-            if(smokeEnabled){
-                smoke.fillStyle = getColor(colorAmount);
-                smoke.fillRect(0, size[1] - x, colorAmount / 16 + 1, 1);
-                smoke.fillRect(size[0] - (colorAmount / 16 + 1), size[1] - x, colorAmount / 16 + 1, 1);
-            }
-            canvas.fillStyle = getColor(colorAmount);
-            canvas.fillRect(0, size[1] - x, colorAmount / 16 + 1, 1);
-            canvas.fillRect(size[0] - (colorAmount / 16 + 1), size[1] - x, colorAmount / 16 + 1, 1);
-        }
-    },
-    bottomSpectrum: {
-        name: "Bottom Spectrum",
-        image: "visualizers/bottomSpectrum.png",
-        start: function(){
-            
-        },
-        frame: function(){
-            canvas.clearRect(0, 0, size[0], size[1]);
-            smoke.clearRect(0, 0, size[0], size[1]);
-            var step = size[0] / 1024;
-            var last = -1;
-            for(var i = 0; i < 1025; i++){
-                var strength = 0;
-                if(i === 0){
-                    strength = visData[i];
-                    this.drawLine(0, strength);
-                }else{
-                    var last = Math.floor(step * (i - 1));
-                    var curr = Math.floor(step * i);
-                    var next = Math.floor(step * (i + 1));
-                    if(last < curr - 1){
-                        // stretched
-                        for(var j = 0; j < curr - last - 1; j++){
-                            //strength = ((j + 1) / (curr - last + 1) * visData[i - 1] + (curr - last - j + 1) / (curr - last + 1) * visData[i]);
-                            strength = (visData[i] + visData[i - 1]) / 2;
-                            this.drawLine(curr - 1, strength);
-                        }
-                        strength = visData[i];
-                        this.drawLine(curr, strength);
-                    }else if(curr === last && next > curr){
-                        // compressed
-                        for(var j = 0; j < (1 / step); j++){
-                            strength += visData[i - j];
-                        }
-                        strength /= Math.floor(1 / step) + 1;
-                        this.drawLine(curr, strength);
-                    }else if(last === curr - 1){
-                        strength = visData[i];
-                        this.drawLine(curr, strength);
-                    }
-                }
-            }
-        },
-        stop: function(){
-            
-        },
-        drawLine: function(x, colorAmount){
-            if(smokeEnabled){
-                smoke.fillStyle = getColor(colorAmount);
-                smoke.fillRect(x, size[1] - (colorAmount / 16 + 1), 1, colorAmount / 16 + 1);
-            }
-            canvas.fillStyle = getColor(colorAmount);
-            canvas.fillRect(x, size[1] - (colorAmount / 16 + 1), 1, colorAmount / 16 + 1);
-        }
-    },
-    bottomBassSpectrum: {
-        name: "Bottom Bass Spectrum",
-        image: "visualizers/bottomBassSpectrum.png",
-        start: function(){
-            
-        },
-        frame: function(){
-            canvas.clearRect(0, 0, size[0], size[1]);
-            smoke.clearRect(0, 0, size[0], size[1]);
-            var step = size[0] / 180;
-            var last = -1;
-            for(var i = 0; i < 181; i++){
+            for(var i = 0; i < 65; i++){
                 var strength = 0;
                 if(i === 0){
                     strength = visData[i];
@@ -3596,10 +3427,124 @@ var vis = {
         },
         drawLine: function(x, colorAmount){
             if(smokeEnabled){
-                smoke.fillStyle = getColor(colorAmount);
+                smoke.fillStyle = getColor(colorAmount, x * (255 / size[1]));
+                smoke.fillRect(0, size[1] - x, colorAmount / 8 + 1, 1);
+                smoke.fillRect(size[0] - (colorAmount / 8 + 1), size[1] - x, colorAmount / 8 + 1, 1);
+            }
+            canvas.fillStyle = getColor(colorAmount, x * (255 / size[1]));
+            canvas.fillRect(0, size[1] - x, colorAmount / 8 + 1, 1);
+            canvas.fillRect(size[0] - (colorAmount / 8 + 1), size[1] - x, colorAmount / 8 + 1, 1);
+        }
+    },
+    bottomSpectrum: {
+        name: "Bottom Spectrum",
+        image: "visualizers/bottomSpectrum.png",
+        start: function(){
+            
+        },
+        frame: function(){
+            canvas.clearRect(0, 0, size[0], size[1]);
+            smoke.clearRect(0, 0, size[0], size[1]);
+            var step = size[0] / 64;
+            var last = -1;
+            for(var i = 0; i < 65; i++){
+                var strength = 0;
+                if(i === 0){
+                    strength = visData[i];
+                    this.drawLine(0, strength);
+                }else{
+                    var last = Math.floor(step * (i - 1));
+                    var curr = Math.floor(step * i);
+                    var next = Math.floor(step * (i + 1));
+                    if(last < curr - 1){
+                        // stretched
+                        for(var j = 0; j < curr - last - 1; j++){
+                            //strength = ((j + 1) / (curr - last + 1) * visData[i - 1] + (curr - last - j + 1) / (curr - last + 1) * visData[i]);
+                            var pcntBetween = j / (curr - last - 1);
+                            strength = visData[i] * pcntBetween + visData[i - 1] * (1 - pcntBetween);
+                            this.drawLine(curr - (curr - last - 1 - j), strength);
+                        }
+                        strength = visData[i];
+                        this.drawLine(curr, strength);
+                    }else if(curr === last && next > curr){
+                        // compressed
+                        for(var j = 0; j < (1 / step); j++){
+                            strength += visData[i - j];
+                        }
+                        strength /= Math.floor(1 / step) + 1;
+                        this.drawLine(curr, strength);
+                    }else if(last === curr - 1){
+                        strength = visData[i];
+                        this.drawLine(curr, strength);
+                    }
+                }
+            }
+        },
+        stop: function(){
+            
+        },
+        drawLine: function(x, colorAmount){
+            if(smokeEnabled){
+                smoke.fillStyle = getColor(colorAmount, x * (255 / size[0]));
+                smoke.fillRect(x, size[1] - (colorAmount / 8 + 1), 1, colorAmount / 8 + 1);
+            }
+            canvas.fillStyle = getColor(colorAmount, x * (255 / size[0]));
+            canvas.fillRect(x, size[1] - (colorAmount / 8 + 1), 1, colorAmount / 8 + 1);
+        }
+    },
+    bottomBassSpectrum: {
+        name: "Bottom Bass Spectrum",
+        image: "visualizers/bottomBassSpectrum.png",
+        start: function(){
+            
+        },
+        frame: function(){
+            canvas.clearRect(0, 0, size[0], size[1]);
+            smoke.clearRect(0, 0, size[0], size[1]);
+            var step = size[0] / 12;
+            var last = -1;
+            for(var i = 0; i < 13; i++){
+                var strength = 0;
+                if(i === 0){
+                    strength = visData[i];
+                    this.drawLine(0, strength);
+                }else{
+                    var last = Math.floor(step * (i - 1));
+                    var curr = Math.floor(step * i);
+                    var next = Math.floor(step * (i + 1));
+                    if(last < curr - 1){
+                        // stretched
+                        for(var j = 0; j < curr - last - 1; j++){
+                            //strength = ((j + 1) / (curr - last + 1) * visData[i - 1] + (curr - last - j + 1) / (curr - last + 1) * visData[i]);
+                            var pcntBetween = j / (curr - last - 1);
+                            strength = visData[i] * pcntBetween + visData[i - 1] * (1 - pcntBetween);
+                            this.drawLine(curr - (curr - last - 1 - j), strength);
+                        }
+                        strength = visData[i];
+                        this.drawLine(curr, strength);
+                    }else if(curr === last && next > curr){
+                        // compressed
+                        for(var j = 0; j < (1 / step); j++){
+                            strength += visData[i - j];
+                        }
+                        strength /= Math.floor(1 / step) + 1;
+                        this.drawLine(curr, strength);
+                    }else if(last === curr - 1){
+                        strength = visData[i];
+                        this.drawLine(curr, strength);
+                    }
+                }
+            }
+        },
+        stop: function(){
+            
+        },
+        drawLine: function(x, colorAmount){
+            if(smokeEnabled){
+                smoke.fillStyle = getColor(colorAmount, x * (255 / size[0]));
                 smoke.fillRect(x, size[1] - (colorAmount / 16 + 1), 1, colorAmount / 16 + 1);
             }
-            canvas.fillStyle = getColor(colorAmount);
+            canvas.fillStyle = getColor(colorAmount, x * (255 / size[0]));
             canvas.fillRect(x, size[1] - (colorAmount / 16 + 1), 1, colorAmount / 16 + 1);
         }
     },
@@ -3612,11 +3557,11 @@ var vis = {
         frame: function(){
             var avg = 0;
             var avgtotal = 0;
-            for(var i = 0; i < 1024; i++){
+            for(var i = 0; i < 64; i++){
                 avg += Math.sqrt(visData[i]) * this.sqrt255;
             }
             //avg /= 180;
-            avg /= 1024;
+            avg /= 64;
             //avg *= 255;
             canvas.clearRect(0, 0, size[0], size[1]);
             if(smokeEnabled){
@@ -3648,10 +3593,10 @@ var vis = {
         frame: function(){
             var avg = 0;
             var avgtotal = 0;
-            for(var i = 0; i < 180; i++){
+            for(var i = 0; i < 12; i++){
                 avg += Math.sqrt(visData[i]) * this.sqrt255;
             }
-            avg /= 180;
+            avg /= 12;
             //avg /= 1024;
             //avg *= 255;
             canvas.clearRect(0, 0, size[0], size[1]);
@@ -3696,65 +3641,9 @@ var vis = {
         frame: function(){
             canvas.clearRect(0, 0, size[0], size[1]);
             smoke.clearRect(0, 0, size[0], size[1]);
-            var step = size[0] / 1024;
+            var step = size[0] / 64;
             var last = -1;
-            for(var i = 0; i < 1025; i++){
-                var strength = 0;
-                if(i === 0){
-                    strength = visData[i];
-                    this.drawLine(0, strength);
-                }else{
-                    var last = Math.floor(step * (i - 1));
-                    var curr = Math.floor(step * i);
-                    var next = Math.floor(step * (i + 1));
-                    if(last < curr - 1){
-                        // stretched
-                        for(var j = 0; j < curr - last - 1; j++){
-                            //strength = ((j + 1) / (curr - last + 1) * visData[i - 1] + (curr - last - j + 1) / (curr - last + 1) * visData[i]);
-                            strength = (visData[i] + visData[i - 1]) / 2;
-                            this.drawLine(curr - 1, strength);
-                        }
-                        strength = visData[i];
-                        this.drawLine(curr, strength);
-                    }else if(curr === last && next > curr){
-                        // compressed
-                        for(var j = 0; j < (1 / step); j++){
-                            strength += visData[i - j];
-                        }
-                        strength /= Math.floor(1 / step) + 1;
-                        this.drawLine(curr, strength);
-                    }else if(last === curr - 1){
-                        strength = visData[i];
-                        this.drawLine(curr, strength);
-                    }
-                }
-            }
-        },
-        stop: function(){
-            
-        },
-        drawLine: function(x, colorAmount){
-            if(smokeEnabled){
-                smoke.fillStyle = getColor(colorAmount);
-                smoke.fillRect(x, 0, 1, size[1]);
-            }else{
-                canvas.fillStyle = getColor(colorAmount);
-                canvas.fillRect(x, 0, 1, size[1]);
-            }
-        }
-    },
-    spectrumBass: {
-        name: "Bass Spectrum",
-        image: "visualizers/spectrumBass.png",
-        start: function(){
-            
-        },
-        frame: function(){
-            canvas.clearRect(0, 0, size[0], size[1]);
-            smoke.clearRect(0, 0, size[0], size[1]);
-            var step = size[0] / 180;
-            var last = -1;
-            for(var i = 0; i < 181; i++){
+            for(var i = 0; i < 65; i++){
                 var strength = 0;
                 if(i === 0){
                     strength = visData[i];
@@ -3792,10 +3681,67 @@ var vis = {
         },
         drawLine: function(x, colorAmount){
             if(smokeEnabled){
-                smoke.fillStyle = getColor(colorAmount);
+                smoke.fillStyle = getColor(colorAmount, x * (255 / size[0]));
                 smoke.fillRect(x, 0, 1, size[1]);
             }else{
-                canvas.fillStyle = getColor(colorAmount);
+                canvas.fillStyle = getColor(colorAmount, x * (255 / size[0]));
+                canvas.fillRect(x, 0, 1, size[1]);
+            }
+        }
+    },
+    spectrumBass: {
+        name: "Bass Spectrum",
+        image: "visualizers/spectrumBass.png",
+        start: function(){
+            
+        },
+        frame: function(){
+            canvas.clearRect(0, 0, size[0], size[1]);
+            smoke.clearRect(0, 0, size[0], size[1]);
+            var step = size[0] / 12;
+            var last = -1;
+            for(var i = 0; i < 13; i++){
+                var strength = 0;
+                if(i === 0){
+                    strength = visData[i];
+                    this.drawLine(0, strength);
+                }else{
+                    var last = Math.floor(step * (i - 1));
+                    var curr = Math.floor(step * i);
+                    var next = Math.floor(step * (i + 1));
+                    if(last < curr - 1){
+                        // stretched
+                        for(var j = 0; j < curr - last - 1; j++){
+                            //strength = ((j + 1) / (curr - last + 1) * visData[i - 1] + (curr - last - j + 1) / (curr - last + 1) * visData[i]);
+                            var pcntBetween = j / (curr - last - 1);
+                            strength = visData[i] * pcntBetween + visData[i - 1] * (1 - pcntBetween);
+                            this.drawLine(curr - (curr - last - 1 - j), strength);
+                        }
+                        strength = visData[i];
+                        this.drawLine(curr, strength);
+                    }else if(curr === last && next > curr){
+                        // compressed
+                        for(var j = 0; j < (1 / step); j++){
+                            strength += visData[i - j];
+                        }
+                        strength /= Math.floor(1 / step) + 1;
+                        this.drawLine(curr, strength);
+                    }else if(last === curr - 1){
+                        strength = visData[i];
+                        this.drawLine(curr, strength);
+                    }
+                }
+            }
+        },
+        stop: function(){
+            
+        },
+        drawLine: function(x, colorAmount){
+            if(smokeEnabled){
+                smoke.fillStyle = getColor(colorAmount, x * (255 / size[0]));
+                smoke.fillRect(x, 0, 1, size[1]);
+            }else{
+                canvas.fillStyle = getColor(colorAmount, x * (255 / size[0]));
                 canvas.fillRect(x, 0, 1, size[1]);
             }
         }
@@ -3807,10 +3753,10 @@ var vis = {
             canvas.clearRect(0, 0, size[0], size[1]);
             smoke.clearRect(0, 0, size[0], size[1]);
             var freqs = [];
-            for(var i = 0; i < 1024; i++){
+            for(var i = 0; i < 64; i++){
                 freqs.push(i);
             }
-            for (var i = 1024; i > 0; i--) {
+            for (var i = 64; i > 0; i--) {
                 var j = Math.floor(Math.random() * (i + 1));
                 var temp = freqs[i];
                 freqs[i] = freqs[j];
@@ -3818,23 +3764,23 @@ var vis = {
             }
             tiles = [];
             var index = 0;
-            for(var i = 0; i < 32; i++){
+            for(var i = 0; i < 8; i++){
                 this.tiles.push([]);
-                for(var j = 0; j < 32; j++){
+                for(var j = 0; j < 8; j++){
                     this.tiles[this.tiles.length - 1].push(freqs[index]);
                     index++;
                 }
             }
-            this.boxSize = [Math.round(size[0] / 32), Math.round(size[1] / 32)];
+            this.boxSize = [Math.round(size[0] / 8), Math.round(size[1] / 8)];
         },
         sizechange: function(){
             canvas.clearRect(0, 0, size[0], size[1]);
             smoke.clearRect(0, 0, size[0], size[1]);
             var freqs = [];
-            for(var i = 0; i < 1024; i++){
+            for(var i = 0; i < 64; i++){
                 freqs.push(i);
             }
-            for (var i = 1024; i > 0; i--) {
+            for (var i = 64; i > 0; i--) {
                 var j = Math.floor(Math.random() * (i + 1));
                 var temp = freqs[i];
                 freqs[i] = freqs[j];
@@ -3842,14 +3788,14 @@ var vis = {
             }
             tiles = [];
             var index = 0;
-            for(var i = 0; i < 32; i++){
+            for(var i = 0; i < 8; i++){
                 this.tiles.push([]);
-                for(var j = 0; j < 32; j++){
+                for(var j = 0; j < 8; j++){
                     this.tiles[this.tiles.length - 1].push(freqs[index]);
                     index++;
                 }
             }
-            this.boxSize = [Math.round(size[0] / 32), Math.round(size[1] / 32)];
+            this.boxSize = [Math.round(size[0] / 8), Math.round(size[1] / 8)];
         },
         frame: function(){
             if(smokeEnabled){
@@ -3857,8 +3803,8 @@ var vis = {
             }else{
                 canvas.clearRect(0, 0, size[0], size[1]);
             }
-            for(var i = 0; i < 32; i++){
-                for(var j = 0; j < 32; j++){
+            for(var i = 0; i < 8; i++){
+                for(var j = 0; j < 8; j++){
                     var strength = visData[this.tiles[i][j]];
                     var color = getColor(strength);
                     if(smokeEnabled){
@@ -3887,10 +3833,10 @@ var vis = {
         frame: function(){
             var avg = 0;
             var avgtotal = 0;
-            for(var i = 0; i < 1024; i++){
+            for(var i = 0; i < 64; i++){
                 avg += Math.sqrt(visData[i]) * this.sqrt255;
             }
-            avg /= 1024;
+            avg /= 64;
             //avg /= 1024;
             //avg *= 255;
             canvas.clearRect(0, 0, size[0], size[1]);
@@ -3921,10 +3867,10 @@ var vis = {
         frame: function(){
             var avg = 0;
             var avgtotal = 0;
-            for(var i = 0; i < 180; i++){
+            for(var i = 0; i < 12; i++){
                 avg += Math.sqrt(visData[i]) * this.sqrt255;
             }
-            avg /= 180;
+            avg /= 12;
             //avg /= 1024;
             //avg *= 255;
             canvas.clearRect(0, 0, size[0], size[1]);
@@ -3955,10 +3901,10 @@ var vis = {
         frame: function(){
             var avg = 0;
             var avgtotal = 0;
-            for(var i = 0; i < 1024; i++){
+            for(var i = 0; i < 64; i++){
                 avg += Math.sqrt(visData[i]) * this.sqrt255;
             }
-            avg /= 1024;
+            avg /= 64;
             //avg /= 1024;
             //avg *= 255;
             canvas.clearRect(0, 0, size[0], size[1]);
@@ -3985,10 +3931,10 @@ var vis = {
         frame: function(){
             var avg = 0;
             var avgtotal = 0;
-            for(var i = 0; i < 180; i++){
+            for(var i = 0; i < 12; i++){
                 avg += Math.sqrt(visData[i]) * this.sqrt255;
             }
-            avg /= 180;
+            avg /= 12;
             //avg /= 1024;
             //avg *= 255;
             canvas.clearRect(0, 0, size[0], size[1]);
@@ -4019,7 +3965,7 @@ var vis = {
         }
     },
     spectrogramClassic: {
-        name: "Spectrogram Classic",
+        name: "Spectrogram",
         image: "visualizers/spectrogramClassic.png",
         start: function(){
             canvas.clearRect(0, 0, size[0], size[1]);
@@ -4029,10 +3975,12 @@ var vis = {
             var left = size[0] / 2 - 512;
             canvas.putImageData(canvas.getImageData(left, 0, left + 1024, size[1]), left, -1);
             var strength = 0;
-            for(var i = 0; i < 1024; i++){
+            canvas.fillStyle = "#000";
+            canvas.fillRect(0, size[1] - 1, size[0], 1);
+            for(var i = 0; i < 64; i++){
                 strength = visData[i];
-                canvas.fillStyle = getColor(strength, i / 4);
-                canvas.fillRect(left + i, size[1] - 1, 1, 1);
+                canvas.fillStyle = getColor(strength, i * 4);
+                canvas.fillRect(left + i * 16, size[1] - 1, 16, 1);
             }
         },
         sizechange: function(){
@@ -4043,52 +3991,22 @@ var vis = {
         }
     },
     spectrogram: {
-        name: "Spectrogram Stretch",
+        name: "Full-Range Spectrogram",
         image: "visualizers/spectrogramStretch.png",
         start: function(){
             canvas.clearRect(0, 0, size[0], size[1]);
             smoke.clearRect(0, 0, size[0], size[1]);
         },
         frame: function(){
-            canvas.putImageData(canvas.getImageData(0, 0, size[0], size[1]), 0, -1);
-            var step = size[0] / 1024;
-            var last = -1;
-            var heightFactor = size[1] / 255;
+            var left = size[0] / 2 - 512;
+            canvas.putImageData(canvas.getImageData(left, 0, left + 1024, size[1]), left, -1);
+            var strength = 0;
+            canvas.fillStyle = "#000";
+            canvas.fillRect(0, size[1] - 1, size[0], 1);
             for(var i = 0; i < 1024; i++){
-                var strength = 0;
-                if(i === 0){
-                    strength = visData[i];
-                    canvas.fillStyle = getColor(strength);
-                    canvas.fillRect(0, size[1] - 1, 1, 1);
-                }else{
-                    var last = Math.floor(step * (i - 1));
-                    var curr = Math.floor(step * i);
-                    var next = Math.floor(step * (i + 1));
-                    if(last < curr - 1){
-                        // stretched
-                        for(var j = 0; j < curr - last - 1; j++){
-                            //strength = ((j + 1) / (curr - last + 1) * visData[i - 1] + (curr - last - j + 1) / (curr - last + 1) * visData[i]);
-                            strength = (visData[i] + visData[i - 1]) / 2;
-                            canvas.fillStyle = getColor(strength);
-                            canvas.fillRect(curr - j - 1, size[1] - 1, 1, 1);
-                        }
-                        strength = visData[i];
-                        canvas.fillStyle = getColor(strength);
-                        canvas.fillRect(curr, size[1] - 1, 1, 1);
-                    }else if(curr === last && next > curr){
-                        // compressed
-                        for(var j = 0; j < (1 / step); j++){
-                            strength += visData[i - j];
-                        }
-                        strength /= Math.floor(1 / step) + 1;
-                        canvas.fillStyle = getColor(strength);
-                        canvas.fillRect(curr, size[1] - 1, 1, 1);
-                    }else if(last === curr - 1){
-                        strength = visData[i];
-                        canvas.fillStyle = getColor(strength);
-                        canvas.fillRect(curr, size[1] - 1, 1, 1);
-                    }
-                }
+                strength = visData[i];
+                canvas.fillStyle = getColor(strength, i / 4);
+                canvas.fillRect(left + i, size[1] - 1, 1, 1);
             }
         },
         sizechange: function(){
@@ -4107,7 +4025,7 @@ var vis = {
         frame: function(){
             canvas.clearRect(0, 0, size[0], size[1]);
             smoke.clearRect(0, 0, size[0], size[1]);
-            var mult = size[0] / 1024;
+            var mult = size[0] / 64;
             //var roundMult = Math.round(mult);
             //var halfMult = Math.round(mult / 2);
             for(var i = 1; i < 10; i++){
@@ -4126,20 +4044,20 @@ var vis = {
             var avgPitch = 0;
             var avgPitchMult = 0;
             var avgVolume = 0;
-            for(var i = 0; i < 1024; i++){
+            for(var i = 0; i < 64; i++){
                 avgVolume += Math.sqrt(visData[i]) * this.sqrt255;
                 //avgVolume += visData[i];
                 avgPitch += i * visData[i];
                 avgPitchMult += visData[i];
             }
-            avgVolume /= 1024;
+            avgVolume /= 64;
             avgPitch /= avgPitchMult;
             canvas.globalAlpha = 1;
-            canvas.fillStyle = getColor(avgVolume, avgPitch / 4);
+            canvas.fillStyle = getColor(avgVolume, avgPitch * 4);
             canvas.fillRect(this.history[9][0], 0, Math.round(avgPitch * mult) - this.history[9][0], size[1]);
             if(smokeEnabled){
                 smoke.globalAlpha = 1;
-                smoke.fillStyle = getColor(avgVolume, avgPitch / 4);
+                smoke.fillStyle = getColor(avgVolume, avgPitch * 4);
                 smoke.fillRect(this.history[9][0], 0, Math.round(avgPitch * mult) - this.history[9][0], size[1]);
             }
             this.history.shift();
@@ -4295,14 +4213,14 @@ var vis = {
                 this.visBassAvgTotal = 0;
                 this.visBassAvgVolume = 0;
             }
-            for(var i = 0; i < 180; i++){
+            for(var i = 0; i < 12; i++){
 
                 //this.visBassAvg += visData[i];
                 this.visBassAvg += visData[i];
                 
                 //this.visLast[i] = visData[i];
             }
-            this.visBassAvg /= 180;
+            this.visBassAvg /= 12;
 
             this.visBassAvgElements.push(this.visBassAvg);
             this.visBassAvgTotal += this.visBassAvg;
@@ -5082,116 +5000,8 @@ var vis = {
             return rad * this._180ByPi;
         }
     },
-    piano: {
-        name: "Piano Test",
-        image: "visualizers/pianoTest.png",
-        start: function(){
-            /*
-
-            1014 = 739.989 = F5#
-
-            957 = 698.456 = F5
-            
-            ----
-            
-            47 = 138.591 = C3#
-            
-            45 = 130.813 = C3
-            
-            ----
-            
-            lowest note line = 45
-            
-            highest note line = 1014
-            
-            0.0629514964 notes per line on average
-            
-            57 lines per note @ high
-            
-            2 lines per note @ low
-            
-            ----
-            
-            61 keys in total
-            
-            1014-45 = 969 screen lines
-
-            left edge = 40
-
-            45 47 50 53 56 59 63 67 71 75 80 84 89 95 100 106 112 119 126 134 142 150 159 169 179 189 200 212 225 238 253 268 284 301 320 339 359 379 402 426 452 478 507 537 569 603 638 676 717 759 808 855 907 960 1018 1078 1142 1210 1282 1358 1439
-            
-            */
-        },
-        frame: function(){
-            canvas.clearRect(0, 0, size[0], size[1]);
-            smoke.clearRect(0, 0, size[0], size[1]);
-            var finalKey = this.keys.length - 1;
-            var pianoWidth = finalKey * 20 + finalKey + 22;
-            var pianoLeft = size[0] / 2 - Math.floor(pianoWidth / 2);
-            var pianoTop = size[1] / 2 - 201;
-            canvas.fillStyle = "#7F7F7F";
-            canvas.fillRect(pianoLeft, pianoTop, pianoWidth, 402);
-            for(var i = 0; i <= finalKey; i++){
-                if(i === 0){
-                    var leftCount = Math.floor(this.keys[i] - (this.keys[i + 1] - this.keys[i]) * 0.25);
-                    var rightCount = Math.round(this.keys[i] + (this.keys[i + 1] - this.keys[i]) * 0.25);
-                }else if(i === finalKey){
-                    var leftCount = Math.floor(this.keys[i] - (this.keys[i] - this.keys[i - 1]) * 0.25);
-                    var rightCount = Math.round(this.keys[i] + (this.keys[i] - this.keys[i - 1]) * 0.25);
-                }else{
-                    var leftCount = Math.floor(this.keys[i] - (this.keys[i] - this.keys[i - 1]) * 0.25);
-                    var rightCount = Math.round(this.keys[i] + (this.keys[i + 1] - this.keys[i]) * 0.25);
-                }
-                var strength = 0;
-                for(var j = leftCount; j < rightCount; j++){
-                    //strength += Math.sqrt(visData[j]) * this.sqrt255;
-                    //strength += Math.pow(visData[j], 2) / 255;
-                    strength += visData[j];
-                    //strength = Math.max(strength, visData[j]);
-                }
-                strength /= rightCount - leftCount;
-                if(this.blackKeys[i]){
-                    canvas.fillStyle = "#000";
-                    canvas.fillRect(pianoLeft + i * 20 + i + 1, pianoTop + 1, 20, 200);
-                    canvas.fillStyle = getColor(strength);
-                    canvas.fillRect(pianoLeft + i * 20 + i + 1, pianoTop + 1, 20, 200);
-                    if(smokeEnabled){
-                        smoke.fillStyle = getColor(strength);
-                        smoke.fillRect(pianoLeft + i * 20 + i + 1, pianoTop + 1, 20, 200);
-                    }
-                }else{
-                    canvas.fillStyle = "#FFF";
-                    canvas.fillRect(pianoLeft + i * 20 + i + 1, pianoTop + 1, 20, 400);
-                    canvas.fillStyle = getColor(strength);
-                    canvas.fillRect(pianoLeft + i * 20 + i + 1, pianoTop + 1, 20, 400);
-                    if(smokeEnabled){
-                        smoke.fillStyle = getColor(strength);
-                        smoke.fillRect(pianoLeft + i * 20 + i + 1, pianoTop + 1, 20, 400);
-                    }
-                }
-            }
-        },
-        stop: function(){
-
-        },
-        sqrt255: Math.sqrt(255),
-        keys: [
-            45, 47, 50, 53, 56, 59, 63, 67, 71, 75, 80, 84, 89, 95,
-            100, 106, 112, 119, 126, 134, 142, 150, 159, 169, 179, 189,
-            200, 212, 225, 238, 253, 268, 284, 301, 320, 339, 359, 379,
-            402, 426, 452, 478, 507, 537, 569, 603, 638, 676, 717, 759,
-            808, 855, 907, 960, 1018, 1078, 1142, 1210, 1282, 1358, 1439
-        ],
-        blackKeys: [
-            0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0,
-            0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0,
-            0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0,
-            0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0,
-            0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0, 0
-        ]
-    },
     bassSplit: {
-        name: "Bass Split (&lt;180)",
+        name: "Bass Split (&lt; 12)",
         image: "visualizers/bassSplit.png",
         start: function(){
             
@@ -5201,10 +5011,10 @@ var vis = {
             canvas.fillStyle = "#000";
             canvas.fillRect(0, size[1] / 2 + 127, size[0], size[1] / 2 - 127);
             smoke.clearRect(0, 0, size[0], size[1]);
-            var left = size[0] / 2 - 512;
+            var left = size[0] / 2 - 64;
             var top = size[1] / 2 - 128;
-            for(var i = 0; i < 1024; i++){
-                this.drawLine(i, visData[i], left + (i >= 180) * 90 - (i < 180) * 90, top);
+            for(var i = 0; i < 64; i++){
+                this.drawLine(i, visData[i], left + (i >= 12) * 90 - (i < 12) * 90, top);
             }
             //updateSmoke();
         },
@@ -5214,20 +5024,17 @@ var vis = {
         drawLine: function(x, h, l, t){
             var fillColor = getColor(h, x / 4);
             canvas.fillStyle = fillColor;
-            canvas.fillRect(l + x, t + (255 - h), 1, h);
+            canvas.fillRect(l + x * 2, t + (255 - h), 2, h);
             if(smokeEnabled){
                 smoke.fillStyle = fillColor;
-                smoke.fillRect(l + x, t + (255 - h), 1, h * 2);
+                smoke.fillRect(l + x * 2, t + (255 - h), 2, h * 2);
             }
         }
     },
     colorTest: {
-        name: "Color Test",
+        name: "Color Smoke Test",
         image: "visualizers/colorTest.png",
         start: function(){
-
-        },
-        frame: function(){
             smoke.clearRect(0, 0, size[0], size[1]);
             smoke.fillStyle = '#111';
             smoke.fillRect(0, 0, size[0], size[1] * 0.15);
@@ -5243,13 +5050,63 @@ var vis = {
             }
             canvas.clearRect(0, size[1] * 0.5, size[0], size[1] * 0.25);
         },
+        frame: function(){
+
+        },
         stop: function(){
 
+        },
+        sizechange: function(){
+            smoke.clearRect(0, 0, size[0], size[1]);
+            smoke.fillStyle = '#111';
+            smoke.fillRect(0, 0, size[0], size[1] * 0.15);
+            for(var i = 0; i < size[0]; i++){
+                smoke.fillStyle = getColor(i / size[0] * 255);
+                smoke.fillRect(i, size[1] * 0.75, 1, size[1] * 0.25);
+            }
+            //updateSmoke();
+            canvas.clearRect(0, 0, size[0], size[1]);
+            for(var i = 0; i < size[0]; i++){
+                canvas.fillStyle = getColor(i / size[0] * 255);
+                canvas.fillRect(i, 0, 1, size[1]);
+            }
+            canvas.clearRect(0, size[1] * 0.5, size[0], size[1] * 0.25);
+        }
+    },
+    colorTest2: {
+        name: "2D Color Test",
+        image: "visualizers/colorTest2.png",
+        start: function(){
+            canvas.clearRect(0, 0, size[0], size[1]);
+            var leftEdge = size[0] / 2 - 128;
+            var bottomEdge = size[1] / 2 + 128;
+            for(var i = 0; i < 256; i++){
+                for(var j = 0; j < 256; j++){
+                    canvas.fillStyle = getColor(i, j);
+                    canvas.fillRect(leftEdge + j, bottomEdge - i, 1, 1);
+                }
+            }
+        },
+        frame: function(){
+        },
+        stop: function(){
+
+        },
+        sizechange: function(){
+            canvas.clearRect(0, 0, size[0], size[1]);
+            var leftEdge = size[0] / 2 - 128;
+            var bottomEdge = size[1] / 2 + 128;
+            for(var i = 0; i < 256; i++){
+                for(var j = 0; j < 256; j++){
+                    canvas.fillStyle = getColor(i, j);
+                    canvas.fillRect(leftEdge + j, bottomEdge - i, 1, 1);
+                }
+            }
         }
     },
     modTest: {
-        name: "Mod Test",
-        //image: "visualizers/modTest.png",
+        name: "Curve Test",
+        image: "visualizers/modTest.png",
         start: function(){
 
         },
@@ -5368,7 +5225,7 @@ var featuredVis = {
     monstercat: 1,
     spikes: 1,
     circle: 1,
-    bassCircle: 1
+    blast: 1
 };
 
 function openVisualizerMenu(){
@@ -5392,7 +5249,7 @@ function openVisualizerMenu(){
                 namecolor = ' style="outline:2px solid ' + getColor(255) + ';"';
             }
             if(vis[i].image){
-                tempHTML += '<div' + namecolor + ' class="visOption" onclick="overrideVis(\'' + i + '\')"><img src="' + vis[i].image + '">' + vis[i].name + '</div>';
+                tempHTML += '<div' + namecolor + ' class="visOption" onclick="overrideVis(\'' + i + '\')"><img src="' + vis[i].image + '">' + vis[i].name + '&nbsp;</div>';
             }else{
                 tempHTML += '<div' + namecolor + ' class="visOption" onclick="overrideVis(\'' + i + '\')"><span></span>' + vis[i].name + '</div>';
             }
@@ -5405,7 +5262,7 @@ function openVisualizerMenu(){
                         namecolor = ' style="outline:2px solid ' + getColor(255) + ';"';
                     }
                     if(vis[i].image){
-                        tempHTML += '<div' + namecolor + ' class="visOption" onclick="overrideVis(\'' + i + '\')"><img src="' + vis[i].image + '">' + vis[i].name + '</div>';
+                        tempHTML += '<div' + namecolor + ' class="visOption" onclick="overrideVis(\'' + i + '\')"><img src="' + vis[i].image + '">' + vis[i].name + '&nbsp;</div>';
                     }else{
                         tempHTML += '<div' + namecolor + ' class="visOption" onclick="overrideVis(\'' + i + '\')"><span></span>' + vis[i].name + '</div>';
                     }
@@ -5512,7 +5369,7 @@ function openSettingsMenu(){
             }
 
             tempHTML += "<br><br><p style='font-size:2em'>Audio Delay</p>" +
-                'Seconds: <input style="width: 50px" type="number" id="delayinput" min="0" max="1" value="' + delayNode.delayTime.value + '" step="0.01" onchange="setDelay(this.value)"></input>' +
+                'Seconds: <input style="width: 50px" type="number" id="delayinput" min="0" max="1" value="' + (Math.round(delayNode.delayTime.value * 100) / 100) + '" step="0.01" onchange="setDelay(this.value)"></input>' +
                 "<p>If the visualizer and the music don't line up, try changing this.<br>Larger numbers delay the audible music more.</p>";
 
             tempHTML += '<br><br><p style="font-size:2em">Song Info</p>' +

@@ -67,12 +67,14 @@
                     <button onclick="shuffle()">Shuffle</button> &nbsp; &nbsp; &nbsp;
                 </span>
 
+                <!--
                 <span id="liveControls" title="High setting raises visualizer detail to maximum, but introduces lots of latency. Low setting removes most of the detail, but is nearly instant.">
                     Latency / Detail:
                     <button id="latencyButton0" onclick="setLatency(0)" style="border-color:#C00">High</button>
                     <button id="latencyButton1" onclick="setLatency(1)" style="border-color:#0A0">Default</button>
                     <button id="latencyButton2" onclick="setLatency(2)" style="border-color:#C00">Low</button> &nbsp; &nbsp; &nbsp;
                 </span>
+                -->
 
                 <button id="ambienceButton" onclick="toggleAmbience()" style="border-color:#C00" title="Random delay of silence after every song, up to five minutes. Randomly selects the next song.">Ambience Mode</button>
 
@@ -93,7 +95,7 @@
 
                 Colors: <select id="colorfield" onchange="setColor(this.value)" onmousedown="if(!taskbarMode){requestAnimationFrame(()=>{this.blur()}); event.preventDefault();}" onclick="if(!taskbarMode){openColorMenu(); event.preventDefault();}"></select> &nbsp; &nbsp; &nbsp;
 
-                Mod: <select id="modfield" onchange="selectMod(this.value)" onmousedown="if(!taskbarMode){requestAnimationFrame(()=>{this.blur()}); event.preventDefault();}" onclick="if(!taskbarMode){openModMenu(); event.preventDefault();}" title="Processes visualizer data to increase or decrease power of visualizer movement. Power Sine tends to work best.">
+                Curve: <select id="modfield" onchange="selectMod(this.value)" onmousedown="if(!taskbarMode){requestAnimationFrame(()=>{this.blur()}); event.preventDefault();}" onclick="if(!taskbarMode){openModMenu(); event.preventDefault();}" title="Processes visualizer data to increase or decrease power of visualizer movement. Power Sine tends to work best.">
                     <option value="null">None</option>
                 </select>
 
