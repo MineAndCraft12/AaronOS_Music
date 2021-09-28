@@ -303,7 +303,7 @@ function loadFolder(event){
     mediaSource = audioContext.createMediaElementSource(audio);
     
     delayNode = audioContext.createDelay();
-    delayNode.delayTime.value = 0.03;
+    delayNode.delayTime.value = 0.07;
     delayNode.connect(audioContext.destination);
     
     analyser = audioContext.createAnalyser();
@@ -333,6 +333,10 @@ function loadFolder(event){
     getId("visCanvas").height = size[1];
     
     requestAnimationFrame(globalFrame);
+    requestAnimationFrame(function(){
+        overrideMod("powSin");
+        overrideColor("beta");
+    });
 }
 
 function loadFiles(event){
@@ -378,7 +382,7 @@ function loadFiles(event){
     mediaSource = audioContext.createMediaElementSource(audio);
     
     delayNode = audioContext.createDelay();
-    delayNode.delayTime.value = 0.03;
+    delayNode.delayTime.value = 0.07;
     delayNode.connect(audioContext.destination);
     
     analyser = audioContext.createAnalyser();
@@ -408,6 +412,10 @@ function loadFiles(event){
     getId("visCanvas").height = size[1];
     
     requestAnimationFrame(globalFrame);
+    requestAnimationFrame(function(){
+        overrideMod("powSin");
+        overrideColor("beta");
+    });
 }
 
 function loadWeirdFiles(event){
@@ -449,7 +457,7 @@ function loadWeirdFiles(event){
     mediaSource = audioContext.createMediaElementSource(audio);
     
     delayNode = audioContext.createDelay();
-    delayNode.delayTime.value = 0.03;
+    delayNode.delayTime.value = 0.07;
     delayNode.connect(audioContext.destination);
     
     analyser = audioContext.createAnalyser();
@@ -479,6 +487,10 @@ function loadWeirdFiles(event){
     getId("visCanvas").height = size[1];
     
     requestAnimationFrame(globalFrame);
+    requestAnimationFrame(function(){
+        overrideMod("powSin");
+        overrideColor("beta");
+    });
 }
 
 var microphoneActive = 0;
@@ -579,10 +591,10 @@ function loadMicrophone(event){
     
     requestAnimationFrame(globalFrame);
     requestAnimationFrame(function(){
-        overrideVis("spikes");
+        overrideVis("monstercat");
         overrideMod("powSin");
         overrideColor("beta");
-    })
+    });
     blockSleep();
 }
 
@@ -596,8 +608,10 @@ function loadSystemAudio(event){
     //analyser.fftSize = 32768;
     analyser.fftSize = 2048;
     latencyReduction = 1;
-    analyser.maxDecibels = -20;
-    analyser.minDecibels = -60;
+    // system audio seems to be quieter than regular audio files for some reason?
+    // Tested with Deezer set to 200% and with YouTube set to 100%. Same issue between both. Hmm...
+    analyser.maxDecibels = -30;
+    analyser.minDecibels = -70;
     //analyser.smoothingTimeConstant = 0;
     
     visData = new Uint8Array(analyser.frequencyBinCount);
@@ -663,7 +677,7 @@ function loadSystemAudio(event){
                     
                     requestAnimationFrame(globalFrame);
                     requestAnimationFrame(function(){
-                        overrideVis("spikes");
+                        overrideVis("monstercat");
                         overrideMod("powSin");
                         overrideColor("beta");
                     });
@@ -1070,11 +1084,21 @@ var currFPS = "0";
 var lastSecond = 0;
 var fpsEnabled = 0;
 var debugForce = 0;
+var debugFreqs = 0; // sweeps all freqs from 0 to 255 and back again
+var debugFreqsValue = 0; // 0 to 255
+var debugFreqsDirection = -1; // 1 or -1
+var debugFreqsTimer = 0; // debug hangs at 0 and 255 for a while
 var debugColors = ["#C00", "#0A0"];
 function toggleFPS(){
     debugForce = Math.abs(debugForce - 1);
     if(getId("debugButton")){
         getId("debugButton").style.borderColor = debugColors[debugForce];
+    }
+}
+function toggleFreqs(){
+    debugFreqs = Math.abs(debugFreqs - 1);
+    if(getId("debugFreqsButton")){
+        getId("debugFreqsButton").style.borderColor = debugColors[debugFreqs];
     }
 }
 
@@ -1145,6 +1169,25 @@ function globalFrame(){
             analyser.getByteFrequencyData(visData);
         }else{
             analyser.getByteFrequencyData(visDataBuffer);
+        }
+        if(debugFreqs){
+            var shouldIncrement = 1;
+            if(debugFreqsValue <= 0 || debugFreqsValue >= 255){
+                if(debugFreqsTimer === 0){ // we just arrived at the end
+                    // 5 seconds between switching directions
+                    shouldIncrement = 0;
+                    debugFreqsTimer = performance.now() + 5000;
+                }else if(performance.now() > debugFreqsTimer){
+                    debugFreqsDirection *= -1;
+                    debugFreqsTimer = 0;
+                }else{
+                    shouldIncrement = 0;
+                }
+            }
+            if(shouldIncrement){
+                debugFreqsValue += debugFreqsDirection;
+            }
+            visData.fill(debugFreqsValue);
         }
         if(microphoneActive){
             var tempArr = [];
@@ -1882,15 +1925,6 @@ var vis = {
             
             for(var i = 0; i < 64; i++){
                 var strength = visData[i];
-                /*
-                for(var j = 0; j < 16; j++){
-                    //strength = Math.max(visData[i * 16 + j], strength);
-                    //strength += visData[i * 16 + j];
-                    //strength += Math.pow(visData[i * 16 + j], 2) / 255;
-                    strength += Math.sqrt(visData[i * 16 + j]) * this.sqrt255;
-                }
-                strength = Math.round(strength / 16);
-                */
                 
                 var fillColor = getColor(strength, i * 4);
                 canvas.fillStyle = fillColor;
@@ -2057,34 +2091,14 @@ var vis = {
             var xdist = size[0] / (this.lineCount + 2) / 2;
             var ydist = size[1] / (this.lineCount + 2) / 2;
             xdist = Math.min(xdist, ydist);
-            var datastep = 64 / this.lineCount;
             var colorstep = 255 / this.lineCount;
-            var center = size[1] / 2;
+            var ringPools = [0, 0, 0, 0, 0, 0, 0, 0, 0];
+            for(var i = 0; i < 64; i++){
+                var currPool = Math.floor(i / (64 / 9));
+                ringPools[currPool] = Math.max(visData[i], ringPools[currPool]);
+            }
             for(var i = 0; i < this.lineCount; i++){
-                var pos = Math.floor((i + 1) * xdist);
-                var enddata = (i + 1) * datastep;
-                var strength = 0;
-                var samples = 0;
-                for(var j = Math.round(i * datastep); j < enddata; j++){
-                    //if(visData[j] > 127){
-                        strength += Math.sqrt(visData[j]) * this.sqrt255;
-                        //strength += Math.pow(visData[j], 2) / 255;
-                        //strength += visData[j];
-                        //strength += Math.pow(visData[j] * 1.5, 2) / 255;
-                        //strength = Math.max(strength, visData[j]);
-                        samples++;
-                    //}else{
-                    //    strength += Math.sqrt(visData[j]) * this.sqrt255;
-                        //strength += Math.pow(visData[j], 2) / 255;
-                        //strength += visData[j];
-                        //strength = Math.max(strength, visData[j]);
-                    //    samples++;
-                    //}
-                }
-                strength /= samples;
-                //if(strength > 255){
-                //    strength = 255;
-                //}
+                var strength = ringPools[i] * 0.85;
                 canvas.strokeStyle = getColor(strength, i * colorstep);
                 smoke.strokeStyle = getColor(strength, i * colorstep);
 
@@ -2215,34 +2229,16 @@ var vis = {
             smoke.lineCap = "round";
             smoke.lineWidth = this.lineWidth - (performanceMode * 0.5 * this.lineWidth);
             var xdist = size[0] / (this.lineCount + 2);
-            var datastep = 64 / this.lineCount;
             var colorstep = 255 / this.lineCount;
             var center = size[1] / 2;
+            var ringPools = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+            for(var i = 0; i < 64; i++){
+                var currPool = Math.floor(i / (64 / 18));
+                ringPools[currPool] = Math.max(visData[i], ringPools[currPool]);
+            }
             for(var i = 0; i < this.lineCount; i++){
                 var pos = Math.floor((i + 1) * xdist);
-                var enddata = (i + 1) * datastep;
-                var strength = 0;
-                var samples = 0;
-                for(var j = Math.round(i * datastep); j < enddata; j++){
-                    //if(visData[j] > 127){
-                        strength += Math.sqrt(visData[j]) * this.sqrt255;
-                        //strength += Math.pow(visData[j], 2) / 255;
-                        //strength += visData[j];
-                        //strength += Math.pow(visData[j] * 1.5, 2) / 255;
-                        //strength = Math.max(strength, visData[j]);
-                        samples++;
-                    //}else{
-                    //    strength += Math.sqrt(visData[j]) * this.sqrt255;
-                        //strength += Math.pow(visData[j], 2) / 255;
-                        //strength += visData[j];
-                        //strength = Math.max(strength, visData[j]);
-                    //    samples++;
-                    //}
-                }
-                strength /= samples;
-                //if(strength > 255){
-                //    strength = 255;
-                //}
+                var strength = ringPools[i];
                 canvas.strokeStyle = getColor(strength, i * colorstep);
                 smoke.strokeStyle = getColor(strength, i * colorstep);
                 
@@ -2283,35 +2279,17 @@ var vis = {
             canvas.clearRect(0, 0, size[0], size[1]);
             smoke.clearRect(0, 0, size[0], size[1]);
             var xdist = size[0] / (this.lineCount + 2);
-            var datastep = 64 / this.lineCount;
             var colorstep = 255 / this.lineCount;
             var caveCieling = Math.round(size[1] / 18);
             var center = size[1] / 2;
+            var ringPools = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+            for(var i = 0; i < 64; i++){
+                var currPool = Math.floor(i / (64 / 18));
+                ringPools[currPool] = Math.max(visData[i], ringPools[currPool]);
+            }
             for(var i = 0; i < this.lineCount; i++){
                 var pos = Math.floor((i + 1) * xdist);
-                var enddata = (i + 1) * datastep;
-                var strength = 0;
-                var samples = 0;
-                for(var j = Math.round(i * datastep); j < enddata; j++){
-                    //if(visData[j] > 127){
-                        strength += Math.sqrt(visData[j]) * this.sqrt255;
-                        //strength += Math.pow(visData[j], 2) / 255;
-                        //strength += visData[j];
-                        //strength += Math.pow(visData[j] * 1.5, 2) / 255;
-                        //strength = Math.max(strength, visData[j]);
-                        samples++;
-                    //}else{
-                    //    strength += Math.sqrt(visData[j]) * this.sqrt255;
-                        //strength += Math.pow(visData[j], 2) / 255;
-                        //strength += visData[j];
-                        //strength = Math.max(strength, visData[j]);
-                    //    samples++;
-                    //}
-                }
-                strength /= samples;
-                //if(strength > 255){
-                //    strength = 255;
-                //}
+                var strength = ringPools[i];
                 canvas.strokeStyle = getColor(strength, i * colorstep);
                 smoke.strokeStyle = getColor(strength, i * colorstep);
                 
@@ -2369,7 +2347,7 @@ var vis = {
             
         },
         drawLine: function(x, h, l, t){
-            var fillColor = getColor(h, x / 16);
+            var fillColor = getColor(h, x * (255 / 64));
             canvas.fillStyle = fillColor;
             var xtimesl = x * l;
             var l2 = Math.floor(l);
@@ -2575,18 +2553,12 @@ var vis = {
             canvas.lineCap = "round";
             smoke.lineWidth = ringWidth;
             smoke.lineCap = "round";
-            var ringPools = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-            //var ringAvgs = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
             var center = [Math.round(size[0] / 2), Math.round(size[1] / 2)];
+            var ringPools = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
             for(var i = 0; i < 64; i++){
                 var currPool = Math.floor(i / 6.4);
                 ringPools[currPool] = Math.max(visData[i], ringPools[currPool]);
-                //ringPools[currPool] += visData[i];
-                //ringAvgs[currPool]++;
             }
-            //for(var i in ringPools){
-            //    ringPools[i] /= ringAvgs[i];
-            //}
             for(var i = 0; i < 10; i++){
                 var strength = Math.pow(ringPools[i], 2) / 65025;
                 var ringColor = getColor(strength * 255, (9 - i) * 28);
@@ -2710,11 +2682,15 @@ var vis = {
                 smoke.clearRect(0, 0, size[0], size[1]);
             }
             var ringHeight = Math.round(Math.min(size[0], size[1]) * 0.6);
-            var ringMaxRadius = ringHeight * 0.5;
+            var ringMaxRadius = ringHeight * 0.35;
             var ringMinRadius = ringHeight * 0.25;
-            var ringMaxExpand = Math.round(Math.min(size[0], size[1]) * 0.2);
+            var ringMaxExpand = (ringMaxRadius - ringMinRadius) / 4;
             var drumStrength = 0;
-            var center = [Math.round(size[0] / 2), Math.round(size[1] / 2)];
+            var ringPools = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+            for(var i = 0; i < 64; i++){
+                var currPool = Math.floor(i / (64 / 36));
+                ringPools[currPool] = Math.max(visData[i], ringPools[currPool]);
+            }
             for(var i = 0; i < 12; i++){
                 drumStrength += Math.pow(visData[i], 2) / 255;
             }
@@ -2724,28 +2700,20 @@ var vis = {
 
             var lineDist = 360 / this.lineCount;
             var colorDist = 255 / this.lineCount;
-            var dataDist = Math.round(64 / this.lineCount);
             for(var i = 0; i < this.lineCount; i++){
-                var strength = 0;
-                var dataStop = (i + 1) * dataDist;
-                var samples = 0;
-                for(var j = i * dataDist; j < dataStop; j++){
-                    strength += Math.sqrt(visData[j]) * this.sqrt255;
-                    samples++;
-                }
-                strength /= samples;
+                var strength = ringPools[i];
                 
                 var firstPoint = this.findNewPoint(
                     size[0] / 2,
                     size[1] / 2,
                     i * lineDist + 90,
-                    ringMinRadius + drumStrength / 255 * ringMaxExpand - 5
+                    ringMinRadius + drumStrength / 255 * ringMaxRadius - 5
                 );
                 var secondPoint = this.findNewPoint(
                     size[0] / 2,
                     size[1] / 2,
                     i * lineDist + 90,
-                    ringMinRadius + strength / 255 * ringMinRadius + drumStrength / 255 * ringMaxExpand
+                    ringMinRadius + strength / 255 * ringMinRadius + drumStrength / 255 * ringMaxRadius + drumStrength / 255 * ringMaxExpand,
                 )
                 canvas.strokeStyle = getColor(strength, i * colorDist);
                 canvas.beginPath();
@@ -2766,7 +2734,7 @@ var vis = {
             this.degArc2(
                 size[0] / 2 + randomOffset[0],
                 size[1] / 2 + randomOffset[1],
-                ringMinRadius * 0.7 + drumStrength / 255 * ringMaxExpand - 5,
+                ringMinRadius * 0.7 + drumStrength / 255 * ringMaxRadius - 5,
                 0,
                 360
             );
@@ -2802,7 +2770,7 @@ var vis = {
         }
     },
     circle: {
-        name: "Treble Circle",
+        name: "Circle",
         image: "visualizers/trebleCircle.png",
         start: function(){
             
@@ -2813,9 +2781,9 @@ var vis = {
                 smoke.clearRect(0, 0, size[0], size[1]);
             }
             var ringHeight = Math.round(Math.min(size[0], size[1]) * 0.6);
-            var ringMaxRadius = ringHeight * 0.5;
+            var ringMaxRadius = ringHeight * 0.35;
             var ringMinRadius = ringHeight * 0.25;
-            var ringMaxExpand = Math.round(Math.min(size[0], size[1]) * 0.2);
+            var ringMaxExpand = (ringMaxRadius - ringMinRadius) / 4;
             var randomShake = Math.round(Math.min(size[0], size[1]) * 0.03);
             var drumStrength = 0; // drums is all under line 12
             var center = [Math.round(size[0] / 2), Math.round(size[1] / 2)];
@@ -2826,38 +2794,38 @@ var vis = {
 
             var randomOffset = [(Math.random() - 0.5) * drumStrength / 255 * randomShake, (Math.random() - 0.5) * drumStrength / 255 * randomShake];
 
-            for(var i = 0; i < 52; i += 1){
-                var strength = visData[i + 12];
-                canvas.fillStyle = getColor(strength, i * 4.9);
+            for(var i = 0; i < 64; i += 1){
+                var strength = visData[i];
+                canvas.fillStyle = getColor(strength, i * 3.9);
                 this.degArc(
                     size[0] / 2 + randomOffset[0],
                     size[1] / 2 + randomOffset[1],
-                    ringMinRadius + strength / 255 * ringMinRadius + drumStrength / 255 * ringMaxExpand,
-                    (i - 0.01) / 52 * 180 + 90,
-                    (i + 1.02) / 52 * 180 + 90
+                    ringMinRadius + strength / 255 * ringMinRadius + drumStrength / 255 * ringMaxRadius + drumStrength / 255 * ringMaxExpand,
+                    (i - 0.01) / 64 * 180 + 90,
+                    (i + 1.02) / 64 * 180 + 90
                 );
                 this.degArc(
                     size[0] / 2 + randomOffset[0],
                     size[1] / 2 + randomOffset[1],
-                    ringMinRadius + strength / 255 * ringMinRadius + drumStrength / 255 * ringMaxExpand,
-                    90 - (i + 1.02) / 52 * 180,
-                    90 - (i - 0.01) / 52 * 180
+                    ringMinRadius + strength / 255 * ringMinRadius + drumStrength / 255 * ringMaxRadius + drumStrength / 255 * ringMaxExpand,
+                    90 - (i + 1.02) / 64 * 180,
+                    90 - (i - 0.01) / 64 * 180
                 );
                 if(smokeEnabled){
-                    smoke.fillStyle = getColor(strength, i * 4.9);
+                    smoke.fillStyle = getColor(strength, i * 3.9);
                     this.degArcSmoke(
                         size[0] / 2 + randomOffset[0],
                         size[1] / 2 + randomOffset[1],
-                        ringMinRadius + strength / 255 * ringMinRadius + drumStrength / 255 * ringMaxExpand,
-                        (i - 0.01) / 52 * 180 + 90,
-                        (i + 1.02) / 52 * 180 + 90
+                        ringMinRadius + strength / 255 * ringMinRadius + drumStrength / 255 * ringMaxRadius + drumStrength / 255 * ringMaxExpand,
+                        (i - 0.01) / 64 * 180 + 90,
+                        (i + 1.02) / 64 * 180 + 90
                     );
                     this.degArcSmoke(
                         size[0] / 2 + randomOffset[0],
                         size[1] / 2 + randomOffset[1],
-                        ringMinRadius + strength / 255 * ringMinRadius + drumStrength / 255 * ringMaxExpand,
-                        90 - (i + 1.02) / 52 * 180,
-                        90 - (i - 0.01) / 52 * 180
+                        ringMinRadius + strength / 255 * ringMinRadius + drumStrength / 255 * ringMaxRadius + drumStrength / 255 * ringMaxExpand,
+                        90 - (i + 1.02) / 64 * 180,
+                        90 - (i - 0.01) / 64 * 180
                     );
                 }
             }
@@ -2866,7 +2834,7 @@ var vis = {
             this.degArc2(
                 size[0] / 2 + randomOffset[0],
                 size[1] / 2 + randomOffset[1],
-                ringMinRadius + drumStrength / 255 * ringMaxExpand - 5,
+                ringMinRadius + drumStrength / 255 * ringMaxRadius - 5,
                 0,
                 360
             );
@@ -2875,7 +2843,7 @@ var vis = {
                 this.degArc2smoke(
                     size[0] / 2 + randomOffset[0],
                     size[1] / 2 + randomOffset[1],
-                    ringMinRadius + drumStrength / 255 * ringMaxExpand - 5,
+                    ringMinRadius + drumStrength / 255 * ringMaxRadius - 5,
                     0,
                     360
                 );
@@ -2921,9 +2889,9 @@ var vis = {
                 smoke.clearRect(0, 0, size[0], size[1]);
             }
             var ringHeight = Math.round(Math.min(size[0], size[1]) * 0.6);
-            var ringMaxRadius = ringHeight * 0.5;
+            var ringMaxRadius = ringHeight * 0.35;
             var ringMinRadius = ringHeight * 0.25;
-            var ringMaxExpand = Math.round(Math.min(size[0], size[1]) * 0.2);
+            var ringMaxExpand = (ringMaxRadius - ringMinRadius) / 4;
             var randomShake = Math.round(Math.min(size[0], size[1]) * 0.03);
             var drumStrength = 0; // drums is all under line 12
             var center = [Math.round(size[0] / 2), Math.round(size[1] / 2)];
@@ -2939,14 +2907,14 @@ var vis = {
                 this.degArc(
                     size[0] / 2 + randomOffset[0],
                     size[1] / 2 + randomOffset[1],
-                    ringMinRadius + visData[i] / 255 * ringMinRadius + drumStrength / 255 * ringMaxExpand,
+                    ringMinRadius + visData[i] / 255 * ringMinRadius + drumStrength / 255 * ringMaxRadius + drumStrength / 255 * ringMaxExpand,
                     (i - 0.01) / 12 * 180 + 90,
                     (i + 1.01) / 12 * 180 + 90
                 );
                 this.degArc(
                     size[0] / 2 + randomOffset[0],
                     size[1] / 2 + randomOffset[1],
-                    ringMinRadius + visData[i] / 255 * ringMinRadius + drumStrength / 255 * ringMaxExpand,
+                    ringMinRadius + visData[i] / 255 * ringMinRadius + drumStrength / 255 * ringMaxRadius + drumStrength / 255 * ringMaxExpand,
                     90 - (i + 1.01) / 12 * 180,
                     90 - (i - 0.01) / 12 * 180
                 );
@@ -2955,14 +2923,14 @@ var vis = {
                     this.degArcSmoke(
                         size[0] / 2 + randomOffset[0],
                         size[1] / 2 + randomOffset[1],
-                        ringMinRadius + visData[i] / 255 * ringMinRadius + drumStrength / 255 * ringMaxExpand,
+                        ringMinRadius + visData[i] / 255 * ringMinRadius + drumStrength / 255 * ringMaxRadius + drumStrength / 255 * ringMaxExpand,
                         (i - 0.01) / 12 * 180 + 90,
                         (i + 1.01) / 12 * 180 + 90
                     );
                     this.degArcSmoke(
                         size[0] / 2 + randomOffset[0],
                         size[1] / 2 + randomOffset[1],
-                        ringMinRadius + visData[i] / 255 * ringMinRadius + drumStrength / 255 * ringMaxExpand,
+                        ringMinRadius + visData[i] / 255 * ringMinRadius + drumStrength / 255 * ringMaxRadius + drumStrength / 255 * ringMaxExpand,
                         90 - (i + 1.01) / 12 * 180,
                         90 - (i - 0.01) / 12 * 180
                     );
@@ -2973,7 +2941,7 @@ var vis = {
             this.degArc2(
                 size[0] / 2 + randomOffset[0],
                 size[1] / 2 + randomOffset[1],
-                ringMinRadius + drumStrength / 255 * ringMaxExpand - 5,
+                ringMinRadius + drumStrength / 255 * ringMaxRadius - 5,
                 0,
                 360
             );
@@ -2982,7 +2950,7 @@ var vis = {
                 this.degArc2smoke(
                     size[0] / 2 + randomOffset[0],
                     size[1] / 2 + randomOffset[1],
-                    ringMinRadius + drumStrength / 255 * ringMaxExpand - 5,
+                    ringMinRadius + drumStrength / 255 * ringMaxRadius - 5,
                     0,
                     360
                 );
@@ -3028,9 +2996,9 @@ var vis = {
                 smoke.clearRect(0, 0, size[0], size[1]);
             }
             var ringHeight = Math.round(Math.min(size[0], size[1]) * 0.6);
-            var ringMaxRadius = ringHeight * 0.5;
+            var ringMaxRadius = ringHeight * 0.35;
             var ringMinRadius = ringHeight * 0.25;
-            var ringMaxExpand = Math.round(Math.min(size[0], size[1]) * 0.2);
+            var ringMaxExpand = (ringMaxRadius - ringMinRadius) / 4;
             var randomShake = Math.round(Math.min(size[0], size[1]) * 0.03);
             var drumStrength = 0; // drums is all under line 12
             var center = [Math.round(size[0] / 2), Math.round(size[1] / 2)];
@@ -3055,7 +3023,7 @@ var vis = {
                 this.degArc(
                     size[0] / 2 + randomOffset[0],
                     size[1] / 2 + randomOffset[1],
-                    ringMinRadius + visData[Math.abs(i)] / 255 * ringMinRadius + drumStrength / 255 * ringMaxExpand,
+                    ringMinRadius + visData[Math.abs(i)] / 255 * ringMinRadius + drumStrength / 255 * ringMaxRadius + drumStrength / 255 * ringMaxExpand,
                     i / 12 * 180 + 90,
                     i / 12 * 180 + 90,
                     //(i + 1.1) + 90
@@ -3072,7 +3040,7 @@ var vis = {
                     this.degArcSmoke(
                         size[0] / 2 + randomOffset[0],
                         size[1] / 2 + randomOffset[1],
-                        ringMinRadius + visData[Math.abs(i)] / 255 * ringMinRadius + drumStrength / 255 * ringMaxExpand,
+                        ringMinRadius + visData[Math.abs(i)] / 255 * ringMinRadius + drumStrength / 255 * ringMaxRadius + drumStrength / 255 * ringMaxExpand,
                         i / 12 * 180 + 90,
                         i / 12 * 180 + 90,
                         //(i + 1.1) + 90
@@ -3104,12 +3072,12 @@ var vis = {
             }
 
             for(var i = -52; i < 53; i++){
-                var strength = visData[Math.abs(i)];
+                var strength = visData[Math.abs(i) + 12];
                 
                 this.degArc(
                     size[0] / 2 + randomOffset[0],
                     size[1] / 2 + randomOffset[1],
-                    ringMinRadius + strength / 255 * ringMinRadius + drumStrength / 255 * ringMaxExpand,
+                    ringMinRadius + strength / 255 * ringMinRadius + drumStrength / 255 * ringMaxRadius + drumStrength / 255 * ringMaxExpand,
                     i / 52 * 180 + 90,
                     i / 52 * 180 + 90,
                     //(i + 4.1) / 844 * 180 + 90
@@ -3125,7 +3093,7 @@ var vis = {
                     this.degArcSmoke(
                         size[0] / 2 + randomOffset[0],
                         size[1] / 2 + randomOffset[1],
-                        ringMinRadius + strength / 255 * ringMinRadius + drumStrength / 255 * ringMaxExpand,
+                        ringMinRadius + strength / 255 * ringMinRadius + drumStrength / 255 * ringMaxRadius + drumStrength / 255 * ringMaxExpand,
                         i / 52 * 180 + 90,
                         i / 52 * 180 + 90,
                         //(i + 3.1) / 844 * 180 + 90
@@ -3149,7 +3117,7 @@ var vis = {
             this.degArc2(
                 size[0] / 2 + randomOffset[0],
                 size[1] / 2 + randomOffset[1],
-                ringMinRadius + drumStrength / 255 * ringMaxExpand - 5,
+                ringMinRadius + drumStrength / 255 * ringMaxRadius - 5,
                 0,
                 360
             );
@@ -3158,7 +3126,7 @@ var vis = {
                 this.degArc2smoke(
                     size[0] / 2 + randomOffset[0],
                     size[1] / 2 + randomOffset[1],
-                    ringMinRadius + drumStrength / 255 * ringMaxExpand - 5,
+                    ringMinRadius + drumStrength / 255 * ringMaxRadius - 5,
                     0,
                     360
                 );
@@ -5378,17 +5346,24 @@ function openSettingsMenu(){
                 'Select-All + Copy generated info from below, save to "_songInfo.txt" in your music\'s main folder, modify as you see fit.<br>' +
                 '<textarea id="songInfoTemplate" style="height:64px;"></textarea>'
         }
-        tempHTML += '<br><br><p style="font-size:2em">Transparent Mode</p>' +
-        'Current Mode: ' + windowType + '<br>' +
-        '<button onclick="ipcRenderer.send(\'toggle-transparent\', {x: screen.width, y: screen.height})">Toggle</button>';
+
+        if(!webVersion){
+            tempHTML += '<br><br><p style="font-size:2em">Transparent Mode</p>' +
+            'Current Mode: ' + windowType + '<br>' +
+            '<button onclick="ipcRenderer.send(\'toggle-transparent\', {x: screen.width, y: screen.height})">Toggle</button>';
+        }
 
         tempHTML += "<br><br><p style='font-size:2em'>Fast Mode</p>" +
         '<button onclick="togglePerformance()" id="performanceButton" style="border-color:' + debugColors[performanceMode] + '">Toggle</button>' +
             "<p>If performance is slow, this option lowers quality to help weaker devices.</p>";
 
-        tempHTML += "<br><br><p style='font-size:2em'>Debug Mode</p>" +
+        tempHTML += "<br><br><p style='font-size:2em'>Debug Overlays</p>" +
         '<button onclick="toggleFPS()" id="debugButton" style="border-color:' + debugColors[debugForce] + '">Toggle</button>' +
             "<p>Intended for developer use. Enables various debug overlays.</p>";
+
+        tempHTML += "<br><br><p style='font-size:2em'>Debug Frequencies</p>" +
+        '<button onclick="toggleFreqs()" id="debugFreqsButton" style="border-color:' + debugColors[debugFreqs] + '">Toggle</button>' +
+            "<p>Intended for developer use. Sweeps through all frequencies to test visualizers.</p>";
 
         tempHTML += "</div>";
         getId("selectContent").innerHTML = tempHTML;
