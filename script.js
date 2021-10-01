@@ -334,7 +334,7 @@ function loadFolder(event){
     
     requestAnimationFrame(globalFrame);
     requestAnimationFrame(function(){
-        overrideMod("powSin");
+        overrideMod("sinusoid");
         overrideColor("beta");
     });
 }
@@ -413,7 +413,7 @@ function loadFiles(event){
     
     requestAnimationFrame(globalFrame);
     requestAnimationFrame(function(){
-        overrideMod("powSin");
+        overrideMod("sinusoid");
         overrideColor("beta");
     });
 }
@@ -488,7 +488,7 @@ function loadWeirdFiles(event){
     
     requestAnimationFrame(globalFrame);
     requestAnimationFrame(function(){
-        overrideMod("powSin");
+        overrideMod("sinusoid");
         overrideColor("beta");
     });
 }
@@ -592,7 +592,7 @@ function loadMicrophone(event){
     requestAnimationFrame(globalFrame);
     requestAnimationFrame(function(){
         overrideVis("monstercat");
-        overrideMod("powSin");
+        overrideMod("sinusoid");
         overrideColor("beta");
     });
     blockSleep();
@@ -678,7 +678,7 @@ function loadSystemAudio(event){
                     requestAnimationFrame(globalFrame);
                     requestAnimationFrame(function(){
                         overrideVis("monstercat");
-                        overrideMod("powSin");
+                        overrideMod("sinusoid");
                         overrideColor("beta");
                     });
                     blockSleep();
@@ -1358,6 +1358,18 @@ function globalFrame(){
 
 var currMod = null;
 var mods = {
+    sinusoid: {
+        name: "Sinusoid", // this is what i was *trying* to accomplish with Power Sine
+        image: 'mods/sinusoid.png',
+        mod: function(){
+            for(var i = 0; i < 128; i++){
+                visData[i] = -127.5 * Math.cos(2 * Math.PI * visData[i] / 510) + 127.5;
+            }
+        },
+        test: function(input){
+            return -127.5 * Math.cos(2 * Math.PI * input / 510) + 127.5;
+        }
+    },
     powSin: {
         name: "Power Sine",
         image: 'mods/powSin.png',
