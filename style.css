@@ -191,7 +191,7 @@ div{
 }
 #selectContent{
     height:100%;
-    overflow-y:auto;
+    overflow-y:scroll;
     position:relative;
     text-align:left;
     display:inline-block;
@@ -211,6 +211,10 @@ div{
     line-height:48px;
     height:48px;
 }
+.visNone{
+    height:48px !important;
+    line-height:48px !important;
+}
 #selectContent .visOption:hover{
     margin-top:2px;
     line-height:128px;
@@ -226,6 +230,12 @@ div{
 }
 #selectContent div:active{
     background: rgba(255, 255, 255, 0.25);
+}
+#selectContent .visCategory{
+    background: none !important;
+}
+#selectContent .hiddenCategory{
+    height:1em;
 }
 #selectContent .visOption img{
     transition:0.3s;
@@ -253,13 +263,13 @@ div{
     height:128px;
     margin-right:246px;
 }
-#selectContent div:hover img{
+#selectContent .visOption:hover img{
     filter:contrast(0.9) brightness(2);
 }
 #selectContent .modOption:hover img{
     filter:contrast(0.8);
 }
-#selectContent div:active img{
+#selectContent .visOption:active img{
     filter:contrast(0.9) brightness(5);
 }
 #selectContent .colorOption{

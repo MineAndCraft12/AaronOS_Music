@@ -1890,7 +1890,7 @@ var vis = {
         }
     },
     'SEPARATOR_BARS" disabled="': {
-        name: 'Bars',
+        name: 'Bars and Lines',
         start: function(){
 
         },
@@ -1900,6 +1900,85 @@ var vis = {
         stop: function(){
 
         }
+    },
+    reflection: {
+        name: "Reflection",
+        image: "visualizers/reflection.png",
+        start: function(){
+            
+        },
+        frame: function(){
+            canvas.clearRect(0, 0, size[0], size[1]);
+            if(smokeEnabled){
+                smoke.clearRect(0, 0, size[0], size[1]);
+            }
+            var left = size[0] * 0.1;
+            var maxWidth = size[0] * 0.8;
+            var barWidth = maxWidth / 96;
+            var barSpacing = maxWidth / 64;
+            var maxHeight = size[1] * 0.5 - size[1] * 0.2;
+            
+            var monstercatGradient = canvas.createLinearGradient(0, Math.round(size[1] / 2) + 4, 0, size[1]);
+            monstercatGradient.addColorStop(0, 'rgba(0, 0, 0, 0.85)'); // 0.8
+            monstercatGradient.addColorStop(0.1, 'rgba(0, 0, 0, 0.9)'); // 0.9
+            monstercatGradient.addColorStop(0.25, 'rgba(0, 0, 0, 0.95)');
+            monstercatGradient.addColorStop(0.5, 'rgba(0, 0, 0, 1)');// 1
+            
+            for(var i = 0; i < 64; i++){
+                var strength = visData[i];
+                
+                var fillColor = getColor(strength, i * 4);
+                canvas.fillStyle = fillColor;
+                canvas.fillRect(
+                    Math.round(left + i * barSpacing),
+                    Math.floor(size[1] / 2) - Math.round(strength / 255 * maxHeight),
+                    Math.round(barWidth),
+                    Math.round(strength / 255 * maxHeight + 5)
+                );
+                //canvas.fillStyle = "#000";
+                //if(strength > 10){
+                //    canvas.fillRect(
+                //        Math.round(left + i * barSpacing),
+                //        Math.floor(size[1] / 2) + 4,
+                //        Math.round(barWidth),
+                //        Math.round(10 / 255 * maxHeight + 4)
+                //    );
+                //    canvas.fillRect(
+                //        Math.round(left + i * barSpacing - 1),
+                //        Math.floor(size[1] / 2) + 4 + (10 / 255 * maxHeight) + 4,
+                //        Math.round(barWidth + 2),
+                //        Math.round((strength - 10) / 255 * maxHeight)
+                //    );
+                //}else{
+                    canvas.fillRect(
+                        Math.round(left + i * barSpacing),
+                        Math.floor(size[1] / 2) + 4,
+                        Math.round(barWidth),
+                        Math.round(strength / 255 * maxHeight + 4)
+                    );
+                //}
+                if(smokeEnabled){
+                    smoke.fillStyle = fillColor;
+                    smoke.fillRect(
+                        Math.round(left + i * barSpacing),
+                        Math.floor(size[1] / 2) - Math.round(strength / 255 * maxHeight),
+                        Math.round(barWidth),
+                        Math.round((strength / 255 * maxHeight + 5) * 2)
+                    );
+                }
+            }
+
+            canvas.fillStyle = monstercatGradient;
+            canvas.fillRect(0, Math.round(size[1] / 2) + 4, size[0], Math.round(size[1] / 2) - 4);
+
+            //updateSmoke(left, size[1] * 0.2, maxWidth, size[1] * 0.3 + 10);
+            canvas.fillStyle = '#FFF';
+            canvas.font = (size[1] * 0.25) + 'px aosProFont, sans-serif';
+        },
+        stop: function(){
+            
+        },
+        sqrt255: Math.sqrt(255)
     },
     monstercat: {
         name: "Monstercat",
@@ -2074,6 +2153,102 @@ var vis = {
             
         },
         sqrt255: Math.sqrt(255)
+    },
+    wave: {
+        name: "Wave",
+        image: "visualizers/wave.png",
+        start: function(){
+            
+        },
+        frame: function(){
+            canvas.clearRect(0, 0, size[0], size[1]);
+            smoke.clearRect(0, 0, size[0], size[1]);
+            var step = size[0] / 64;
+            var last = -1;
+            var heightFactor = (size[1] / 3) / 255;
+            var widthFactor = 64 / size[0] * 2;
+
+            //if(widthFactor !== 1){
+                //var tempLines = [];
+                //var tempMax = 0;
+                //if(widthFactor < 1){
+                    for(var i = 0; i < size[0] / 2; i++){
+                        // width is larger than data
+                        var pcnt = i / (size[0] / 2);
+                        var closestPoint = visData[Math.floor(pcnt * 64)];
+                        var nextPoint = visData[Math.floor(pcnt * 64) + 1];
+                        if(nextPoint === undefined){
+                            nextPoint = closestPoint;
+                        }
+                        var u = pcnt * 64 - Math.floor(pcnt * 64);
+                        //tempLines[i] = ((1 - u) * closestPoint) + (u * nextPoint);
+                        this.drawLine(i, ((1 - u) * closestPoint) + (u * nextPoint), heightFactor, widthFactor);
+                    }
+                /*
+                }else{
+                    for(var i = 0; i < size[0]; i++){
+                        // width is smaller than data
+                        var firstPcnt = i / size[0];
+                        var lastPcnt = (i + 1) / size[0];
+                        var firstPlace = firstPcnt * 64;
+                        var lastPlace = lastPcnt * 64;
+                        var pointRange = [];
+                        for(var j = Math.floor(firstPlace); j <= Math.ceil(lastPlace); j++){
+                            pointRange.push(j);
+                        }
+                        var totalAvg = 0;
+                        var totalPoints = 0;
+                        var firstU = firstPlace - Math.floor(firstPlace);
+                        var lastU = lastPlace - Math.floor(lastPlace);
+                        var lastValue = visData[pointRange[pointRange.length - 1]];
+                        if(lastValue === undefined){
+                            lastValue = visData[pointRange[pointRange.length - 2]];
+                        }
+                        totalAvg += (1 - firstU) * visData[pointRange[0]] + lastU * lastValue;
+                        totalPoints += (1 - firstU) + lastU;
+                        if(pointRange.length > 2){
+                            for(var j = 1; j < pointRange.length - 1; j++){
+                                totalAvg += visData[pointRange[j]];
+                                totalPoints++;
+                            }
+                        }
+                        tempLines[i] = totalAvg / totalPoints;
+                    }
+                }
+                */
+            //}
+            /*
+            if(widthFactor === 1){
+                for(var curr = 0; curr < size[0]; curr++){
+                    var strength = visData[curr];
+                    this.drawLine(curr, strength, heightFactor, widthFactor);
+                }
+            }else{
+                for(var curr = 0; curr < size[0]; curr++){
+                    var strength = tempLines[curr];
+                    this.drawLine(curr, strength, heightFactor, widthFactor);
+                }
+            }
+            */
+        },
+        stop: function(){
+            
+        },
+        drawLine: function(x, h, fact, widthFact){
+            var fillColor = getColor(h, x / (size[0] / 2) * 255);
+            canvas.fillStyle = fillColor;
+            canvas.fillRect(x + size[0] / 2, (255 - h)  * fact - 2 + (size[1] / 6), 1, h * fact * 2 + 4);
+            if(x !== 0){
+                canvas.fillRect(size[0] / 2 - x, (255 - h)  * fact - 2 + (size[1] / 6), 1, h * fact * 2 + 4);
+            }
+            if(smokeEnabled){
+                smoke.fillStyle = fillColor;
+                smoke.fillRect(x + size[0] / 2, (255 - h)  * fact + (size[1] / 6), 1, h * fact * 2);
+                if(x !== 0){
+                    smoke.fillRect(size[0] / 2 - x, (255 - h)  * fact + (size[1] / 6), 1, h * fact * 2);
+                }
+            }
+        }
     },
     curvedAudioVision: {
         name: "Curved Lines",
@@ -2525,7 +2700,7 @@ var vis = {
         graph: []
     },
     'SEPARATOR_CIRCLES" disabled="': {
-        name: 'Circles',
+        name: 'Circular',
         start: function(){
 
         },
@@ -3589,7 +3764,7 @@ var vis = {
         sqrt255: Math.sqrt(255)
     },
     'SEPARATOR_FULL_SCREEN" disabled="': {
-        name: 'Full',
+        name: 'Entire Screen',
         start: function(){
 
         },
@@ -3654,6 +3829,69 @@ var vis = {
             }else{
                 canvas.fillStyle = getColor(colorAmount, x * (255 / size[0]));
                 canvas.fillRect(x, 0, 1, size[1]);
+            }
+        }
+    },
+    spectrumCentered: {
+        name: "Centered Spectrum",
+        image: "visualizers/spectrumCentered.png",
+        start: function(){
+            
+        },
+        frame: function(){
+            canvas.clearRect(0, 0, size[0], size[1]);
+            smoke.clearRect(0, 0, size[0], size[1]);
+            var step = size[0] / 2 / 64;
+            var last = -1;
+            for(var i = 0; i < 65; i++){
+                var strength = 0;
+                if(i === 0){
+                    strength = visData[i];
+                    this.drawLine(0, strength);
+                }else{
+                    var last = Math.floor(step * (i - 1));
+                    var curr = Math.floor(step * i);
+                    var next = Math.floor(step * (i + 1));
+                    if(last < curr - 1){
+                        // stretched
+                        for(var j = 0; j < curr - last - 1; j++){
+                            //strength = ((j + 1) / (curr - last + 1) * visData[i - 1] + (curr - last - j + 1) / (curr - last + 1) * visData[i]);
+                            var pcntBetween = j / (curr - last - 1);
+                            strength = visData[i] * pcntBetween + visData[i - 1] * (1 - pcntBetween);
+                            this.drawLine(curr - (curr - last - 1 - j), strength);
+                        }
+                        strength = visData[i];
+                        this.drawLine(curr, strength);
+                    }else if(curr === last && next > curr){
+                        // compressed
+                        for(var j = 0; j < (1 / step); j++){
+                            strength += visData[i - j];
+                        }
+                        strength /= Math.floor(1 / step) + 1;
+                        this.drawLine(curr, strength);
+                    }else if(last === curr - 1){
+                        strength = visData[i];
+                        this.drawLine(curr, strength);
+                    }
+                }
+            }
+        },
+        stop: function(){
+            
+        },
+        drawLine: function(x, colorAmount){
+            if(smokeEnabled){
+                smoke.fillStyle = getColor(colorAmount, x * (255 / (size[0] / 2)));
+                smoke.fillRect(x + size[0] / 2, 0, 1, size[1]);
+                if(x !== 0){
+                    smoke.fillRect(size[0] / 2 - x, 0, 1, size[1]);
+                }
+            }else{
+                canvas.fillStyle = getColor(colorAmount, x * (255 / (size[0] / 2)));
+                canvas.fillRect(x + size[0] / 2, 0, 1, size[1]);
+                if(x !== 0){
+                    canvas.fillRect(size[0] / 2 - x, 0, 1, size[1]);
+                }
             }
         }
     },
@@ -3921,7 +4159,7 @@ var vis = {
         sqrt255: Math.sqrt(255)
     },
     'SEPARATOR_PITCH" disabled="': {
-        name: 'Pitch',
+        name: 'Spectrogram',
         start: function(){
 
         },
@@ -3982,6 +4220,18 @@ var vis = {
         },
         stop: function(){
             
+        }
+    },
+    'SEPARATOR_OTHER" disabled="': {
+        name: 'Other',
+        start: function(){
+
+        },
+        frame: function(){
+
+        },
+        stop: function(){
+
         }
     },
     avgPitch: {
@@ -4058,18 +4308,6 @@ var vis = {
             []
         ],
         sqrt255: Math.sqrt(255)
-    },
-    'SEPARATOR_TESTS" disabled="': {
-        name: 'Other',
-        start: function(){
-
-        },
-        frame: function(){
-
-        },
-        stop: function(){
-
-        }
     },
     blast: {
         name: "aOS Blast",
@@ -4968,6 +5206,18 @@ var vis = {
             return rad * this._180ByPi;
         }
     },
+    'SEPARATOR_DEBUG" disabled="': {
+        name: 'Debug',
+        start: function(){
+
+        },
+        frame: function(){
+
+        },
+        stop: function(){
+
+        }
+    },
     bassSplit: {
         name: "Bass Split (&lt; 12)",
         image: "visualizers/bassSplit.png",
@@ -5190,10 +5440,10 @@ function smokeFrame(){
 resizeSmoke();
 
 var featuredVis = {
-    monstercat: 1,
-    spikes: 1,
+    reflection: 1,
+    wave: 1,
     circle: 1,
-    blast: 1
+    bassCircle: 1
 };
 
 function openVisualizerMenu(){
@@ -5205,12 +5455,12 @@ function openVisualizerMenu(){
             namecolor = ' style="outline:2px solid ' + getColor(255) + ';"';
         }
         if(vis.none.image){
-            tempHTML += '<div' + namecolor + ' class="visOption" onclick="overrideVis(\'' + i + '\')"><img src="' + vis.none.image + '">' + vis.none.name + '</div>';
+            tempHTML += '<div' + namecolor + ' class="visOption visNone" onclick="overrideVis(\'' + i + '\')"><img src="' + vis.none.image + '">' + vis.none.name + '</div>';
         }else{
-            tempHTML += '<div' + namecolor + ' class="visOption" onclick="overrideVis(\'' + i + '\')"><span></span>' + vis.none.name + '</div>';
+            tempHTML += '<div' + namecolor + ' class="visOption visNone" onclick="overrideVis(\'' + i + '\')"><span></span>' + vis.none.name + '</div>';
         }
         tempHTML += '<div style="height:auto;background:none;"><hr></div>';
-        tempHTML += '&nbsp; Featured:<br>';
+        tempHTML += '<div class="visCategory">&nbsp;<button onclick="this.parentElement.classList.toggle(\'hiddenCategory\')">&nbsp; v &nbsp;</button> Featured<br>';
         for(var i in featuredVis){
             var namecolor = "";
             if(i === getId("visfield").value){
@@ -5236,10 +5486,11 @@ function openVisualizerMenu(){
                     }
                 }
             }else{
-                tempHTML += '<div style="height:auto;background:none;"><hr></div>';
-                tempHTML += '&nbsp; ' + vis[i].name + ":<br>";
+                tempHTML += '</div><div style="height:auto;background:none;"><br></div>';
+                tempHTML += '<div class="visCategory hiddenCategory">&nbsp;<button onclick="this.parentElement.classList.toggle(\'hiddenCategory\')">&nbsp; v &nbsp;</button> ' + vis[i].name + '<br>';
             }
         }
+        tempHTML += '</div>';
         getId("selectContent").innerHTML = tempHTML;
         getId("selectContent").scrollTop = 0;
     }else{
@@ -5456,7 +5707,7 @@ function toggleTaskbarMode(){
         });
         taskbarMode = 0;
         getId("taskbarButton").style.borderColor = "#C00";
-        if(currVis === "spectrumBass"){
+        if(currVis === "spectrumCentered"){
             overrideVis(previousVis);
         }
     }else{
@@ -5472,7 +5723,7 @@ function toggleTaskbarMode(){
         taskbarMode = 1;
         getId("taskbarButton").style.borderColor = "#0A0";
         previousVis = currVis;
-        overrideVis("spectrumBass");
+        overrideVis("spectrumCentered");
     }
 }
 function finishSettingTaskbarMode(res){
