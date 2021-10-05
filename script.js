@@ -1437,8 +1437,15 @@ var automaticColor = {
 }
 
 var colors = {
+    'SEPARATOR_AARONOS" disabled="': {
+        name: "---------------",
+        category: "AaronOS",
+        func: function(){
+            return '#000';
+        }
+    },
     bluegreenred: {
-        name: "Default",
+        name: "AaronOS",
         image: "colors/default.png",
         func: function(amount){
             return 'rgba(' +
@@ -1449,7 +1456,7 @@ var colors = {
         }
     },
     beta: {
-        name: "Default Solid",
+        name: "AaronOS Solid",
         image: "colors/defaultSolid.png",
         func: function(amount){
             return 'rgb(' +
@@ -1458,58 +1465,21 @@ var colors = {
                 (255 - amount) + ')';
         }
     },
+    alpha: {
+        name: "AaronOS Alpha",
+        image: "colors/alpha.png",
+        func: function(amount){
+            return 'rgb(0,' + amount + ',' + (255 - amount) + ')';
+        }
+    },
     defStatic: {
-        name: "Default Static",
+        name: "AaronOS Static",
         image: "colors/defaultStatic.png",
         func: function(amount, position){
             if(typeof position === "number"){
                 return 'rgb(0,' + position + ',' + (255 - position) + ')';
             }else{
                 return 'rgb(0,' + amount + ',' + (255 - amount) + ')';
-            }
-        }
-    },
-    alpha: {
-        name: "Alpha",
-        image: "colors/alpha.png",
-        func: function(amount){
-            return 'rgb(0,' + amount + ',' + (255 - amount) + ')';
-        }
-    },
-    intensityGlow: {
-        name: "Intensity",
-        image: "colors/intensity.png",
-        func: function(amount){
-            return 'rgba(' +
-                ((amount >= 127) * 255 + (amount < 127) * (amount * 2)) + ',' +
-                ((amount < 127) * 255 + (amount >= 127) * ((254.5 - amount) * 2)) + ',' +
-                '0,' + (amount / 255) + ')';
-        }
-    },
-    intensity: {
-        name: "Intensity Solid",
-        image: "colors/intensitySolid.png",
-        func: function(amount){
-            return 'rgb(' +
-                ((amount >= 127) * 255 + (amount < 127) * (amount * 2)) + ',' +
-                ((amount < 127) * 255 + (amount >= 127) * ((254.5 - amount) * 2)) + ',' +
-                '0)';
-        }
-    },
-    intensityStatic: {
-        name: "Intensity Static",
-        image: "colors/intensityStatic.png",
-        func: function(amount, position){
-            if(typeof position === "number"){
-                return 'rgb(' +
-                    ((position >= 127) * 255 + (position < 127) * (position * 2)) + ',' +
-                    ((position < 127) * 255 + (position >= 127) * ((254.5 - position) * 2)) + ',' +
-                    '0)';
-            }else{
-                return 'rgb(' +
-                    ((amount >= 127) * 255 + (amount < 127) * (amount * 2)) + ',' +
-                    ((amount < 127) * 255 + (amount >= 127) * ((254.5 - amount) * 2)) + ',' +
-                    '0)';
             }
         }
     },
@@ -1522,6 +1492,7 @@ var colors = {
     },
     'SEPARATOR_THEMES" disabled="': {
         name: "---------------",
+        category: "Themes",
         func: function(){
             return '#000';
         }
@@ -1537,41 +1508,6 @@ var colors = {
                 (Math.pow(amount, 2) / 255) + ',0,' +
                 (amount / 255) + ')';
         }
-    },
-    rainbowStatic: {
-        name: "Rainbow",
-        image: "colors/rainbowStatic.png",
-        func: function(amount, position){
-            if(typeof position === "number"){
-                return 'hsl(' +
-                    (position * this.multiplier) +
-                    ',100%,50%)';
-            }else{
-                return 'hsl(' +
-                    (amount * this.multiplier) +
-                    ',100%,50%)';
-            }
-        },
-        multiplier: 360 / 255
-    },
-    rainbowActive: {
-        name: "Rainbow Active",
-        image: "colors/rainbowActive.png",
-        func: function(amount, position){
-            if(typeof position === "number"){
-                return 'hsla(' +
-                    (position * this.multiplier) +
-                    ',100%,50%,' +
-                    (amount / this.alphaDivisor + 0.25) + ')';
-            }else{
-                return 'hsla(' +
-                    (amount * this.multiplier) +
-                    ',100%,50%,' +
-                    (amount / this.alphaDivisor + 0.25) + ')';
-            }
-        },
-        multiplier: 360 / 255,
-        alphaDivisor: 255 * (4/3)
     },
     queen: {
         name: "Queen",
@@ -1612,26 +1548,59 @@ var colors = {
         },
         sqrt127: Math.sqrt(127)
     },
+    'SEPARATOR_RAINBOW" disabled="': {
+        name: "---------------",
+        category: "Rainbow",
+        func: function(){
+            return '#000';
+        }
+    },
+    rainbowActive: {
+        name: "Rainbow Static",
+        image: "colors/rainbowActive.png",
+        func: function(amount, position){
+            if(typeof position === "number"){
+                return 'hsla(' +
+                    (position * this.multiplier) +
+                    ',100%,50%,' +
+                    (amount / this.alphaDivisor + 0.25) + ')';
+            }else{
+                return 'hsla(' +
+                    (amount * this.multiplier) +
+                    ',100%,50%,' +
+                    (amount / this.alphaDivisor + 0.25) + ')';
+            }
+        },
+        multiplier: 360 / 255,
+        alphaDivisor: 255 * (4/3)
+    },
+    rainbowStatic: {
+        name: "Rainbow Static Solid",
+        image: "colors/rainbowStatic.png",
+        func: function(amount, position){
+            if(typeof position === "number"){
+                return 'hsl(' +
+                    (position * this.multiplier) +
+                    ',100%,50%)';
+            }else{
+                return 'hsl(' +
+                    (amount * this.multiplier) +
+                    ',100%,50%)';
+            }
+        },
+        multiplier: 360 / 255
+    },
+    'SEPARATOR_PRIDE" disabled="': {
+        name: "---------------",
+        category: "Pride",
+        func: function(){
+            return '#000';
+        }
+    },
     prideGlow: {
         name: "Pride",
         image: "colors/pride.png",
         func: function(amount){
-            /*return 'rgba(' +
-                (
-                    (amount < 95) * 255 +
-                    (amount >= 95 && amount < 159) * (159 - amount) * this.divide255by64 +
-                    (amount >= 207) * ((207 - amount) * -1) * this.divide255by96
-                ) + ',' +
-                (
-                    (amount < 95) * amount * this.divide255by96 +
-                    (amount >= 95 && amount < 159) * 255 +
-                    (amount >= 159 && amount < 207) * (207 - amount) * this.divide255by48
-                ) + ',' +
-                (
-                    (amount >= 159 && amount < 207) * ((159 - amount) * -1) * this.divide255by48 +
-                    (amount >= 207) * 255
-                ) + ',' + (amount / 255) + ')';
-            */
         return 'hsla(' + amount + ',100%,50%,' + (amount / 255) + ')';
         },
         divide255by96: 255 / 96,
@@ -1642,21 +1611,6 @@ var colors = {
         name: "Pride Solid",
         image: "colors/prideSolid.png",
         func: function(amount){
-            /*return 'rgb(' +
-                (
-                    (amount < 95) * 255 +
-                    (amount >= 95 && amount < 159) * (159 - amount) * this.divide255by64 +
-                    (amount >= 207) * ((207 - amount) * -1) * this.divide255by96
-                ) + ',' +
-                (
-                    (amount < 95) * amount * this.divide255by96 +
-                    (amount >= 95 && amount < 159) * 255 +
-                    (amount >= 159 && amount < 207) * (207 - amount) * this.divide255by48
-                ) + ',' +
-                (
-                    (amount >= 159 && amount < 207) * ((159 - amount) * -1) * this.divide255by48 +
-                    (amount >= 207) * 255
-                ) + ')';*/
             return 'hsl(' + amount + ',100%,50%)';
         },
         divide255by96: 255 / 96,
@@ -1675,7 +1629,7 @@ var colors = {
         }
     },
     prideBlocky: {
-        name: "Pride Blocky",
+        name: "Pride Static Blocky",
         image: "colors/prideBlocky.png",
         func: function(amount, position){
             if(typeof position === "number"){
@@ -1694,56 +1648,58 @@ var colors = {
         },
         prideColors: [0, 33, 55, 110, 175, 235, 265]
     },
-    'SEPARATOR_GLOWS" disabled="': {
+    'SEPARATOR_COLORS" disabled="': {
         name: "---------------",
+        category: "Colors",
         func: function(){
             return '#000';
         }
     },
     whiteglow: {
-        name: "White Glow",
+        name: "White",
         image: "colors/whiteGlow.png",
         func: function(amount){
             return 'rgba(255, 255, 255, ' + (amount / 255) + ')';
         }
     },
     redglow: {
-        name: "Red Glow",
+        name: "Red",
         image: "colors/redGlow.png",
         func: function(amount){
             return 'rgba(255,0,0,' + (amount / 255) + ')';
         }
     },
     greenglow: {
-        name: "Green Glow",
+        name: "Green",
         image: "colors/greenGlow.png",
         func: function(amount){
             return 'rgba(0,255,0,' + (amount / 255) + ')';
         }
     },
     blueglow: {
-        name: "Blue Glow",
+        name: "Blue",
         image: "colors/blueGlow.png",
         func: function(amount){
             return 'rgba(0,0,255,' + (amount / 255) + ')';
         }
     },
     electricglow: {
-        name: "Electric Glow",
+        name: "Electric",
         image: "colors/electricGlow.png",
         func: function(amount){
             return 'rgba(0,255,255,' + (amount / 255) + ')';
         }
     },
     indigoglow: {
-        name: "Indigo Glow",
+        name: "Indigo",
         image: "colors/indigoGlow.png",
         func: function(amount){
             return 'rgba(75, 0, 130, ' + (amount / 255) + ')';
         }
     },
-    'SEPARATOR_SOLID_COLORS" disabled="': {
+    'SEPARATOR_COLORS_SOLID" disabled="': {
         name: "---------------",
+        category: "Solid Colors",
         func: function(){
             return '#000';
         }
@@ -1789,60 +1745,6 @@ var colors = {
         func: function(amount){
             return '#4B0082';
         }
-    },
-    'SEPARATOR_TECHNICAL_COLORS" disabled="': {
-        name: "---------------",
-        func: function(){
-            return '#000';
-        }
-    },
-    rgbsequence: {
-        name: "RGB (Sequence)",
-        image: "colors/triColor.png",
-        lastPosition: -1,
-        sequence: -1,
-        func: function(amount, position){
-            if(position > this.lastPosition){
-                this.lastPosition = position;
-                this.sequence++;
-            }else{
-                this.lastPosition = -1;
-                this.sequence = 0;
-            }
-            return 'hsl(' + (this.sequence % 3 * 120) + ', 100%, ' + (amount / 5.12) + '%)';
-        }
-    },
-    rgbsequencesolid: {
-        name: "RGB (Sequence) Solid",
-        image: "colors/triColor.png",
-        lastPosition: -1,
-        sequence: -1,
-        func: function(amount, position){
-            if(position > this.lastPosition){
-                this.lastPosition = position;
-                this.sequence++;
-            }else{
-                this.lastPosition = -1;
-                this.sequence = 0;
-            }
-            return 'hsl(' + (this.sequence % 3 * 120) + ', 100%, 50%)';
-        }
-    },
-    rgbMath: {
-        name: 'RGB (Math)',
-        image: "colors/tricolor.png",
-        func: function(amount, position){
-            return 'hsl(' + (position * this.multiplier % 3 * 120) + ', 100%, ' + (amount / 5.12) + '%)';
-        },
-        multiplier: 1024 / 256
-    },
-    rgbMathSolid: {
-        name: 'RGB (Math) Solid',
-        image: "colors/tricolor.png",
-        func: function(amount, position){
-            return 'hsl(' + (position * this.multiplier % 3 * 120) + ', 100%, 50%)';
-        },
-        multiplier: 1024 / 256
     }
 }
 
@@ -1947,21 +1849,6 @@ var vis = {
                     Math.round(barWidth),
                     Math.round(strength / 255 * maxHeight + 5)
                 );
-                //canvas.fillStyle = "#000";
-                //if(strength > 10){
-                //    canvas.fillRect(
-                //        Math.round(left + i * barSpacing),
-                //        Math.floor(size[1] / 2) + 4,
-                //        Math.round(barWidth),
-                //        Math.round(10 / 255 * maxHeight + 4)
-                //    );
-                //    canvas.fillRect(
-                //        Math.round(left + i * barSpacing - 1),
-                //        Math.floor(size[1] / 2) + 4 + (10 / 255 * maxHeight) + 4,
-                //        Math.round(barWidth + 2),
-                //        Math.round((strength - 10) / 255 * maxHeight)
-                //    );
-                //}else{
                     canvas.fillRect(
                         Math.round(left + i * barSpacing),
                         Math.floor(size[1] / 2) + 4,
@@ -1982,10 +1869,6 @@ var vis = {
 
             canvas.fillStyle = monstercatGradient;
             canvas.fillRect(0, Math.round(size[1] / 2) + 4, size[0], Math.round(size[1] / 2) - 4);
-
-            //updateSmoke(left, size[1] * 0.2, maxWidth, size[1] * 0.3 + 10);
-            canvas.fillStyle = '#FFF';
-            canvas.font = (size[1] * 0.25) + 'px aosProFont, sans-serif';
         },
         stop: function(){
             
@@ -2081,84 +1964,102 @@ var vis = {
         },
         frame: function(){
             canvas.clearRect(0, 0, size[0], size[1]);
-            smoke.clearRect(0, 0, size[0], size[1]);
+            if(smokeEnabled){
+                smoke.clearRect(0, 0, size[0], size[1]);
+            }
             var left = size[0] * 0.1;
             var maxWidth = size[0] * 0.8;
             var barWidth = maxWidth / 96;
             var barSpacing = maxWidth / 64;
             var maxHeight = size[1] * 0.5 - size[1] * 0.2;
-
+            
             var monstercatGradient = canvas.createLinearGradient(0, Math.round(size[1] / 2) + 4, 0, size[1]);
-            monstercatGradient.addColorStop(0, 'rgba(0, 0, 0, 0.75)');
-            monstercatGradient.addColorStop(0.1, 'rgba(0, 0, 0, 1)');
-            canvas.fillStyle = monstercatGradient;
-            canvas.fillRect(0, Math.round(size[1] / 2) + 4, size[0], Math.round(size[1] / 2) - 4);
-
+            monstercatGradient.addColorStop(0, 'rgba(0, 0, 0, 0.75)'); // 0.8
+            monstercatGradient.addColorStop(0.1, 'rgba(0, 0, 0, 0.85)'); // 0.9
+            monstercatGradient.addColorStop(0.25, 'rgba(0, 0, 0, 0.95)');
+            monstercatGradient.addColorStop(0.5, 'rgba(0, 0, 0, 1)');// 1
+            
             for(var i = 0; i < 64; i++){
                 var strength = visData[i];
-                /*
-                for(var j = 0; j < 16; j++){
-                    //strength = Math.max(visData[i * 16 + j], strength);
-                    //strength += visData[i * 16 + j];
-                    //strength += Math.pow(visData[i * 16 + j], 2) / 255;
-                    strength += Math.sqrt(visData[i * 16 + j]) * this.sqrt255;
-                }
-                strength = Math.round(strength / 16);
-                */
                 
-                smoke.fillStyle = getColor(strength, i * 4);
-                smoke.fillRect(
-                    Math.round(left + i * barSpacing),
-                    Math.floor(size[1] / 2) - Math.round(strength / 255 * maxHeight),
-                    Math.round(barWidth),
-                    Math.round((strength / 255 * maxHeight + 5) * 2)
-                );
-                canvas.fillStyle = "rgba(0, 0, 0, 0.85)";
-                canvas.fillRect(
-                    Math.round(left + i * barSpacing),
-                    Math.floor(size[1] / 2) - Math.round(strength / 255 * maxHeight),
-                    Math.round(barWidth),
-                    Math.round((strength / 255 * maxHeight + 5) * 2)
-                );
-                canvas.fillStyle = "rgba(0, 0, 0, 0.5)";
-                canvas.fillRect(
-                    Math.round(left + i * barSpacing) + 1,
-                    Math.floor(size[1] / 2) - Math.round(strength / 255 * maxHeight) + 1,
-                    Math.round(barWidth) - 2,
-                    Math.round((strength / 255 * maxHeight + 5) * 2) - 2
-                )
+                var fillColor = getColor(strength, i * 4);
                 canvas.fillStyle = "#000";
-                if(strength > 10){
-                    canvas.fillRect(
-                        Math.round(left + i * barSpacing),
-                        Math.floor(size[1] / 2) + 4,
-                        Math.round(barWidth),
-                        Math.round(10 / 255 * maxHeight + 4)
-                    );
-                    canvas.fillRect(
-                        Math.round(left + i * barSpacing - 1),
-                        Math.floor(size[1] / 2) + 4 + (10 / 255 * maxHeight) + 4,
-                        Math.round(barWidth + 2),
-                        Math.round((strength - 10) / 255 * maxHeight)
-                    );
-                }else{
+                canvas.fillRect(
+                    Math.round(left + i * barSpacing),
+                    Math.floor(size[1] / 2) - Math.round(strength / 255 * maxHeight),
+                    Math.round(barWidth),
+                    Math.round(strength / 255 * maxHeight + 5)
+                );
                     canvas.fillRect(
                         Math.round(left + i * barSpacing),
                         Math.floor(size[1] / 2) + 4,
                         Math.round(barWidth),
                         Math.round(strength / 255 * maxHeight + 4)
                     );
+                //}
+                if(smokeEnabled){
+                    smoke.fillStyle = fillColor;
+                    smoke.fillRect(
+                        Math.round(left + i * barSpacing),
+                        Math.floor(size[1] / 2) - Math.round(strength / 255 * maxHeight),
+                        Math.round(barWidth),
+                        Math.round((strength / 255 * maxHeight + 5) * 2)
+                    );
                 }
             }
+
+            canvas.fillStyle = monstercatGradient;
+            canvas.fillRect(0, Math.round(size[1] / 2) + 4, size[0], Math.round(size[1] / 2) - 4);
+
             //updateSmoke(left, size[1] * 0.2, maxWidth, size[1] * 0.3 + 10);
-            canvas.fillStyle = '#FFF';
-            canvas.font = (size[1] * 0.25) + 'px aosProFont, sans-serif';
-            if(!microphoneActive){
-                canvas.fillText((fileNames[currentSong] || ["No Song"])[0].toUpperCase(), Math.round(left) + 0.5, size[1] * 0.75, Math.floor(maxWidth));
-            }
             if(!smokeEnabled){
+                canvas.fillStyle = '#FFF';
                 canvas.font = "12px aosProFont, Courier, monospace";
                 canvas.fillText("Enable Smoke for this visualizer.", Math.round(left) + 0.5, size[1] * 0.25, Math.floor(maxWidth));
+            }
+        },
+        stop: function(){
+            
+        },
+        sqrt255: Math.sqrt(255)
+    },
+    central: {
+        name: "Central",
+        image: "visualizers/central.png",
+        start: function(){
+            
+        },
+        frame: function(){
+            canvas.clearRect(0, 0, size[0], size[1]);
+            if(smokeEnabled){
+                smoke.clearRect(0, 0, size[0], size[1]);
+            }
+            var left = size[0] * 0.1;
+            var maxWidth = size[0] * 0.8;
+            var barWidth = maxWidth / 96;
+            var barSpacing = maxWidth / 64;
+            var maxHeight = size[1] * 0.5 - size[1] * 0.25;
+            
+            for(var i = 0; i < 64; i++){
+                var strength = visData[i];
+                
+                var fillColor = getColor(strength, i * 4);
+                canvas.fillStyle = fillColor;
+                canvas.fillRect(
+                    Math.round(left + i * barSpacing),
+                    Math.floor(size[1] / 2) - Math.round(strength / 255 * maxHeight) - 5,
+                    Math.round(barWidth),
+                    Math.round(strength / 255 * maxHeight * 2 + 10)
+                );
+                if(smokeEnabled){
+                    smoke.fillStyle = fillColor;
+                    smoke.fillRect(
+                        Math.round(left + i * barSpacing),
+                        Math.floor(size[1] / 2) - Math.round(strength / 255 * maxHeight) - 5,
+                        Math.round(barWidth),
+                        Math.round(strength / 255 * maxHeight * 2 + 10)
+                    );
+                }
             }
         },
         stop: function(){
@@ -5520,6 +5421,7 @@ function openColorMenu(){
     if(getId("selectOverlay").classList.contains("disabled")){
         getId("selectOverlay").classList.remove("disabled");
         var tempHTML = '';
+        var firstDiv = 1;
         for(var i in colors){
             if(i.indexOf("SEPARATOR") === -1){
                 var namecolor = "";
@@ -5532,9 +5434,15 @@ function openColorMenu(){
                     tempHTML += '<div' + namecolor + ' class="colorOption" onclick="overrideColor(\'' + i + '\')">' + colors[i].name + '</div>';
                 }
             }else{
-                tempHTML += '<div style="height:auto;background:none;"><hr></div>';
+                if(!firstDiv){
+                    tempHTML += '</div><div style="height:auto;background:none;"><br></div>';
+                }else{
+                    firstDiv = 0;
+                }
+                tempHTML += '<div class="visCategory hiddenCategory">&nbsp;<button onclick="this.parentElement.classList.toggle(\'hiddenCategory\')">&nbsp; v &nbsp;</button> ' + colors[i].category + '<br>';
             }
         }
+        tempHTML += '</div>';
         getId("selectContent").innerHTML = tempHTML;
         getId("selectContent").scrollTop = 0;
     }else{
