@@ -3896,6 +3896,84 @@ var vis = {
             canvas.clearRect(0, 0, size[0], size[1]);
             smoke.clearRect(0, 0, size[0], size[1]);
             var freqs = [];
+            for(var i = 0; i < 65; i++){
+                freqs.push(i);
+            }
+            for (var i = 64; i > 0; i--) {
+                var j = Math.floor(Math.random() * (i + 1));
+                var temp = freqs[i];
+                freqs[i] = freqs[j];
+                freqs[j] = temp;
+            }
+            tiles = [];
+            var index = 0;
+            for(var i = 0; i < 8; i++){
+                this.tiles.push([]);
+                for(var j = 0; j < 8; j++){
+                    this.tiles[this.tiles.length - 1].push(freqs[index]);
+                    index++;
+                }
+            }
+            this.boxSize = [Math.round(size[0] / 8), Math.round(size[1] / 8)];
+        },
+        frame: function(){
+            if(smokeEnabled){
+                smoke.clearRect(0, 0, size[0], size[1]);
+            }else{
+                canvas.clearRect(0, 0, size[0], size[1]);
+            }
+            for(var i = 0; i < 8; i++){
+                for(var j = 0; j < 8; j++){
+                    var strength = visData[this.tiles[i][j]];
+                    var color = getColor(strength, (i + j) / 14 * 255);
+                    if(smokeEnabled){
+                        smoke.fillStyle = color;
+                        smoke.fillRect(i * this.boxSize[0], j * this.boxSize[1], this.boxSize[0], this.boxSize[1]);
+                    }else{
+                        canvas.fillStyle = color;
+                        canvas.fillRect(i * this.boxSize[0], j * this.boxSize[1], this.boxSize[0], this.boxSize[1]);
+                    }
+                }
+            }
+        },
+        stop: function(){
+            this.tiles = [];
+            this.boxSize = [];
+        },
+        tiles: [],
+        boxSize: []
+    },
+    dynamicTiles: {
+        name: "Dynamic Tiles",
+        image: "visualizers/dynamicTiles.png",
+        start: function(){
+            canvas.clearRect(0, 0, size[0], size[1]);
+            smoke.clearRect(0, 0, size[0], size[1]);
+            var freqs = [];
+            for(var i = 0; i < 65; i++){
+                freqs.push(i);
+            }
+            for (var i = 64; i > 0; i--) {
+                var j = Math.floor(Math.random() * (i + 1));
+                var temp = freqs[i];
+                freqs[i] = freqs[j];
+                freqs[j] = temp;
+            }
+            tiles = [];
+            var index = 0;
+            for(var i = 0; i < 8; i++){
+                this.tiles.push([]);
+                for(var j = 0; j < 8; j++){
+                    this.tiles[this.tiles.length - 1].push(freqs[index]);
+                    index++;
+                }
+            }
+            this.boxSize = [Math.round(size[0] / 8), Math.round(size[1] / 8)];
+        },
+        sizechange: function(){
+            canvas.clearRect(0, 0, size[0], size[1]);
+            smoke.clearRect(0, 0, size[0], size[1]);
+            var freqs = [];
             for(var i = 0; i < 64; i++){
                 freqs.push(i);
             }
@@ -3925,13 +4003,23 @@ var vis = {
             for(var i = 0; i < 8; i++){
                 for(var j = 0; j < 8; j++){
                     var strength = visData[this.tiles[i][j]];
-                    var color = getColor(strength);
+                    var color = getColor(strength, (i + j) / 14 * 255);
                     if(smokeEnabled){
                         smoke.fillStyle = color;
-                        smoke.fillRect(i * this.boxSize[0], j * this.boxSize[1], this.boxSize[0], this.boxSize[1]);
+                        smoke.fillRect(
+                            i * this.boxSize[0] + (this.boxSize[0] * 0.3 * ((255 - strength) / 255)),
+                            j * this.boxSize[1] + (this.boxSize[1] * 0.3 * ((255 - strength) / 255)),
+                            this.boxSize[0] - (this.boxSize[0] * 0.6 * ((255 - strength) / 255)),
+                            this.boxSize[1] - (this.boxSize[1] * 0.6 * ((255 - strength) / 255))
+                        );
                     }else{
                         canvas.fillStyle = color;
-                        canvas.fillRect(i * this.boxSize[0], j * this.boxSize[1], this.boxSize[0], this.boxSize[1]);
+                        canvas.fillRect(
+                            i * this.boxSize[0] + (this.boxSize[0] * 0.3 * ((255 - strength) / 255)),
+                            j * this.boxSize[1] + (this.boxSize[1] * 0.3 * ((255 - strength) / 255)),
+                            this.boxSize[0] - (this.boxSize[0] * 0.6 * ((255 - strength) / 255)),
+                            this.boxSize[1] - (this.boxSize[1] * 0.6 * ((255 - strength) / 255))
+                        );
                     }
                 }
             }
@@ -5356,7 +5444,8 @@ var featuredVis = {
     reflection: 1,
     wave: 1,
     circle: 1,
-    bassCircle: 1
+    bassCircle: 1,
+    dynamicTiles: 1
 };
 
 function openVisualizerMenu(){
