@@ -153,6 +153,7 @@ var mediaSource;
 var delayNode;
 function setDelay(newDelay){
     delayNode.delayTime.value = (newDelay || 0);
+    localStorage.setItem("AaronOSMusic_Delay", String(newDelay));
 }
 
 function setVolume(newVolume){
@@ -160,6 +161,10 @@ function setVolume(newVolume){
 }
 
 var analyser;
+function setSmoothingTimeConstant(newValue){
+    analyser.smoothingTimeConstant = newValue;
+    localStorage.setItem("AaronOSMusic_SmoothingTimeConstant", String(newValue));
+}
 
 var visDataBuffer;
 var visData;
@@ -303,7 +308,12 @@ function loadFolder(event){
     mediaSource = audioContext.createMediaElementSource(audio);
     
     delayNode = audioContext.createDelay();
-    delayNode.delayTime.value = 0.07;
+    if(localStorage.getItem("AaronOSMusic_Delay")){
+        delayNode.delayTime.value = parseFloat(localStorage.getItem("AaronOSMusic_Delay"));
+        getId("currentlyPlaying").innerHTML += " | Delay is custom";
+    }else{
+        delayNode.delayTime.value = 0.07;
+    }
     delayNode.connect(audioContext.destination);
     
     analyser = audioContext.createAnalyser();
@@ -312,7 +322,12 @@ function loadFolder(event){
     latencyReduction = 1;
     analyser.maxDecibels = -20;
     analyser.minDecibels = -60;
-    //analyser.smoothingTimeConstant = 0;
+    if(localStorage.getItem("AaronOSMusic_SmoothingTimeConstant")){
+        analyser.smoothingTimeConstant = parseFloat(localStorage.getItem("AaronOSMusic_SmoothingTimeConstant"));
+        getId("currentlyPlaying").innerHTML += " | SmoothingTimeConstant is custom";
+    }else{
+        analyser.smoothingTimeConstant = 0.8;
+    }
     mediaSource.connect(analyser);
     analyser.connect(delayNode);
     
@@ -382,7 +397,12 @@ function loadFiles(event){
     mediaSource = audioContext.createMediaElementSource(audio);
     
     delayNode = audioContext.createDelay();
-    delayNode.delayTime.value = 0.07;
+    if(localStorage.getItem("AaronOSMusic_Delay")){
+        delayNode.delayTime.value = parseFloat(localStorage.getItem("AaronOSMusic_Delay"));
+        getId("currentlyPlaying").innerHTML += " | Delay is custom";
+    }else{
+        delayNode.delayTime.value = 0.07;
+    }
     delayNode.connect(audioContext.destination);
     
     analyser = audioContext.createAnalyser();
@@ -391,7 +411,12 @@ function loadFiles(event){
     latencyReduction = 1;
     analyser.maxDecibels = -20;
     analyser.minDecibels = -60;
-    //analyser.smoothingTimeConstant = 0;
+    if(localStorage.getItem("AaronOSMusic_SmoothingTimeConstant")){
+        analyser.smoothingTimeConstant = parseFloat(localStorage.getItem("AaronOSMusic_SmoothingTimeConstant"));
+        getId("currentlyPlaying").innerHTML += " | SmoothingTimeConstant is custom";
+    }else{
+        analyser.smoothingTimeConstant = 0.8;
+    }
     mediaSource.connect(analyser);
     analyser.connect(delayNode);
     
@@ -457,7 +482,12 @@ function loadWeirdFiles(event){
     mediaSource = audioContext.createMediaElementSource(audio);
     
     delayNode = audioContext.createDelay();
-    delayNode.delayTime.value = 0.07;
+    if(localStorage.getItem("AaronOSMusic_Delay")){
+        delayNode.delayTime.value = parseFloat(localStorage.getItem("AaronOSMusic_Delay"));
+        getId("currentlyPlaying").innerHTML += " | Delay is custom";
+    }else{
+        delayNode.delayTime.value = 0.07;
+    }
     delayNode.connect(audioContext.destination);
     
     analyser = audioContext.createAnalyser();
@@ -466,7 +496,12 @@ function loadWeirdFiles(event){
     latencyReduction = 1;
     analyser.maxDecibels = -20;
     analyser.minDecibels = -60;
-    //analyser.smoothingTimeConstant = 0;
+    if(localStorage.getItem("AaronOSMusic_SmoothingTimeConstant")){
+        analyser.smoothingTimeConstant = parseFloat(localStorage.getItem("AaronOSMusic_SmoothingTimeConstant"));
+        getId("currentlyPlaying").innerHTML += " | SmoothingTimeConstant is custom";
+    }else{
+        analyser.smoothingTimeConstant = 0.8;
+    }
     mediaSource.connect(analyser);
     analyser.connect(delayNode);
     
@@ -564,7 +599,12 @@ function loadMicrophone(event){
     latencyReduction = 1;
     analyser.maxDecibels = -20;
     analyser.minDecibels = -60;
-    //analyser.smoothingTimeConstant = 0;
+    if(localStorage.getItem("AaronOSMusic_SmoothingTimeConstant")){
+        analyser.smoothingTimeConstant = parseFloat(localStorage.getItem("AaronOSMusic_SmoothingTimeConstant"));
+        getId("currentlyPlaying").innerHTML += " | SmoothingTimeConstant is custom";
+    }else{
+        analyser.smoothingTimeConstant = 0.8;
+    }
     
     visData = new Uint8Array(analyser.frequencyBinCount);
     
@@ -612,7 +652,12 @@ function loadSystemAudio(event){
     // Tested with Deezer set to 200% and with YouTube set to 100%. Same issue between both. Hmm...
     analyser.maxDecibels = -30;
     analyser.minDecibels = -70;
-    //analyser.smoothingTimeConstant = 0;
+    if(localStorage.getItem("AaronOSMusic_SmoothingTimeConstant")){
+        analyser.smoothingTimeConstant = parseFloat(localStorage.getItem("AaronOSMusic_SmoothingTimeConstant"));
+        getId("currentlyPlaying").innerHTML += " | SmoothingTimeConstant is custom";
+    }else{
+        analyser.smoothingTimeConstant = 0.8;
+    }
     
     visData = new Uint8Array(analyser.frequencyBinCount);
     
@@ -1032,6 +1077,7 @@ function toggleFullscreen(){
             getId("visualizer").style.left = "";
             getId("visualizer").style.width = "";
             getId("visualizer").style.height = "";
+            getId("visualizer").style.cursor = "";
             getId("visCanvas").width = size[0];
             getId("visCanvas").height = size[1];
             getId("currentlyPlaying").classList.remove("disabled");
@@ -1059,6 +1105,8 @@ function toggleFullscreen(){
             getId("visualizer").style.left = "0";
             getId("visualizer").style.width = "100%";
             getId("visualizer").style.height = "100%";
+            getId("visualizer").style.cursor = "none";
+            getId("visualizer").title = "";
             getId("visCanvas").width = size[0];
             getId("visCanvas").height = size[1];
             getId("currentlyPlaying").classList.add("disabled");
@@ -1436,9 +1484,47 @@ var automaticColor = {
     resultList: new Array(512)
 }
 
+/*
+    // a gradient is a set of points from 0 to 255
+    // each point has a value (0 - 1, 0 - 255, 0 - 360, etc)
+    // one gradient represents one color channel
+    grad: {
+        r: [],
+        g: [],
+        b: [],
+        a: []
+    },
+
+    example:
+    r: [[0, 127], [127, 64], [255, 192]]
+    [[point, value], [point, value], ...]
+
+    // to calculate a point in the gradient:
+    // supply the gradient and the value
+    gcalc(this.grad.r, value)
+
+    // if the value is before the first gradient point, first point is used.
+    // if the value is after the first gradient point, last point is used.
+*/
+function gcalc(grad, value){
+    for(var point = grad.length - 1; point >= 0; point--){
+        if(grad[point][0] <= value){
+            if(point === grad.length - 1 || grad[point][0] === value){
+                return grad[point][1];
+            }
+            var weight = (value - grad[point][0]) / (grad[point + 1][0] - grad[point][0]);
+            return grad[point][1] * (1 - weight) + grad[point + 1][1] * weight;
+        }
+    }
+    return grad[0][1];
+}
+function csscolor(colorType, ...values){
+    return colorType + "(" + values.join(", ") + ")";
+}
+
 var colors = {
     'SEPARATOR_AARONOS" disabled="': {
-        name: "---------------",
+        name: "AaronOS",
         category: "AaronOS",
         func: function(){
             return '#000';
@@ -1447,51 +1533,124 @@ var colors = {
     bluegreenred: {
         name: "AaronOS",
         image: "colors/default.png",
+        grad: {
+            r: [                        [200, 0],             [255, 255]],
+            g: [[  0,   0],                       [220, 255], [255,   0]],
+            b: [            [ 64, 255], [200, 0]                        ],
+            a: [[  0,   0],                       [220,   1]            ]
+        },
         func: function(amount){
-            return 'rgba(' +
-                ((amount > 200) * ((amount - 200) * 4.6)) + ',' +
-                (amount - ((amount > 220) * ((amount - 220) * 7.2))) + ',' +
-                (255 - amount) + ',' +
-                (amount / 255) + ')';
+            return csscolor("rgba",
+                gcalc(this.grad.r, amount),
+                gcalc(this.grad.g, amount),
+                gcalc(this.grad.b, amount),
+                gcalc(this.grad.a, amount)
+            );
         }
     },
     beta: {
         name: "AaronOS Solid",
         image: "colors/defaultSolid.png",
+        grad: {
+            r: [                        [200, 0],             [255, 255]],
+            g: [[  0,   0],                       [220, 255], [255,   0]],
+            b: [            [ 64, 255], [200, 0]                        ]
+        },
         func: function(amount){
-            return 'rgb(' +
-                ((amount > 200) * ((amount - 200) * 4.6)) + ',' +
-                (amount - ((amount > 220) * ((amount - 220) * 7.2))) + ',' +
-                (255 - amount) + ')';
+            return csscolor("rgb",
+                gcalc(this.grad.r, amount),
+                gcalc(this.grad.g, amount),
+                gcalc(this.grad.b, amount)
+            );
         }
     },
     alpha: {
-        name: "AaronOS Alpha",
+        name: "AaronOS Solid Clean",
         image: "colors/alpha.png",
+        grad: {
+            b: [[ 64, 255], [255,   0]]
+        },
         func: function(amount){
-            return 'rgb(0,' + amount + ',' + (255 - amount) + ')';
+            return csscolor("rgb",
+                0,
+                amount,
+                gcalc(this.grad.b, amount)
+            );
         }
     },
     defStatic: {
         name: "AaronOS Static",
         image: "colors/defaultStatic.png",
+        grad: {
+            b: [[ 64, 255], [255,   0]]
+        },
         func: function(amount, position){
-            if(typeof position === "number"){
-                return 'rgb(0,' + position + ',' + (255 - position) + ')';
-            }else{
-                return 'rgb(0,' + amount + ',' + (255 - amount) + ')';
-            }
+            return csscolor("rgb",
+                0,
+                (typeof position === "number") ? position : amount,
+                gcalc(this.grad.b, (typeof position === "number") ? position : amount)
+            );
         }
     },
     autoFileInfo: {
-        name: "Automatic (File Info)",
+        name: "File Info",
         image: "colors/triColor.png",
         func: function(amount){
             return automaticColor.resultList[Math.round(amount * 2)];
         }
     },
+    capri: {
+        name: "Capri Plum",
+        image: "colors/capri.png",
+        grad: {
+            r: [[  0,  52], [220,  20], [255, 255]],
+            g: [[  0,   0], [220, 194], [255,   0]],
+            b: [[  0, 104], [220, 220], [255,   0]],
+            a: [[  0,   0], [220,   1]            ]
+        },
+        func: function(amount){
+            return csscolor('rgba',
+                gcalc(this.grad.r, amount),
+                gcalc(this.grad.g, amount),
+                gcalc(this.grad.b, amount),
+                gcalc(this.grad.a, amount)
+            );
+        }
+    },
+    caprisolid: {
+        name: "Capri Plum Solid",
+        image: "colors/caprisolid.png",
+        grad: {
+            r: [[  0,  52], [220,  20], [255, 255]],
+            g: [[  0,   0], [220, 194], [255,   0]],
+            b: [[  0, 104], [220, 220], [255,   0]]
+        },
+        func: function(amount){
+            return csscolor('rgb',
+                gcalc(this.grad.r, amount),
+                gcalc(this.grad.g, amount),
+                gcalc(this.grad.b, amount)
+            );
+        }
+    },
+    capristatic: {
+        name: "Capri Plum Static",
+        image: "colors/capristatic.png",
+        grad: {
+            r: [[  0,  52], [255,  20]],
+            g: [[  0,   0], [255, 194]],
+            b: [[  0, 104], [255, 220]]
+        },
+        func: function(amount, position){
+            return csscolor('rgb',
+                gcalc(this.grad.r, (typeof position === "number") ? position : amount),
+                gcalc(this.grad.g, (typeof position === "number") ? position : amount),
+                gcalc(this.grad.b, (typeof position === "number") ? position : amount)
+            );
+        }
+    },
     'SEPARATOR_THEMES" disabled="': {
-        name: "---------------",
+        name: "Themes",
         category: "Themes",
         func: function(){
             return '#000';
@@ -1501,55 +1660,65 @@ var colors = {
         name: "Fire",
         image: "colors/fire.png",
         func: function(amount){
-            //return 'rgba(' +
-            //    amount + ',' +
-            //    ((amount > 200) * amount * 0.25 + (amount > 127) * amount * 0.5 + (amount <= 127) * amount * 0.1) + ',0, ' + (amount / 255) + ')';
-            return 'rgba(255,' +
-                (Math.pow(amount, 2) / 255) + ',0,' +
-                (amount / 255) + ')';
+            return csscolor("rgba",
+                255,
+                Math.pow(amount, 2) / 255,
+                0,
+                amount / 255
+            );
         }
     },
     queen: {
         name: "Queen",
         image: "colors/queen.png",
+        grad: {
+            r: [[  0, 142],             [255, 255]],
+            g: [            [127,  40], [255, 204]],
+            b: [[  0, 167],             [255,   3]]
+        },
         func: function(amount){
-            return 'rgba(' +
-                (amount * amount / 510 + 127) + ',' +
-                ((amount > 127) * ((amount - 127) * 1.6)) + ',' +
-                (255 - amount) + ',' +
-                (amount / 255) + ')';
+            return csscolor('rgb',
+                gcalc(this.grad.r, amount),
+                gcalc(this.grad.g, amount),
+                gcalc(this.grad.b, amount),
+                amount / 255
+            );
         }
     },
     queenSolid: {
         name: "Queen Solid",
         image: "colors/queenSolid.png",
+        grad: {
+            r: [[  0, 142],             [255, 255]],
+            g: [            [127,  40], [255, 204]],
+            b: [[  0, 167],             [255,   3]]
+        },
         func: function(amount){
-            return 'rgb(' +
-                (amount * amount / 510 + 127) + ',' +
-                ((amount > 127) * ((amount - 127) * 1.6)) + ',' +
-                (255 - amount) + ')';
+            return csscolor('rgb',
+                gcalc(this.grad.r, amount),
+                gcalc(this.grad.g, amount),
+                gcalc(this.grad.b, amount)
+            );
         }
     },
     queenStatic: {
         name: "Queen Static",
         image: "colors/queenStatic.png",
-        func: function(amount, position){
-            if(typeof position === "number"){
-                return 'rgb(' +
-                    (position * position / 510 + 127) + ',' +
-                    ((position > 127) * ((position - 127) * 1.6)) + ',' +
-                    (255 - position) + ')';
-            }else{
-                return 'rgb(' +
-                    (amount * amount / 510 + 127) + ',' +
-                    ((amount > 127) * ((amount - 127) * 1.6)) + ',' +
-                    (255 - amount) + ')';
-            }
+        grad: {
+            r: [[  0, 142],             [255, 255]],
+            g: [            [127,  40], [255, 204]],
+            b: [[  0, 167],             [255,   3]]
         },
-        sqrt127: Math.sqrt(127)
+        func: function(amount, position){
+            return csscolor('rgb',
+                gcalc(this.grad.r, (typeof position === "number") ? position : amount),
+                gcalc(this.grad.g, (typeof position === "number") ? position : amount),
+                gcalc(this.grad.b, (typeof position === "number") ? position : amount)
+            );
+        }
     },
     'SEPARATOR_RAINBOW" disabled="': {
-        name: "---------------",
+        name: "Rainbow",
         category: "Rainbow",
         func: function(){
             return '#000';
@@ -1559,17 +1728,12 @@ var colors = {
         name: "Rainbow Static",
         image: "colors/rainbowActive.png",
         func: function(amount, position){
-            if(typeof position === "number"){
-                return 'hsla(' +
-                    (position * this.multiplier) +
-                    ',100%,50%,' +
-                    (amount / this.alphaDivisor + 0.25) + ')';
-            }else{
-                return 'hsla(' +
-                    (amount * this.multiplier) +
-                    ',100%,50%,' +
-                    (amount / this.alphaDivisor + 0.25) + ')';
-            }
+            return csscolor('hsla',
+                ((typeof position === "number") ? position : amount) * this.multiplier,
+                '100%',
+                '50%',
+                amount / this.alphaDivisor + 0.25
+            );
         },
         multiplier: 360 / 255,
         alphaDivisor: 255 * (4/3)
@@ -1578,20 +1742,16 @@ var colors = {
         name: "Rainbow Static Solid",
         image: "colors/rainbowStatic.png",
         func: function(amount, position){
-            if(typeof position === "number"){
-                return 'hsl(' +
-                    (position * this.multiplier) +
-                    ',100%,50%)';
-            }else{
-                return 'hsl(' +
-                    (amount * this.multiplier) +
-                    ',100%,50%)';
-            }
+            return csscolor('hsla',
+                ((typeof position === "number") ? position : amount) * this.multiplier,
+                '100%',
+                '50%'
+            );
         },
         multiplier: 360 / 255
     },
     'SEPARATOR_PRIDE" disabled="': {
-        name: "---------------",
+        name: "Pride",
         category: "Pride",
         func: function(){
             return '#000';
@@ -1600,8 +1760,17 @@ var colors = {
     prideGlow: {
         name: "Pride",
         image: "colors/pride.png",
+        grad: {
+            h: [[  0,   0], [255, 265]],
+            a: [[  0, 0.1], [255,   1]]
+        },
         func: function(amount){
-        return 'hsla(' + amount + ',100%,50%,' + (amount / 255) + ')';
+            return csscolor('hsla',
+                gcalc(this.grad.h, amount),
+                '100%',
+                '50%',
+                gcalc(this.grad.a, amount)
+            );
         },
         divide255by96: 255 / 96,
         divide255by64: 255 / 64,
@@ -1610,8 +1779,15 @@ var colors = {
     pride: {
         name: "Pride Solid",
         image: "colors/prideSolid.png",
+        grad: {
+            h: [[  0,   0], [255, 265]]
+        },
         func: function(amount){
-            return 'hsl(' + amount + ',100%,50%)';
+            return csscolor('hsl',
+                gcalc(this.grad.h, amount),
+                '100%',
+                '50%'
+            );
         },
         divide255by96: 255 / 96,
         divide255by64: 255 / 64,
@@ -1620,12 +1796,15 @@ var colors = {
     prideStatic: {
         name: "Pride Static",
         image: "colors/prideStatic.png",
+        grad: {
+            h: [[  0,   0], [255, 265]]
+        },
         func: function(amount, position){
-            if(typeof position === "number"){
-                return 'hsl(' + position + ',100%,50%)';
-            }else{
-                return 'hsl(' + amount + ',100%,50%)';
-            }
+            return csscolor('hsl',
+                gcalc(this.grad.h, (typeof position === "number") ? position : amount),
+                '100%',
+                '50%'
+            );
         }
     },
     prideBlocky: {
@@ -1649,7 +1828,7 @@ var colors = {
         prideColors: [0, 33, 55, 110, 175, 235, 265]
     },
     'SEPARATOR_COLORS" disabled="': {
-        name: "---------------",
+        name: "Colors",
         category: "Colors",
         func: function(){
             return '#000';
@@ -1698,7 +1877,7 @@ var colors = {
         }
     },
     'SEPARATOR_COLORS_SOLID" disabled="': {
-        name: "---------------",
+        name: "Solid Colors",
         category: "Solid Colors",
         func: function(){
             return '#000';
@@ -2081,10 +2260,6 @@ var vis = {
             var heightFactor = (size[1] / 3) / 255;
             var widthFactor = 64 / size[0] * 2;
 
-            //if(widthFactor !== 1){
-                //var tempLines = [];
-                //var tempMax = 0;
-                //if(widthFactor < 1){
                     for(var i = 0; i < size[0] / 2; i++){
                         // width is larger than data
                         var pcnt = i / (size[0] / 2);
@@ -2097,52 +2272,52 @@ var vis = {
                         //tempLines[i] = ((1 - u) * closestPoint) + (u * nextPoint);
                         this.drawLine(i, ((1 - u) * closestPoint) + (u * nextPoint), heightFactor, widthFactor);
                     }
-                /*
-                }else{
-                    for(var i = 0; i < size[0]; i++){
-                        // width is smaller than data
-                        var firstPcnt = i / size[0];
-                        var lastPcnt = (i + 1) / size[0];
-                        var firstPlace = firstPcnt * 64;
-                        var lastPlace = lastPcnt * 64;
-                        var pointRange = [];
-                        for(var j = Math.floor(firstPlace); j <= Math.ceil(lastPlace); j++){
-                            pointRange.push(j);
-                        }
-                        var totalAvg = 0;
-                        var totalPoints = 0;
-                        var firstU = firstPlace - Math.floor(firstPlace);
-                        var lastU = lastPlace - Math.floor(lastPlace);
-                        var lastValue = visData[pointRange[pointRange.length - 1]];
-                        if(lastValue === undefined){
-                            lastValue = visData[pointRange[pointRange.length - 2]];
-                        }
-                        totalAvg += (1 - firstU) * visData[pointRange[0]] + lastU * lastValue;
-                        totalPoints += (1 - firstU) + lastU;
-                        if(pointRange.length > 2){
-                            for(var j = 1; j < pointRange.length - 1; j++){
-                                totalAvg += visData[pointRange[j]];
-                                totalPoints++;
-                            }
-                        }
-                        tempLines[i] = totalAvg / totalPoints;
-                    }
-                }
-                */
-            //}
-            /*
-            if(widthFactor === 1){
-                for(var curr = 0; curr < size[0]; curr++){
-                    var strength = visData[curr];
-                    this.drawLine(curr, strength, heightFactor, widthFactor);
-                }
-            }else{
-                for(var curr = 0; curr < size[0]; curr++){
-                    var strength = tempLines[curr];
-                    this.drawLine(curr, strength, heightFactor, widthFactor);
+        },
+        stop: function(){
+            
+        },
+        drawLine: function(x, h, fact, widthFact){
+            var fillColor = getColor(h, x / (size[0] / 2) * 255);
+            canvas.fillStyle = fillColor;
+            canvas.fillRect(x + size[0] / 2, (255 - h)  * fact - 2 + (size[1] / 6), 1, h * fact * 2 + 4);
+            if(x !== 0){
+                canvas.fillRect(size[0] / 2 - x, (255 - h)  * fact - 2 + (size[1] / 6), 1, h * fact * 2 + 4);
+            }
+            if(smokeEnabled){
+                smoke.fillStyle = fillColor;
+                smoke.fillRect(x + size[0] / 2, (255 - h)  * fact + (size[1] / 6), 1, h * fact * 2);
+                if(x !== 0){
+                    smoke.fillRect(size[0] / 2 - x, (255 - h)  * fact + (size[1] / 6), 1, h * fact * 2);
                 }
             }
-            */
+        }
+    },
+    bassWave: {
+        name: "Bass Wave",
+        image: "visualizers/bassWave.png",
+        start: function(){
+            
+        },
+        frame: function(){
+            canvas.clearRect(0, 0, size[0], size[1]);
+            smoke.clearRect(0, 0, size[0], size[1]);
+            var step = size[0] / 12;
+            var last = -1;
+            var heightFactor = (size[1] / 3) / 255;
+            var widthFactor = 64 / size[0] * 2;
+
+                    for(var i = 0; i < size[0] / 2; i++){
+                        // width is larger than data
+                        var pcnt = i / (size[0] / 2);
+                        var closestPoint = visData[Math.floor(pcnt * 12)];
+                        var nextPoint = visData[Math.floor(pcnt * 12) + 1];
+                        if(nextPoint === undefined){
+                            nextPoint = closestPoint;
+                        }
+                        var u = pcnt * 12 - Math.floor(pcnt * 12);
+                        //tempLines[i] = ((1 - u) * closestPoint) + (u * nextPoint);
+                        this.drawLine(i, ((1 - u) * closestPoint) + (u * nextPoint), heightFactor, widthFactor);
+                    }
         },
         stop: function(){
             
@@ -2534,11 +2709,68 @@ var vis = {
             }
         }
     },
+    pitchmograph: {
+        name: "Pitchmograph",
+        image: "visualizers/pitchmograph.png",
+        start: function(){
+            this.graph = new Array(size[1]);
+            this.graph.fill([-1, 0], 0, size[1]);
+        },
+        frame: function(){
+            // PITCH LOGIC FROM AVG PITCH
+            var avgPitch = 0;
+            var avgPitchMult = 0;
+            var avgVolume = 0;
+            for(var i = 0; i < 12; i++){
+                avgVolume += Math.sqrt(visData[i]) * this.sqrt255;
+                //avgVolume += visData[i];
+            }
+            for(var i = 0; i < 64; i++){
+                avgPitch += i * visData[i];
+                avgPitchMult += visData[i];
+            }
+            avgVolume /= 12;
+            avgPitch /= avgPitchMult;
+
+            canvas.clearRect(0, 0, size[0], size[1]);
+            smoke.clearRect(0, 0, size[0], size[1]);
+            this.graph.push([avgPitch, avgVolume]);
+            while(this.graph.length > size[1]){
+                this.graph.shift();
+            }
+            var graphLength = this.graph.length;
+            var multiplier = size[0] / 64;
+            canvas.lineWidth = 2;
+            smoke.lineWidth = 2;
+            for(var i = 0; i < graphLength; i++){
+                canvas.strokeStyle = getColor(this.graph[i][1], 255 - i / size[0] * 255);
+                canvas.beginPath();
+                canvas.moveTo(this.graph[i][0] * multiplier, size[1] - i - 1.5);
+                canvas.lineTo(((typeof this.graph[i - 1] === "object") ? this.graph[i - 1] : this.graph[i])[0] * multiplier, size[1] - i - 0.5);
+                canvas.stroke();
+                //canvas.fillRect(graphLength - i - 1, size[1] - (this.graph[i] * multiplier), 1, 1);
+                if(smokeEnabled){
+                    smoke.strokeStyle = getColor(this.graph[i][0], 255 - i / size[0] * 255);
+                    smoke.beginPath();
+                    smoke.moveTo(this.graph[i][0] * multiplier, size[1] - i - 1.5);
+                    smoke.lineTo(((typeof this.graph[i - 1] === "object") ? this.graph[i - 1] : this.graph[i])[0] * multiplier, size[1] - i - 0.5);
+                    smoke.stroke();
+                    //smoke.fillRect(graphLength - i - 1, size[1] - (this.graph[i] * multiplier), 1, 1);
+                }
+            }
+        },
+        stop: function(){
+            this.graph = [];
+        },
+        graph: [],
+        sqrt255: Math.sqrt(255)
+    },
     seismograph: {
-        name: "Seismograph 1",
+        name: "Beatmograph 1",
         image: "visualizers/seismograph.png",
         start: function(){
-            this.graph = [];
+            this.graph = new Array(size[0]);
+            this.graph.fill(-1, 0, size[0]);
         },
         frame: function(){
             canvas.clearRect(0, 0, size[0], size[1]);
@@ -2560,14 +2792,14 @@ var vis = {
                 canvas.strokeStyle = getColor(this.graph[i], 255 - i / size[0] * 255);
                 canvas.beginPath();
                 canvas.moveTo(size[0] - i - 1.5, size[1] - (this.graph[i] * multiplier));
-                canvas.lineTo(size[0] - i - 0.5, size[1] - ((this.graph[i - 1] || this.graph[i]) * multiplier));
+                canvas.lineTo(size[0] - i - 0.5, size[1] - (((typeof this.graph[i - 1] === "number") ? this.graph[i - 1] : this.graph[i]) * multiplier));
                 canvas.stroke();
                 //canvas.fillRect(graphLength - i - 1, size[1] - (this.graph[i] * multiplier), 1, 1);
                 if(smokeEnabled){
                     smoke.strokeStyle = getColor(this.graph[i], 255 - i / size[0] * 255);
                     smoke.beginPath();
                     smoke.moveTo(size[0] - i - 1.5, size[1] - (this.graph[i] * multiplier));
-                    smoke.lineTo(size[0] - i - 1.5, size[1] - ((this.graph[i - 1] || this.graph[i]) * multiplier));
+                    smoke.lineTo(size[0] - i - 1.5, size[1] - (((typeof this.graph[i - 1] === "number") ? this.graph[i - 1] : this.graph[i]) * multiplier));
                     smoke.stroke();
                     //smoke.fillRect(graphLength - i - 1, size[1] - (this.graph[i] * multiplier), 1, 1);
                 }
@@ -2579,10 +2811,11 @@ var vis = {
         graph: []
     },
     barsmograph: {
-        name: "Seismograph 2",
+        name: "Beatmograph 2",
         image: "visualizers/barsmograph.png",
         start: function(){
-            this.graph = [];
+            this.graph = new Array(size[0]);
+            this.graph.fill(-1, 0, size[0]);
         },
         frame: function(){
             canvas.clearRect(0, 0, size[0], size[1]);
@@ -4235,81 +4468,6 @@ var vis = {
 
         }
     },
-    avgPitch: {
-        name: "Average Pitch",
-        image: "visualizers/averagePitch.png",
-        start: function(){
-
-        },
-        frame: function(){
-            canvas.clearRect(0, 0, size[0], size[1]);
-            smoke.clearRect(0, 0, size[0], size[1]);
-            var mult = size[0] / 64;
-            //var roundMult = Math.round(mult);
-            //var halfMult = Math.round(mult / 2);
-            for(var i = 1; i < 10; i++){
-                if(this.history[i].length === 0){
-                    continue;
-                }
-                canvas.globalAlpha = Math.sqrt(i - 1) * 3.16227766 / 10;
-                canvas.fillStyle = getColor(this.history[i][1], this.history[i][2] / 4);
-                canvas.fillRect(this.history[i - 1][0], 0, this.history[i][0] - this.history[i - 1][0], size[1]);
-                if(smokeEnabled){
-                    smoke.globalAlpha = Math.sqrt(i - 1) * 3.16227766 / 10;
-                    smoke.fillStyle = getColor(this.history[i][1], this.history[i][2] / 4);
-                    smoke.fillRect(this.history[i - 1][0], 0, this.history[i][0] - this.history[i - 1][0], size[1]);
-                }
-            }
-            var avgPitch = 0;
-            var avgPitchMult = 0;
-            var avgVolume = 0;
-            for(var i = 0; i < 64; i++){
-                avgVolume += Math.sqrt(visData[i]) * this.sqrt255;
-                //avgVolume += visData[i];
-                avgPitch += i * visData[i];
-                avgPitchMult += visData[i];
-            }
-            avgVolume /= 64;
-            avgPitch /= avgPitchMult;
-            canvas.globalAlpha = 1;
-            canvas.fillStyle = getColor(avgVolume, avgPitch * 4);
-            canvas.fillRect(this.history[9][0], 0, Math.round(avgPitch * mult) - this.history[9][0], size[1]);
-            if(smokeEnabled){
-                smoke.globalAlpha = 1;
-                smoke.fillStyle = getColor(avgVolume, avgPitch * 4);
-                smoke.fillRect(this.history[9][0], 0, Math.round(avgPitch * mult) - this.history[9][0], size[1]);
-            }
-            this.history.shift();
-            this.history[9] = [Math.round(avgPitch * mult), avgVolume, avgPitch];
-        },
-        stop: function(){
-            this.history = [
-                [],
-                [],
-                [],
-                [],
-                [],
-                [],
-                [],
-                [],
-                [],
-                []
-            ];
-        },
-        history: [
-            [],
-            [],
-            [],
-            [],
-            [],
-            [],
-            [],
-            [],
-            [],
-            []
-        ],
-        sqrt255: Math.sqrt(255)
-    },
     blast: {
         name: "aOS Blast",
         image: "visualizers/blast.png",
@@ -5207,6 +5365,176 @@ var vis = {
             return rad * this._180ByPi;
         }
     },
+    waveform: {
+        name: "Waveform",
+        image: "visualizers/waveform.png",
+        start: function(){
+            this.waveArray = new Uint8Array(analyser.fftSize);
+            this.arrsize = analyser.fftSize;
+        },
+        frame: function(){
+            analyser.getByteTimeDomainData(this.waveArray);
+            canvas.clearRect(0, 0, size[0], size[1]);
+            smoke.clearRect(0, 0, size[0], size[1]);
+            var avg = 0;
+            for(var i = 0; i < 12; i++){
+                avg += visData[i];
+            }
+            avg /= 12;
+            var multiplier = size[1] / 255;
+            var step = this.arrsize / size[0];
+            canvas.lineWidth = 2;
+            smoke.lineWidth = 2;
+            for(var i = 0; i < size[0]; i++){
+                canvas.strokeStyle = getColor(avg, 255 - i / size[0] * 255);
+                canvas.beginPath();
+                canvas.moveTo(size[0] - i - 1.5, size[1] - (this.waveArray[Math.round(i * step)] / 2 * multiplier) - size[1] / 4);
+                canvas.lineTo(size[0] - i - 0.5, size[1] - (((typeof this.waveArray[Math.round((i - 1) * step)] === "number") ? this.waveArray[Math.round((i - 1) * step)] / 2 : this.waveArray[Math.round(i * step)] / 2) * multiplier) - size[1] / 4);
+                canvas.stroke();
+                //canvas.fillRect(graphLength - i - 1, size[1] - (this.graph[i] * multiplier), 1, 1);
+                if(smokeEnabled){
+                    smoke.strokeStyle = getColor(this.graph[i], 255 - i / size[0] * 255);
+                    smoke.beginPath();
+                    smoke.moveTo(size[0] - i - 1.5, size[1] - (this.waveArray[Math.round(i * step)] * multiplier));
+                    smoke.lineTo(size[0] - i - 1.5, size[1] - (((typeof this.waveArray[Math.round((i - 1) * step)] === "number") ? this.waveArray[Math.round((i - 1) * step)] : this.waveArray[Math.round(i * step)]) * multiplier));
+                    smoke.stroke();
+                    //smoke.fillRect(graphLength - i - 1, size[1] - (this.graph[i] * multiplier), 1, 1);
+                }
+            }
+        },
+        stop: function(){
+
+        },
+        waveArray: new Uint8Array()
+    },
+    realseismograph: {
+        name: "Seismograph",
+        image: "visualizers/realseismograph.png",
+        start: function(){
+            this.graph = new Array(Math.floor(size[1] / 2));
+            this.graph.fill([-1, 0], 0, Math.floor(size[1] / 2));
+            this.waveArray = new Uint8Array(1);
+        },
+        frame: function(){
+            analyser.getByteTimeDomainData(this.waveArray);
+
+            var avgVolume = 0;
+            for(var i = 0; i < 12; i++){
+                avgVolume += Math.sqrt(visData[i]) * this.sqrt255;
+                //avgVolume += visData[i];
+            }
+            avgVolume /= 12;
+
+            canvas.clearRect(0, 0, size[0], size[1]);
+            smoke.clearRect(0, 0, size[0], size[1]);
+            this.graph.push([this.waveArray[0], avgVolume]);
+            while(this.graph.length > Math.floor(size[1] / 2)){
+                this.graph.shift();
+            }
+            var graphLength = this.graph.length;
+            var multiplier = size[0] / 255;
+            canvas.lineWidth = 2;
+            smoke.lineWidth = 2;
+            for(var i = 0; i < graphLength; i++){
+                canvas.strokeStyle = getColor(this.graph[i][1], 255 - i / size[0] * 255);
+                canvas.beginPath();
+                canvas.moveTo(this.graph[i][0] * multiplier, size[1] - i * 2 - 2);
+                canvas.lineTo(((typeof this.graph[i - 1] === "object") ? this.graph[i - 1] : this.graph[i])[0] * multiplier, size[1] - i * 2);
+                canvas.stroke();
+                //canvas.fillRect(graphLength - i - 1, size[1] - (this.graph[i] * multiplier), 1, 1);
+                if(smokeEnabled){
+                    smoke.strokeStyle = getColor(this.graph[i][0], 255 - i / size[0] * 255);
+                    smoke.beginPath();
+                    smoke.moveTo(this.graph[i][0] * multiplier, size[1] - i * 2 - 2);
+                    smoke.lineTo(((typeof this.graph[i - 1] === "object") ? this.graph[i - 1] : this.graph[i])[0] * multiplier, size[1] - i * 2);
+                    smoke.stroke();
+                    //smoke.fillRect(graphLength - i - 1, size[1] - (this.graph[i] * multiplier), 1, 1);
+                }
+            }
+        },
+        stop: function(){
+            this.graph = [];
+        },
+        graph: [],
+        sqrt255: Math.sqrt(255)
+    },
+    avgPitch: {
+        name: "Average Pitch",
+        image: "visualizers/averagePitch.png",
+        start: function(){
+
+        },
+        frame: function(){
+            canvas.clearRect(0, 0, size[0], size[1]);
+            smoke.clearRect(0, 0, size[0], size[1]);
+            var mult = size[0] / 64;
+            //var roundMult = Math.round(mult);
+            //var halfMult = Math.round(mult / 2);
+            for(var i = 1; i < 10; i++){
+                if(this.history[i].length === 0){
+                    continue;
+                }
+                canvas.globalAlpha = Math.sqrt(i - 1) * 3.16227766 / 10;
+                canvas.fillStyle = getColor(this.history[i][1], this.history[i][2] / 4);
+                canvas.fillRect(this.history[i - 1][0], 0, this.history[i][0] - this.history[i - 1][0], size[1]);
+                if(smokeEnabled){
+                    smoke.globalAlpha = Math.sqrt(i - 1) * 3.16227766 / 10;
+                    smoke.fillStyle = getColor(this.history[i][1], this.history[i][2] / 4);
+                    smoke.fillRect(this.history[i - 1][0], 0, this.history[i][0] - this.history[i - 1][0], size[1]);
+                }
+            }
+            var avgPitch = 0;
+            var avgPitchMult = 0;
+            var avgVolume = 0;
+            for(var i = 0; i < 12; i++){
+                avgVolume += Math.sqrt(visData[i]) * this.sqrt255;
+                //avgVolume += visData[i];
+            }
+            for(var i = 0; i < 64; i++){
+                avgPitch += i * visData[i];
+                avgPitchMult += visData[i];
+            }
+            avgVolume /= 12;
+            avgPitch /= avgPitchMult;
+            canvas.globalAlpha = 1;
+            canvas.fillStyle = getColor(avgVolume, avgPitch * 4);
+            canvas.fillRect(this.history[9][0], 0, Math.round(avgPitch * mult) - this.history[9][0], size[1]);
+            if(smokeEnabled){
+                smoke.globalAlpha = 1;
+                smoke.fillStyle = getColor(avgVolume, avgPitch * 4);
+                smoke.fillRect(this.history[9][0], 0, Math.round(avgPitch * mult) - this.history[9][0], size[1]);
+            }
+            this.history.shift();
+            this.history[9] = [Math.round(avgPitch * mult), avgVolume, avgPitch];
+        },
+        stop: function(){
+            this.history = [
+                [],
+                [],
+                [],
+                [],
+                [],
+                [],
+                [],
+                [],
+                [],
+                []
+            ];
+        },
+        history: [
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            []
+        ],
+        sqrt255: Math.sqrt(255)
+    },
     'SEPARATOR_DEBUG" disabled="': {
         name: 'Debug',
         start: function(){
@@ -5442,7 +5770,7 @@ resizeSmoke();
 
 var featuredVis = {
     reflection: 1,
-    wave: 1,
+    bassWave: 1,
     circle: 1,
     bassCircle: 1,
     dynamicTiles: 1
@@ -5518,7 +5846,7 @@ function openColorMenu(){
                     namecolor = ' style="outline:2px solid ' + getColor(255) + ';"';
                 }
                 if(colors[i].image){
-                    tempHTML += '<div' + namecolor + ' class="colorOption" onclick="overrideColor(\'' + i + '\')">' + colors[i].name + '<br><img src="' + colors[i].image + '"></div>';
+                    tempHTML += '<div' + namecolor + ' class="colorOption" onclick="overrideColor(\'' + i + '\')">&nbsp;<img src="' + colors[i].image + '">&nbsp;' + colors[i].name + '</div>';
                 }else{
                     tempHTML += '<div' + namecolor + ' class="colorOption" onclick="overrideColor(\'' + i + '\')">' + colors[i].name + '</div>';
                 }
@@ -5588,34 +5916,38 @@ function openSettingsMenu(){
         getId("selectOverlay").classList.remove("disabled");
         var tempHTML = '<div style="font-size:0.5em;background:transparent">';
 
-        if(!microphoneActive){
-            if(!webVersion){
-                tempHTML += "<p style='font-size:2em'>Self-Close</p>" +
+        tempHTML += "<p style='font-size:2em'>Fast Mode</p>" +
+        '<button onclick="togglePerformance()" id="performanceButton" style="border-color:' + debugColors[performanceMode] + '">Toggle</button>' +
+            "<p>If performance is slow, this option lowers quality to help weaker devices.</p>";
+
+        if(!webVersion){
+            if(!microphoneActive){
+                tempHTML += "<br><br><p style='font-size:2em'>Self-Close</p>" +
                     'Songs: <input style="width:50px" type="number" id="selfcloseinput" min="1" max="9999" value="' + selfCloseSongs + '" step="1" onchange="selfCloseSongs = this.value;"></input>' +
                     ' <button onclick="toggleSelfClose()" id="selfclosebutton" style="border-color:' + debugColors[selfCloseEnabled] + '">Toggle</button>' +
                     "<p>The music player will close itself after playing a number of songs.</p>";
             }
 
-            tempHTML += "<br><br><p style='font-size:2em'>Audio Delay</p>" +
-                'Seconds: <input style="width: 50px" type="number" id="delayinput" min="0" max="1" value="' + (Math.round(delayNode.delayTime.value * 100) / 100) + '" step="0.01" onchange="setDelay(this.value)"></input>' +
-                "<p>If the visualizer and the music don't line up, try changing this.<br>Larger numbers delay the audible music more.</p>";
-
-            tempHTML += '<br><br><p style="font-size:2em">Song Info</p>' +
-                'Info detected: ' + (['No', 'Yes'])[0 + (fileInfo.hasOwnProperty('_default_colors'))] + '<br>' +
-                '<button onclick="generateSongInfo()">Generate Info</button><br>' +
-                'Select-All + Copy generated info from below, save to "_songInfo.txt" in your music\'s main folder, modify as you see fit.<br>' +
-                '<textarea id="songInfoTemplate" style="height:64px;"></textarea>'
-        }
-
-        if(!webVersion){
             tempHTML += '<br><br><p style="font-size:2em">Transparent Mode</p>' +
             'Current Mode: ' + windowType + '<br>' +
             '<button onclick="ipcRenderer.send(\'toggle-transparent\', {x: screen.width, y: screen.height})">Toggle</button>';
         }
 
-        tempHTML += "<br><br><p style='font-size:2em'>Fast Mode</p>" +
-        '<button onclick="togglePerformance()" id="performanceButton" style="border-color:' + debugColors[performanceMode] + '">Toggle</button>' +
-            "<p>If performance is slow, this option lowers quality to help weaker devices.</p>";
+        if(!microphoneActive){
+            tempHTML += '<br><br><p style="font-size:2em">Song Info</p>' +
+                'Info detected: ' + (['No', 'Yes'])[0 + (fileInfo.hasOwnProperty('_default_colors'))] + '<br>' +
+                '<button onclick="generateSongInfo()">Generate Info</button><br>' +
+                'Select-All + Copy generated info from below, save to "_songInfo.txt" in your music\'s main folder, modify as you see fit.<br>' +
+                '<textarea id="songInfoTemplate" style="height:64px;"></textarea>';
+
+            tempHTML += "<br><br><p style='font-size:2em'>Audio Delay</p>" +
+                'Seconds: <input style="width: 50px" type="number" id="delayinput" min="0" max="1" value="' + (Math.round(delayNode.delayTime.value * 100) / 100) + '" step="0.01" onchange="setDelay(this.value)"></input>' +
+                "<p>Default: 0.07<br>If the visualizer and the music don't line up, try changing this.<br>Larger numbers delay the audible music more.</p>";
+
+            tempHTML += "<br><br><p style='font-size:2em'>Smoothing Time Constant</p>" +
+                'Constant: <input style="width: 50px" type="number" id="delayinput" min="0" max="0.99" value="' + analyser.smoothingTimeConstant + '" step="0.01" onchange="setSmoothingTimeConstant(this.value)"></input>' +
+                "<p>Default: 0.8<br>This value changes how smooth frequency response over time is. High values are smoother.<br>Values too high will make the visualizers feel lethargic.<br>Values too low will make the visualizers too hyper or unreadable.</p>";
+        }
 
         tempHTML += "<br><br><p style='font-size:2em'>Debug Overlays</p>" +
         '<button onclick="toggleFPS()" id="debugButton" style="border-color:' + debugColors[debugForce] + '">Toggle</button>' +
@@ -5752,6 +6084,17 @@ window.addEventListener("keypress", function(event){
         toggleFullscreen();
     }
 });
+
+if(!document.fullscreenEnabled){
+    getId("fullscreenButton").classList.add("disabled");
+}
+function exclusiveFullscreen(){
+    if(!document.fullscreenElement){
+        document.body.parentNode.requestFullscreen();
+    }else if(document.exitFullscreen){
+        document.exitFullscreen();
+    }
+}
 
 if(!webVersion){
     delete vis.windowRecolor;

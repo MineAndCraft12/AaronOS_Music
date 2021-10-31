@@ -35,7 +35,7 @@
                     </div>
                 </div>
                 <div style="text-align:center;max-width:500px;margin:auto;">
-                    <h2>Press F to toggle full-window visualizer.</h2>
+                    <h3>Visualizers exhibit flashing lights that may cause issues for people with a photosensitivity.</h3>
                     <i id="filesNotUploadedDisclaimer">
                         Uploaded files never leave your device and are not uploaded to the AaronOS server.
                         <br><br>
@@ -97,7 +97,9 @@
 
                 Curve: <select id="modfield" onchange="selectMod(this.value)" onmousedown="if(!taskbarMode){requestAnimationFrame(()=>{this.blur()}); event.preventDefault();}" onclick="if(!taskbarMode){openModMenu(); event.preventDefault();}" title="Processes visualizer data to increase or decrease power of visualizer movement. Power Sine tends to work best.">
                     <option value="null">None</option>
-                </select>
+                </select> &nbsp; &nbsp; &nbsp;
+
+                <button id="fullscreenButton" onclick="exclusiveFullscreen()" title="Toggle Fullscreen">F</button>
 
             </div>
             <div id="progressContainer" class="disabled" onclick="setProgress(event)"><div id="progress"></div></div>

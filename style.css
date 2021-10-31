@@ -96,6 +96,7 @@ div{
     height:calc(100% - 81px);
     background:#000;
     border:1px solid #000;
+    cursor:pointer;
 }
 #visCanvas{
     position:absolute;
@@ -273,13 +274,15 @@ div{
     filter:contrast(0.9) brightness(5);
 }
 #selectContent .colorOption{
-    text-align:center;
-    padding-top:16px;
+    text-align:left;
+    padding-top:8px;
+    padding-bottom:8px;
 }
 #selectContent .colorOption img{
-    width:256px;
-    margin-top:-16px;
-    margin-bottom:-6px;
+    width:32px;
+    height:32px;
+    margin-top:-8px;
+    margin-bottom:-10px;
 }
 #selectBackground{
     position:absolute;
