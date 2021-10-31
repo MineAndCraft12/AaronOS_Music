@@ -1619,7 +1619,7 @@ var colors = {
     },
     caprisolid: {
         name: "Capri Plum Solid",
-        image: "colors/caprisolid.png",
+        image: "colors/capriSolid.png",
         grad: {
             r: [[  0,  52], [220,  20], [255, 255]],
             g: [[  0,   0], [220, 194], [255,   0]],
@@ -1635,7 +1635,7 @@ var colors = {
     },
     capristatic: {
         name: "Capri Plum Static",
-        image: "colors/capristatic.png",
+        image: "colors/capriStatic.png",
         grad: {
             r: [[  0,  52], [255,  20]],
             g: [[  0,   0], [255, 194]],
