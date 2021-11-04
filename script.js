@@ -303,6 +303,10 @@ function loadFolder(event){
         smokeScreen2.classList.add("disabled");
     }
     //getId("liveControls").classList.add("disabled");
+
+    if(localStorage.getItem("AaronOSMusic_SmokeBrightness")){
+        smokeBrightness = parseFloat(localStorage.getItem("AaronOSMusic_SmokeBrightness"));
+    }
     
     audioContext = new AudioContext();
     mediaSource = audioContext.createMediaElementSource(audio);
@@ -392,6 +396,10 @@ function loadFiles(event){
         smokeScreen2.classList.add("disabled");
     }
     //getId("liveControls").classList.add("disabled");
+
+    if(localStorage.getItem("AaronOSMusic_SmokeBrightness")){
+        smokeBrightness = parseFloat(localStorage.getItem("AaronOSMusic_SmokeBrightness"));
+    }
     
     audioContext = new AudioContext();
     mediaSource = audioContext.createMediaElementSource(audio);
@@ -477,6 +485,10 @@ function loadWeirdFiles(event){
         smokeScreen2.classList.add("disabled");
     }
     //getId("liveControls").classList.add("disabled");
+
+    if(localStorage.getItem("AaronOSMusic_SmokeBrightness")){
+        smokeBrightness = parseFloat(localStorage.getItem("AaronOSMusic_SmokeBrightness"));
+    }
     
     audioContext = new AudioContext();
     mediaSource = audioContext.createMediaElementSource(audio);
@@ -590,6 +602,10 @@ function loadMicrophone(event){
     getId("ambienceButton").classList.add("unclickable");
     getId("ambienceSpacing").classList.add("unclickable");
     getId("currentlyPlaying").innerHTML = "Microphone";
+
+    if(localStorage.getItem("AaronOSMusic_SmokeBrightness")){
+        smokeBrightness = parseFloat(localStorage.getItem("AaronOSMusic_SmokeBrightness"));
+    }
     
     audioContext = new AudioContext();
     
@@ -641,6 +657,10 @@ function loadMicrophone(event){
 function loadSystemAudio(event){
     audio.pause();
     currentSong = -1;
+
+    if(localStorage.getItem("AaronOSMusic_SmokeBrightness")){
+        smokeBrightness = parseFloat(localStorage.getItem("AaronOSMusic_SmokeBrightness"));
+    }
     
     audioContext = new AudioContext();
     
@@ -5676,7 +5696,35 @@ var vis = {
         stop: function(){
 
         }
-    }
+    },
+    smokeTest: {
+        name: "Smoke Test",
+        image: "visualizers/smokeTest.png",
+        start: function(){
+            smoke.clearRect(0, 0, size[0], size[1]);
+            for(var i = 0; i < size[0]; i++){
+                smoke.fillStyle = getColor(i / size[0] * 255);
+                smoke.fillRect(i, 0, 1, size[1]);
+            }
+            //updateSmoke();
+            canvas.clearRect(0, 0, size[0], size[1]);
+        },
+        frame: function(){
+
+        },
+        stop: function(){
+
+        },
+        sizechange: function(){
+            smoke.clearRect(0, 0, size[0], size[1]);
+            for(var i = 0; i < size[0]; i++){
+                smoke.fillStyle = getColor(i / size[0] * 255);
+                smoke.fillRect(i, 0, 1, size[1]);
+            }
+            //updateSmoke();
+            canvas.clearRect(0, 0, size[0], size[1]);
+        }
+    },
 };
 
 for(var i in colors){
@@ -5726,6 +5774,12 @@ function toggleSmoke(){
         }
     }
 }
+var smokeBrightness = 1.5;
+function setSmokeBrightness(newValue){
+    smokeBrightness = (newValue || 0);
+    resizeSmoke();
+    localStorage.setItem("AaronOSMusic_SmokeBrightness", String(newValue));
+}
 function resizeSmoke(){
     smokeElement.width = size[0];
     smokeElement.height = size[1];
@@ -5738,9 +5792,9 @@ function resizeSmoke(){
             }
         }else{
             if(performanceMode){
-                smokeElement.style.filter = "blur(" + Math.round((size[0] * 2 + size[1] * 2) / 50) + "px) brightness(4)";
+                smokeElement.style.filter = "blur(" + Math.round((size[0] * 2 + size[1] * 2) / 50) + "px) brightness(" + smokeBrightness + ")";
             }else{
-                smokeElement.style.filter = "blur(" + Math.round((size[0] + size[1]) / 50) + "px) brightness(4)";
+                smokeElement.style.filter = "blur(" + Math.round((size[0] + size[1]) / 50) + "px) brightness(" + smokeBrightness + ")";
             }
         }
     }
@@ -5920,6 +5974,10 @@ function openSettingsMenu(){
         '<button onclick="togglePerformance()" id="performanceButton" style="border-color:' + debugColors[performanceMode] + '">Toggle</button>' +
             "<p>If performance is slow, this option lowers quality to help weaker devices.</p>";
 
+        tempHTML += "<br><br><p style='font-size:2em'>Smoke Glow Brightness</p>" +
+            'Multiplier: <input style="width: 50px" type="number" id="smokeglowinput" min="0.25" max="5" value="' + smokeBrightness + '" step="0.25" onchange="setSmokeBrightness(this.value)"></input>' +
+            "<p>Default: 1.5<br>The smoke effect multiplies light by this value to make it more visible. Excessive values may cause color issues.</p>";
+
         if(!webVersion){
             if(!microphoneActive){
                 tempHTML += "<br><br><p style='font-size:2em'>Self-Close</p>" +
@@ -6093,6 +6151,17 @@ function exclusiveFullscreen(){
         document.body.parentNode.requestFullscreen();
     }else if(document.exitFullscreen){
         document.exitFullscreen();
+    }
+}
+
+if(webVersion){
+    // hide Folder button on mobile (devies with no mouse connected)
+    // this is because mobile does not support Folder upload - only indiv. files
+    if(window.matchMedia){
+        if(!window.matchMedia("(pointer: fine)").matches){
+            getId("folderInput").parentNode.style.opacity = "0.25";
+            getId("mobileDeviceText").classList.remove("disabled");
+        }
     }
 }
 
