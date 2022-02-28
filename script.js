@@ -129,6 +129,7 @@ function checkDarkTheme(){
         }else{
             document.body.classList.remove("darkMode");
         }
+        remote.nativeTheme.removeAllListeners();
     }
 }
 checkDarkTheme();
@@ -1688,52 +1689,146 @@ var colors = {
             );
         }
     },
-    queen: {
-        name: "Queen",
-        image: "colors/queen.png",
+    'SEPARATOR_UKRAINE" disabled="': {
+        name: "Ukraine",
+        category: "Ukraine",
+        func: function(){
+            return '#000';
+        }
+    },
+    ukraineSunrise: {
+        name: "Sunrise",
+        image: "colors/ukrainesunrise.png",
         grad: {
-            r: [[  0, 142],             [255, 255]],
-            g: [            [127,  40], [255, 204]],
-            b: [[  0, 167],             [255,   3]]
+            r: [[0,   0], [104,  64], [255, 255]],
+            g: [[0,  91], [104, 122], [255, 213]],
+            b: [[0, 187], [104, 140], [255,   0]],
+            a: [[0, 0.5],             [255,   1]]
         },
         func: function(amount){
-            return csscolor('rgb',
+            return csscolor("rgba",
                 gcalc(this.grad.r, amount),
                 gcalc(this.grad.g, amount),
                 gcalc(this.grad.b, amount),
-                amount / 255
+                gcalc(this.grad.a, amount)
             );
         }
     },
-    queenSolid: {
-        name: "Queen Solid",
-        image: "colors/queenSolid.png",
+    ukraineSunriseSolid: {
+        name: "Sunrise Solid",
+        image: "colors/ukrainesunrisesolid.png",
         grad: {
-            r: [[  0, 142],             [255, 255]],
-            g: [            [127,  40], [255, 204]],
-            b: [[  0, 167],             [255,   3]]
+            r: [[0,   0], [104,  64], [255, 255]],
+            g: [[0,  91], [104, 122], [255, 213]],
+            b: [[0, 187], [104, 140], [255,   0]]
         },
         func: function(amount){
-            return csscolor('rgb',
+            return csscolor("rgb",
                 gcalc(this.grad.r, amount),
                 gcalc(this.grad.g, amount),
                 gcalc(this.grad.b, amount)
             );
         }
     },
-    queenStatic: {
-        name: "Queen Static",
-        image: "colors/queenStatic.png",
+    ukraineSunriseStatic: {
+        name: "Sunrise Static",
+        image: "colors/ukrainesunrisestatic.png",
         grad: {
-            r: [[  0, 142],             [255, 255]],
-            g: [            [127,  40], [255, 204]],
-            b: [[  0, 167],             [255,   3]]
+            r: [[0,   0], [104,  64], [255, 255]],
+            g: [[0,  91], [104, 122], [255, 213]],
+            b: [[0, 187], [104, 140], [255,   0]],
+            a: [[0, .25],             [255,   1]]
         },
         func: function(amount, position){
-            return csscolor('rgb',
-                gcalc(this.grad.r, (typeof position === "number") ? position : amount),
-                gcalc(this.grad.g, (typeof position === "number") ? position : amount),
-                gcalc(this.grad.b, (typeof position === "number") ? position : amount)
+            return csscolor("rgba",
+                gcalc(this.grad.r, position),
+                gcalc(this.grad.g, position),
+                gcalc(this.grad.b, position),
+                gcalc(this.grad.a, amount)
+            );
+        }
+    },
+    ukraineSunriseStaticSolid: {
+        name: "Sunrise Static Solid",
+        image: "colors/ukrainesunrisestaticsolid.png",
+        grad: {
+            r: [[0,   0], [104,  64], [255, 255]],
+            g: [[0,  91], [104, 122], [255, 213]],
+            b: [[0, 187], [104, 140], [255,   0]]
+        },
+        func: function(amount, position){
+            return csscolor("rgb",
+                gcalc(this.grad.r, position),
+                gcalc(this.grad.g, position),
+                gcalc(this.grad.b, position)
+            );
+        }
+    },
+    ukraineSunset: {
+        name: "Sunset",
+        image: "colors/ukrainesunset.png",
+        grad: {
+            r: [[0, 255], [152,  64], [255,   0]],
+            g: [[0, 213], [152, 122], [255,  91]],
+            b: [[0,   0], [152, 140], [255, 187]],
+            a: [[0, 0.5],             [255,   1]]
+        },
+        func: function(amount){
+            return csscolor("rgba",
+                gcalc(this.grad.r, amount),
+                gcalc(this.grad.g, amount),
+                gcalc(this.grad.b, amount),
+                gcalc(this.grad.a, amount)
+            );
+        }
+    },
+    ukraineSunsetSolid: {
+        name: "Sunset Solid",
+        image: "colors/ukrainesunsetsolid.png",
+        grad: {
+            r: [[0, 255], [152,  64], [255,   0]],
+            g: [[0, 213], [152, 122], [255,  91]],
+            b: [[0,   0], [152, 140], [255, 187]]
+        },
+        func: function(amount){
+            return csscolor("rgba",
+                gcalc(this.grad.r, amount),
+                gcalc(this.grad.g, amount),
+                gcalc(this.grad.b, amount)
+            );
+        }
+    },
+    ukraineSunsetStatic: {
+        name: "Sunset Static",
+        image: "colors/ukrainesunsetstatic.png",
+        grad: {
+            r: [[0, 255], [152,  64], [255,   0]],
+            g: [[0, 213], [152, 122], [255,  91]],
+            b: [[0,   0], [152, 140], [255, 187]],
+            a: [[0, .25],             [255,   1]]
+        },
+        func: function(amount, position){
+            return csscolor("rgba",
+                gcalc(this.grad.r, position),
+                gcalc(this.grad.g, position),
+                gcalc(this.grad.b, position),
+                gcalc(this.grad.a, amount)
+            );
+        }
+    },
+    ukraineSunsetStaticSolid: {
+        name: "Sunset Static Solid",
+        image: "colors/ukrainesunsetstaticsolid.png",
+        grad: {
+            r: [[0, 255], [152,  64], [255,   0]],
+            g: [[0, 213], [152, 122], [255,  91]],
+            b: [[0,   0], [152, 140], [255, 187]]
+        },
+        func: function(amount, position){
+            return csscolor("rgb",
+                gcalc(this.grad.r, position),
+                gcalc(this.grad.g, position),
+                gcalc(this.grad.b, position)
             );
         }
     },
@@ -1846,6 +1941,62 @@ var colors = {
             }
         },
         prideColors: [0, 33, 55, 110, 175, 235, 265]
+    },
+    'SEPARATOR_QUEEN" disabled="': {
+        name: "Queen",
+        category: "Queen",
+        func: function(){
+            return '#000';
+        }
+    },
+    queen: {
+        name: "Queen",
+        image: "colors/queen.png",
+        grad: {
+            r: [[  0, 142],             [255, 255]],
+            g: [            [127,  40], [255, 204]],
+            b: [[  0, 167],             [255,   3]]
+        },
+        func: function(amount){
+            return csscolor('rgb',
+                gcalc(this.grad.r, amount),
+                gcalc(this.grad.g, amount),
+                gcalc(this.grad.b, amount),
+                amount / 255
+            );
+        }
+    },
+    queenSolid: {
+        name: "Queen Solid",
+        image: "colors/queenSolid.png",
+        grad: {
+            r: [[  0, 142],             [255, 255]],
+            g: [            [127,  40], [255, 204]],
+            b: [[  0, 167],             [255,   3]]
+        },
+        func: function(amount){
+            return csscolor('rgb',
+                gcalc(this.grad.r, amount),
+                gcalc(this.grad.g, amount),
+                gcalc(this.grad.b, amount)
+            );
+        }
+    },
+    queenStatic: {
+        name: "Queen Static",
+        image: "colors/queenStatic.png",
+        grad: {
+            r: [[  0, 142],             [255, 255]],
+            g: [            [127,  40], [255, 204]],
+            b: [[  0, 167],             [255,   3]]
+        },
+        func: function(amount, position){
+            return csscolor('rgb',
+                gcalc(this.grad.r, (typeof position === "number") ? position : amount),
+                gcalc(this.grad.g, (typeof position === "number") ? position : amount),
+                gcalc(this.grad.b, (typeof position === "number") ? position : amount)
+            );
+        }
     },
     'SEPARATOR_COLORS" disabled="': {
         name: "Colors",
@@ -2325,19 +2476,18 @@ var vis = {
             var last = -1;
             var heightFactor = (size[1] / 3) / 255;
             var widthFactor = 64 / size[0] * 2;
-
-                    for(var i = 0; i < size[0] / 2; i++){
-                        // width is larger than data
-                        var pcnt = i / (size[0] / 2);
-                        var closestPoint = visData[Math.floor(pcnt * 12)];
-                        var nextPoint = visData[Math.floor(pcnt * 12) + 1];
-                        if(nextPoint === undefined){
-                            nextPoint = closestPoint;
-                        }
-                        var u = pcnt * 12 - Math.floor(pcnt * 12);
-                        //tempLines[i] = ((1 - u) * closestPoint) + (u * nextPoint);
-                        this.drawLine(i, ((1 - u) * closestPoint) + (u * nextPoint), heightFactor, widthFactor);
-                    }
+            for(var i = 0; i < size[0] / 2; i++){
+                // width is larger than data
+                var pcnt = i / (size[0] / 2);
+                var closestPoint = visData[Math.floor(pcnt * 12)];
+                var nextPoint = visData[Math.floor(pcnt * 12) + 1];
+                if(nextPoint === undefined){
+                    nextPoint = closestPoint;
+                }
+                var u = pcnt * 12 - Math.floor(pcnt * 12);
+                //tempLines[i] = ((1 - u) * closestPoint) + (u * nextPoint);
+                this.drawLine(i, ((1 - u) * closestPoint) + (u * nextPoint), heightFactor, widthFactor);
+            }
         },
         stop: function(){
             
@@ -2355,6 +2505,72 @@ var vis = {
                 if(x !== 0){
                     smoke.fillRect(size[0] / 2 - x, (255 - h)  * fact + (size[1] / 6), 1, h * fact * 2);
                 }
+            }
+        }
+    },
+    triWave: {
+        name: "Triple Wave",
+        image: "visualizers/tripleWave.png",
+        start: function(){
+            
+        },
+        frame: function(){
+            canvas.clearRect(0, 0, size[0], size[1]);
+            smoke.clearRect(0, 0, size[0], size[1]);
+            var heightFactor = (size[1] / 4) / 255;
+            var heightFactorTreble = (size[1] / 4) / 255;
+            var widthFactor = 64 / size[0] * 2;
+            for(var i = 0; i < size[0]; i++){
+                // width is larger than data
+                var pcntTreble = i / size[0];
+                var closestPointTreble = visData[Math.floor(pcntTreble * 52) + 12];
+                var nextPointTreble = visData[Math.floor(pcntTreble * 52) + 13];
+                if(nextPointTreble === undefined){
+                    nextPointTreble = closestPointTreble;
+                }
+                var uTreble = pcntTreble * 52 - Math.floor(pcntTreble * 52);
+                this.drawTrebleLine(i, ((1 - uTreble) * closestPointTreble) + (uTreble * nextPointTreble), heightFactorTreble);
+                if(i < size[0] / 2){
+                    var pcnt = i / (size[0] / 2);
+                    var closestPoint = visData[Math.floor(pcnt * 12)];
+                    var nextPoint = visData[Math.floor(pcnt * 12) + 1];
+                    if(nextPoint === undefined){
+                        nextPoint = closestPoint;
+                    }
+                    var u = pcnt * 12 - Math.floor(pcnt * 12);
+                    //tempLines[i] = ((1 - u) * closestPoint) + (u * nextPoint);
+                    this.drawLine(i, ((1 - u) * closestPoint) + (u * nextPoint), heightFactor, widthFactor);
+                }
+            }
+        },
+        stop: function(){
+            
+        },
+        drawLine: function(x, h, fact, widthFact){
+            var fillColor = getColor(h, x / (size[0] / 2) * 255);
+            canvas.fillStyle = fillColor;
+            canvas.fillRect(x + size[0] / 2, (255 - h)  * fact - 2 + (size[1] / 4), 1, h * fact * 2 + 4);
+            if(x !== 0){
+                canvas.fillRect(size[0] / 2 - x, (255 - h)  * fact - 2 + (size[1] / 4), 1, h * fact * 2 + 4);
+            }
+            if(smokeEnabled){
+                smoke.fillStyle = fillColor;
+                smoke.fillRect(x + size[0] / 2, (255 - h)  * fact + (size[1] / 4), 1, h * fact * 2 + 4);
+                if(x !== 0){
+                    smoke.fillRect(size[0] / 2 - x, (255 - h)  * fact + (size[1] / 4), 1, h * fact * 2 + 4);
+                }
+            }
+        },
+        drawTrebleLine: function(x, h, fact){
+            var fillColor = getColor(h, x / (size[0] / 2) * 255);
+            canvas.fillStyle = fillColor;
+            canvas.fillRect(x, 0, 1, h * fact + 2);
+            canvas.fillRect(x, size[1] - (h * fact + 2), 1, h * fact + 2);
+            if(smokeEnabled){
+                fillColor = getColor(h, x / size[0] * 255);
+                smoke.fillStyle = fillColor;
+                smoke.fillRect(x, 0, 1, h * fact + 2);
+                smoke.fillRect(x, size[1] - (h * fact + 2), 1, h * fact + 2);
             }
         }
     },
@@ -5825,6 +6041,7 @@ resizeSmoke();
 var featuredVis = {
     reflection: 1,
     bassWave: 1,
+    triWave: 1,
     circle: 1,
     bassCircle: 1,
     dynamicTiles: 1
