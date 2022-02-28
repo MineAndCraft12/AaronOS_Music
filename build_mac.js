@@ -6,18 +6,6 @@ async function bundleElectronApp(options){
     console.log(`Electron app bundles created:\n${appPaths.join("\n")}`);
 }
 
-/*
-var options_win = {
-    dir: ".",
-    arch: "ia32",
-    asar: true,
-    platform: "win32",
-    icon: "\"win_icon.ico\"",
-    out: "release-builds/win",
-    overwrite: "true"
-};
-*/
-
 var options_mac = {
     dir: ".",
     arch: "x64",
@@ -31,24 +19,9 @@ var options_mac = {
     darwinDarkModeSupport: true,
     usageDescription: {
         Microphone: "Used to visualize microphone input"
-    }
+    },
+    ignore: /(?:release\-builds|node_modules)\//
 };
 
-/*
-var options_linux = {
-    dir: ".",
-    arch: "x64",
-    asar: true,
-    platform: "linux",
-    icon: "./app_icon.png",
-    out: "release-builds/linux",
-    overwrite: "true"
-};
-*/
-
-//console.log("building for Windows...");
-//bundleElectronApp(options_win);
-//console.log("building for Linux...");
-//bundleElectronApp(options_linux);
 console.log("building for MacOS...");
 bundleElectronApp(options_mac);
