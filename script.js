@@ -3,10 +3,11 @@ var aosToolsConnected = 0;
 //let remote, ipcRenderer, desktopCapturer = null;
 try{
     var {
-        remote,
+        // remote,
         ipcRenderer,
         desktopCapturer
     } = require('electron');
+    var remote = require('@electron/remote');
 }catch(err){
     console.log("Error requiring electron -- assuming web version");
     webVersion = 1;
@@ -76,6 +77,9 @@ if(webVersion){
     getId("transparentModeIcon").style.display = "none";
     getId("tskbrModeRange").style.display = "none";
 }else{
+    // disable transparent mode because it's broken on new version of electron
+    getId("transparentModeIcon").style.display = "none";
+
     // disable system audio icon on mac because it's not allowed
     if(navigator.platform.indexOf("Mac") === 0){
         getId("systemAudioIcon").style.display = "none";

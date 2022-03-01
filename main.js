@@ -5,6 +5,8 @@ const {
     screen
 } = require('electron');
 
+require('@electron/remote/main').initialize();
+
 let windowType = "opaque";
 let win = null;
 let win2 = null;
@@ -40,6 +42,8 @@ function createWindow() {
     //win.setMenu(null);
     win.setMenuBarVisibility(false);
 
+    require("@electron/remote/main").enable(win.webContents);
+
     win.loadFile('index.html');
 }
 
@@ -65,7 +69,10 @@ function createWindowTransparent() {
         transparent: true
     });
 
+    console.log("creating transparent window...");
+
     win2.once('ready-to-show', () => {
+        console.log("ready to show transparent window");
         win2.show();
         if(windowType === "opaque"){
             windowType = "transparent";
@@ -75,6 +82,8 @@ function createWindowTransparent() {
 
     //win.setMenu(null);
     win2.setMenuBarVisibility(false);
+
+    require("@electron/remote/main").enable(win.webContents);
 
     win2.loadFile('index.html');
 }
@@ -117,6 +126,7 @@ app.on('activate', () => {
 
 ipcMain.on('toggle-transparent', function(event, args){
     if(windowType === "opaque"){
+        console.log("restarting app for transparent window...");
         //createWindowTransparent();
         app.relaunch({ args: process.argv.slice(1).concat(['--enable-transparent-visuals']) });
         app.quit();

@@ -14,7 +14,8 @@ var options_win = {
     icon: "win_icon.ico",
     out: "release-builds/win",
     overwrite: "true",
-    ignore: /(?:release\-builds|node_modules)\//
+    ignore: /release\-builds\//,
+
 };
 
 console.log("building for Windows...");
