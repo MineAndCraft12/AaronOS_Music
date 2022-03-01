@@ -20,7 +20,7 @@ var options_mac = {
     usageDescription: {
         Microphone: "Used to visualize microphone input"
     },
-    ignore: /(?:release\-builds|node_modules)\//
+    ignore: /release\-builds\//
 };
 
 console.log("building for MacOS...");

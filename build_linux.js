@@ -14,7 +14,7 @@ var options_linux = {
     icon: "./app_icon.png",
     out: "release-builds/linux",
     overwrite: "true",
-    ignore: /(?:release\-builds|node_modules)\//
+    ignore: /release\-builds\//
 };
 
 console.log("building for Linux...");
