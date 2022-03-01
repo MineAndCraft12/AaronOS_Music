@@ -15,10 +15,6 @@ let screenDims = {
     height: 720
 }
 
-if(app.commandLine.hasSwitch('enable-transparent-visuals')){
-    app.disableHardwareAcceleration();
-}
-
 function createWindow() {
     win = new BrowserWindow({
         width: 1048,
@@ -45,6 +41,10 @@ function createWindow() {
     require("@electron/remote/main").enable(win.webContents);
 
     win.loadFile('index.html');
+}
+
+if(app.commandLine.hasSwitch('enable-transparent-visuals')){
+    app.disableHardwareAcceleration();
 }
 
 function createWindowTransparent() {
@@ -74,6 +74,7 @@ function createWindowTransparent() {
     win2.once('ready-to-show', () => {
         console.log("ready to show transparent window");
         win2.show();
+        
         if(windowType === "opaque"){
             windowType = "transparent";
             win.close();
@@ -83,7 +84,7 @@ function createWindowTransparent() {
     //win.setMenu(null);
     win2.setMenuBarVisibility(false);
 
-    require("@electron/remote/main").enable(win.webContents);
+    require("@electron/remote/main").enable(win2.webContents);
 
     win2.loadFile('index.html');
 }
@@ -94,7 +95,6 @@ function appLaunch(){
         width: screenWorkArea.width,
         height: screenWorkArea.height
     }
-    console.log(app.commandLine.hasSwitch('enable-transparent-visuals'));
     if(app.commandLine.hasSwitch('enable-transparent-visuals')){
         windowType = "transparent";
         createWindowTransparent();
@@ -140,4 +140,4 @@ ipcMain.on('toggle-transparent', function(event, args){
 
 ipcMain.on('getWindowType', function(event){
     event.sender.send('giveWindowType', {windowType: windowType});
-})
+});
