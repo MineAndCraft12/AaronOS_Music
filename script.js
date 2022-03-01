@@ -77,8 +77,9 @@ if(webVersion){
     getId("transparentModeIcon").style.display = "none";
     getId("tskbrModeRange").style.display = "none";
 }else{
-    // disable transparent mode because it's broken on new version of electron
-    getId("transparentModeIcon").style.display = "none";
+    // hide transparent mode because it's broken on new version of electron
+    getId("transparentModeIcon").style.opacity = "0.25";
+    getId("transparentModeIcon").title = "Transparent mode is broken. I will fix it when I can.";
 
     // disable system audio icon on mac because it's not allowed
     if(navigator.platform.indexOf("Mac") === 0){
@@ -86,6 +87,12 @@ if(webVersion){
         getId("filesIcon").src = "icons/mac_files.png";
         getId("folderIcon").src = "icons/mac_folder.png";
         getId("microphoneIcon").src = "icons/mac_microphone.png";
+    }
+
+    // hide system audio on linux because it's broken on most systems
+    if(navigator.platform.indexOf("Linux") === 0){
+        getId("systemAudioIcon").style.opacity = "0.25";
+        getId("systemAudioIcon").title = "System Audio does not work on most Linux systems. Feel free to try it anyway.";
     }
 
     // taskbar mode is designed with windows taskbar
