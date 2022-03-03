@@ -7,11 +7,9 @@
   "scripts": {
     "start": "electron .",
     "start-transparent": "electron . --enable-transparent-visuals",
-    "package-mac-cli": "electron-packager . --overwrite -- platform=darwin --arch=x64 --icon=mac_icon.incs --prune=true --out=release-builds --ignore=node_modules",
+    "start-transparent-no-gpu": "electron . --enable-transparent-visuals --disable-hardware-acceleration",
     "package-mac": "node build_mac.js",
-    "package-win-cli": "electron-packager . aaronos_music --overwrite --asar=true --platform=win32 --arch=ia32 --icon=win_icon.ico --prune=true --out=release-builds --version-string.CompanyName=\"Aaron Adams\" --version-string.FileDescription=\"Music Player from AaronOS\" --version-string.ProductName=\"AaronOS Music\" --ignore=node_modules",
     "package-win": "node build_win.js",
-    "package-linux-cli": "electron-packager . aaronos_music --overwrite --asar=true --platform=linux --arch=x64 --icon=app_icon.png --prune=true --out=release-builds --ignore=node_modules",
     "package-linux": "node build_linux.js"
   },
   "repository": {
@@ -25,7 +23,7 @@
   },
   "homepage": "https://github.com/MineAndCraft12/AaronOS_Music#readme",
   "devDependencies": {
-    "electron": "^11.5.0",
+    "electron": "^17.1.0",
     "electron-packager": "^15.4.0"
   },
   "dependencies": {

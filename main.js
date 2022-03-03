@@ -20,7 +20,8 @@ function createWindow() {
         width: 1048,
         height: 632,
         webPreferences: {
-            nodeIntegration: true
+            nodeIntegration: true,
+            contextIsolation: false
         },
         show: false,
         backgroundColor: "rgb(32, 32, 32)",
@@ -35,7 +36,6 @@ function createWindow() {
         }
     });
 
-    //win.setMenu(null);
     win.setMenuBarVisibility(false);
 
     require("@electron/remote/main").enable(win.webContents);
@@ -43,7 +43,7 @@ function createWindow() {
     win.loadFile('index.html');
 }
 
-if(app.commandLine.hasSwitch('enable-transparent-visuals')){
+if(app.commandLine.hasSwitch('disable-hardware-acceleration')){
     app.disableHardwareAcceleration();
 }
 
@@ -60,7 +60,8 @@ function createWindowTransparent() {
         fullscreen: false,
         hasShadow: false,
         webPreferences: {
-            nodeIntegration: true
+            nodeIntegration: true,
+            contextIsolation: false
         },
         show: false,
         backgroundColor: "#00ffffff",
@@ -81,7 +82,6 @@ function createWindowTransparent() {
         }
     });
 
-    //win.setMenu(null);
     win2.setMenuBarVisibility(false);
 
     require("@electron/remote/main").enable(win2.webContents);
@@ -126,16 +126,17 @@ app.on('activate', () => {
 
 ipcMain.on('toggle-transparent', function(event, args){
     if(windowType === "opaque"){
-        console.log("restarting app for transparent window...");
-        //createWindowTransparent();
         app.relaunch({ args: process.argv.slice(1).concat(['--enable-transparent-visuals']) });
         app.quit();
     }else if(windowType === "transparent"){
-        //screenDims = {width: args.x, height: args.y};
-        //createWindow();
         app.relaunch({ args: process.argv.slice(1, 2) });
         app.quit();
     }
+});
+
+ipcMain.on('toggle-transparent-no-gpu', function(event, args){
+    app.relaunch({ args: process.argv.slice(1).concat(['--enable-transparent-visuals', '--disable-hardware-acceleration']) });
+    app.quit();
 });
 
 ipcMain.on('getWindowType', function(event){

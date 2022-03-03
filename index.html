@@ -9,8 +9,8 @@
     <body style="margin:0;padding:0;width:100%;height:100%;overflow:hidden;">
         <div class="winHTML" style="width:calc(100% - 8px);height:calc(100% - 6px);margin:0;padding:3px;padding-right:5px;overflow-y:auto;overflow-x:hidden">
             <div id="introduction" style="padding-bottom:16px;">
-                <h1 style="text-align:center">AaronOS Music</h1>
-                <div style="text-align:center; position:relative; margin-top:-16px; margin-bottom:-16px;">
+                <h1 id="appTitle" style="text-align:center">AaronOS Music</h1>
+                <div id="selectAudioSourceIcons" style="text-align:center; position:relative; margin-top:-16px; margin-bottom:-16px;">
                     <div class="selectIcon">
                         <input type="file" id="folderInput" webkitdirectory directory multiple onchange="loadFolder()">
                         <img id="folderIcon" src="icons/folder.png" style="pointer-events:none;">
@@ -29,9 +29,15 @@
                         <img id="microphoneIcon" class="cursorPointer" src="icons/microphone.png" onclick="loadMicrophone()">
                         <span>Microphone</span>
                     </div>
+                </div>
+                <div id="transparentModeIcons" style="text-align:center; position:relative; margin-top:-48px;">
                     <div class="selectIcon" id="transparentModeIcon">
                         <img class="cursorPointer" src="icons/transparentMode.png" onclick="ipcRenderer.send('toggle-transparent', {x: screen.width, y: screen.height})">
-                        <span>Transparent Mode</span>
+                        <span id="transparentModeIconText">Transparent (GPU On)</span>
+                    </div>
+                    <div class="selectIcon" id="transparentModeIconNoGPU">
+                        <img class="cursorPointer" src="icons/transparentMode.png" onclick="ipcRenderer.send('toggle-transparent-no-gpu', {x: screen.width, y: screen.height})">
+                        <span>Transparent (GPU Off)</span>
                     </div>
                 </div>
                 <div style="text-align:center;max-width:500px;margin:auto;">
@@ -42,8 +48,7 @@
                         <br><br>
                     </i>
                     <i>
-                        Visualizations in the list whose thumbnails use the Rainbow color scheme are modeled after the AudioVision app for Android.<br><br>
-                        The AudioVision designs were created by &Scaron;tefan Schindler.
+                        The AudioVision app's designs were originally by &Scaron;tefan Schindler.
                     </i>
                 </div>
             </div>

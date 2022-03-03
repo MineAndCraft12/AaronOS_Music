@@ -10,6 +10,7 @@ try{
     var remote = require('@electron/remote');
 }catch(err){
     console.log("Error requiring electron -- assuming web version");
+    console.log(err);
     webVersion = 1;
     var newScriptTag = document.createElement("script");
     newScriptTag.setAttribute("data-light", "true");
@@ -71,18 +72,29 @@ function unblockSleep(){
     }
 }
 
+var navigatorPlatform = "";
+if(navigator.userAgentData){
+    if(navigator.userAgentData.platform){
+        navigatorPlatform = navigator.userAgentData.platform;
+    }else{
+        navigatorPlatform = navigator.platform;
+    }
+}else{
+    navigatorPlatform = navigator.platform;
+}
+
 if(webVersion){
     // web version can't be transparent or use system audio
     getId("systemAudioIcon").style.display = "none";
-    getId("transparentModeIcon").style.display = "none";
+    getId("transparentModeIcons").style.display = "none";
     getId("tskbrModeRange").style.display = "none";
 }else{
-    // hide transparent mode because it's broken on new version of electron
-    getId("transparentModeIcon").style.opacity = "0.25";
-    getId("transparentModeIcon").title = "Transparent mode is broken. I will fix it when I can.";
+    // remove page title since the page needs more room to display disclaimer
+    getId("appTitle").style.display = "none";
+    getId("selectAudioSourceIcons").style.marginTop = "";
 
     // disable system audio icon on mac because it's not allowed
-    if(navigator.platform.indexOf("Mac") === 0){
+    if(navigatorPlatform.indexOf("Mac") === 0){
         getId("systemAudioIcon").style.display = "none";
         getId("filesIcon").src = "icons/mac_files.png";
         getId("folderIcon").src = "icons/mac_folder.png";
@@ -90,13 +102,13 @@ if(webVersion){
     }
 
     // hide system audio on linux because it's broken on most systems
-    if(navigator.platform.indexOf("Linux") === 0){
+    if(navigatorPlatform.indexOf("Linux") === 0){
         getId("systemAudioIcon").style.opacity = "0.25";
         getId("systemAudioIcon").title = "System Audio does not work on most Linux systems. Feel free to try it anyway.";
     }
 
     // taskbar mode is designed with windows taskbar
-    if(navigator.platform.indexOf("Win") !== 0){
+    if(navigatorPlatform.indexOf("Win") !== 0){
         getId("tskbrModeRange").style.display = "none";
     }
 }
@@ -119,7 +131,7 @@ function recieveWindowBorders(response){
 }
 
 var iframeMode = 1;
-if(navigator.platform.indexOf("Win") === 0 && !webVersion){
+if(navigatorPlatform.indexOf("Win") === 0 && !webVersion){
     getId("tskbrModeRange").style.display = "";
 }
 
@@ -156,8 +168,6 @@ function updateProgress(){
     requestAnimationFrame(updateProgress);
 }
 requestAnimationFrame(updateProgress);
-
-/*global AudioContext*/
 
 var audioContext;
 var mediaSource;
@@ -766,17 +776,6 @@ function loadSystemAudio(event){
             }
         }
     });
-
-    /*
-    navigator.webkitGetUserMedia({audio:true}, function(stream){
-        microphone = audioContext.createMediaStreamSource(stream);
-        microphone.connect(analyser);
-    }, function(){alert('error');});
-    
-    microphoneActive = 1;
-    
-    requestAnimationFrame(globalFrame);
-    */
 }
 
 var currentSong = -1;
@@ -1197,19 +1196,6 @@ var fpsCompensation = 1;
 
 function globalFrame(){
     requestAnimationFrame(globalFrame);
-    /*
-    this.lastFrame = this.currFrame;
-    this.currFrame = performance.now();
-    this.frametime = this.currFrame - this.lastFrame;
-    this.fps = 1000 / this.frametime;
-    this.fpsMod = 1 / (this.fps / 60);
-    if(this.currFrame > this.lastSecond + 1000){
-        this.fpsFinal = this.fpsCount;
-        this.fpsCount = 0;
-        this.lastSecond = this.currFrame;
-    }
-    this.fpsCount++;
-    */
     perfLast = perfCurrent;
     perfCurrent = performance.now();
     perfTime = perfCurrent - perfLast;
@@ -1271,29 +1257,6 @@ function globalFrame(){
         }
         if(microphoneActive){
             var tempArr = [];
-            // after sep 22 2021 this is default
-            /*
-            if(latencyReduction === 1){
-                for(var i = 0; i < 128; i++){
-                    tempArr[i] = visData[i];
-                }
-                if(performanceMode){
-                    for(var j = 0; j < visData.length; j++){
-                        visData[j] = tempArr[Math.floor(j / 16)];
-                    }
-                }else{
-                    for(var j = 0; j < visData.length; j++){
-                        var approx = Math.floor(j / 16);
-                        var p1 = tempArr[approx];
-                        var p2 = tempArr[approx + 1];
-                        //if(p2 === undefined){
-                        //    p2 = p1;
-                        //}
-                        var u = (j % 16) / 16;
-                        visData[j] = ((1 - u) * p1) + (u * p2);
-                    }
-                }
-            }else */
             if(latencyReduction === 2){
                 for(var i = 0; i < 64; i++){
                     tempArr[i] = visDataBuffer[i];
@@ -1326,14 +1289,6 @@ function globalFrame(){
                 }
             }
         }
-        /*
-        if(highFreqRange){
-            var tempsize = size[0];
-            for(var i = 0; i < tempsize; i++){
-                visData[i] = Math.max(visData[i * 2], visData[i * 2 + 1]);
-            }
-        }
-        */
         if(smokeEnabled){
             smokeFrame();
         }
@@ -1342,21 +1297,9 @@ function globalFrame(){
         
         if(debugEnabled && currMod){
             var oldVisData = [];
-            //if(latencyReduction === 1){
             for(var i = 0; i < 64; i++){
                 oldVisData[i] = visData[i];
             }
-            /*
-            }else if(latencyReduction === 2){
-                for(var i = 0; i < 64; i++){
-                    oldVisData[i] = visData[Math.floor(i / 32) * 32];
-                }
-            }else{
-                for(var i = 0; i < 64; i++){
-                    oldVisData[i] = visData[i];
-                }
-            }
-            */
         }
         
         // if mod is selected, modify the data values
@@ -1390,48 +1333,15 @@ function globalFrame(){
                 for(var i = 0; i < 64; i++){
                     canvas.fillRect(debugLeftBound + (i * 2), 10 + (255 - oldVisData[i]), 2, oldVisData[i]);
                 }
-                /*
-                canvas.globalCompositeOperation = 'screen';
-                canvas.fillStyle = '#F00';
-                for(var i = 0; i < 1024; i += 3){
-                    canvas.fillRect(debugLeftBound + (i / 3), 10 + (255 - oldVisData[i]), 1, oldVisData[i]);
-                }
-                canvas.fillStyle = '#0F0';
-                for(var i = 1; i < 1024; i += 3){
-                    canvas.fillRect(debugLeftBound + ((i - 1) / 3), 10 + (255 - oldVisData[i]), 1, oldVisData[i]);
-                }
-                canvas.fillStyle = '#00F';
-                for(var i = 2; i < 1024; i += 3){
-                    canvas.fillRect(debugLeftBound + ((i - 2) / 3), 10 + (255 - oldVisData[i]), 1, oldVisData[i]);
-                }
-                canvas.globalCompositeOperation = 'normal';
-                */
             }
             canvas.strokeStyle = "#FFF";
             canvas.lineWidth = 1;
             var debugLeftBound = size[0] - 139;
             canvas.strokeRect(size[0] - 139.5, 10.5, 128, 255);
-            // debug is supersampled -- rgb is 1, 2, 3
             canvas.fillStyle = '#FFF';
             for(var i = 0; i < 64; i++){
                 canvas.fillRect(debugLeftBound + (i * 2), 10 + (255 - visData[i]), 2, visData[i]);
             }
-            /*
-            canvas.globalCompositeOperation = 'screen';
-            canvas.fillStyle = '#F00';
-            for(var i = 0; i < 1024; i += 3){
-                canvas.fillRect(debugLeftBound + (i / 3), 10 + (255 - visData[i]), 1, visData[i]);
-            }
-            canvas.fillStyle = '#0F0';
-            for(var i = 1; i < 1024; i += 3){
-                canvas.fillRect(debugLeftBound + ((i - 1) / 3), 10 + (255 - visData[i]), 1, visData[i]);
-            }
-            canvas.fillStyle = '#00F';
-            for(var i = 2; i < 1024; i += 3){
-                canvas.fillRect(debugLeftBound + ((i - 2) / 3), 10 + (255 - visData[i]), 1, visData[i]);
-            }
-            canvas.globalCompositeOperation = 'normal';
-            */
         }
     }
 }
@@ -1596,8 +1506,24 @@ var colors = {
             );
         }
     },
+    alphaTransparent: {
+        name: "AaronOS Clean",
+        image: "colors/alphatransparent.png",
+        grad: {
+            b: [            [ 64, 255], [255,   0]],
+            a: [[  0,   0],             [255,   1]]
+        },
+        func: function(amount){
+            return csscolor("rgba",
+                0,
+                amount,
+                gcalc(this.grad.b, amount),
+                gcalc(this.grad.a, amount)
+            );
+        }
+    },
     alpha: {
-        name: "AaronOS Solid Clean",
+        name: "AaronOS Clean Solid",
         image: "colors/alpha.png",
         grad: {
             b: [[ 64, 255], [255,   0]]
@@ -1697,149 +1623,6 @@ var colors = {
                 Math.pow(amount, 2) / 255,
                 0,
                 amount / 255
-            );
-        }
-    },
-    'SEPARATOR_UKRAINE" disabled="': {
-        name: "Ukraine",
-        category: "Ukraine",
-        func: function(){
-            return '#000';
-        }
-    },
-    ukraineSunrise: {
-        name: "Sunrise",
-        image: "colors/ukrainesunrise.png",
-        grad: {
-            r: [[0,   0], [104,  64], [255, 255]],
-            g: [[0,  91], [104, 122], [255, 213]],
-            b: [[0, 187], [104, 140], [255,   0]],
-            a: [[0, 0.5],             [255,   1]]
-        },
-        func: function(amount){
-            return csscolor("rgba",
-                gcalc(this.grad.r, amount),
-                gcalc(this.grad.g, amount),
-                gcalc(this.grad.b, amount),
-                gcalc(this.grad.a, amount)
-            );
-        }
-    },
-    ukraineSunriseSolid: {
-        name: "Sunrise Solid",
-        image: "colors/ukrainesunrisesolid.png",
-        grad: {
-            r: [[0,   0], [104,  64], [255, 255]],
-            g: [[0,  91], [104, 122], [255, 213]],
-            b: [[0, 187], [104, 140], [255,   0]]
-        },
-        func: function(amount){
-            return csscolor("rgb",
-                gcalc(this.grad.r, amount),
-                gcalc(this.grad.g, amount),
-                gcalc(this.grad.b, amount)
-            );
-        }
-    },
-    ukraineSunriseStatic: {
-        name: "Sunrise Static",
-        image: "colors/ukrainesunrisestatic.png",
-        grad: {
-            r: [[0,   0], [104,  64], [255, 255]],
-            g: [[0,  91], [104, 122], [255, 213]],
-            b: [[0, 187], [104, 140], [255,   0]],
-            a: [[0, .25],             [255,   1]]
-        },
-        func: function(amount, position){
-            return csscolor("rgba",
-                gcalc(this.grad.r, position),
-                gcalc(this.grad.g, position),
-                gcalc(this.grad.b, position),
-                gcalc(this.grad.a, amount)
-            );
-        }
-    },
-    ukraineSunriseStaticSolid: {
-        name: "Sunrise Static Solid",
-        image: "colors/ukrainesunrisestaticsolid.png",
-        grad: {
-            r: [[0,   0], [104,  64], [255, 255]],
-            g: [[0,  91], [104, 122], [255, 213]],
-            b: [[0, 187], [104, 140], [255,   0]]
-        },
-        func: function(amount, position){
-            return csscolor("rgb",
-                gcalc(this.grad.r, position),
-                gcalc(this.grad.g, position),
-                gcalc(this.grad.b, position)
-            );
-        }
-    },
-    ukraineSunset: {
-        name: "Sunset",
-        image: "colors/ukrainesunset.png",
-        grad: {
-            r: [[0, 255], [152,  64], [255,   0]],
-            g: [[0, 213], [152, 122], [255,  91]],
-            b: [[0,   0], [152, 140], [255, 187]],
-            a: [[0, 0.5],             [255,   1]]
-        },
-        func: function(amount){
-            return csscolor("rgba",
-                gcalc(this.grad.r, amount),
-                gcalc(this.grad.g, amount),
-                gcalc(this.grad.b, amount),
-                gcalc(this.grad.a, amount)
-            );
-        }
-    },
-    ukraineSunsetSolid: {
-        name: "Sunset Solid",
-        image: "colors/ukrainesunsetsolid.png",
-        grad: {
-            r: [[0, 255], [152,  64], [255,   0]],
-            g: [[0, 213], [152, 122], [255,  91]],
-            b: [[0,   0], [152, 140], [255, 187]]
-        },
-        func: function(amount){
-            return csscolor("rgba",
-                gcalc(this.grad.r, amount),
-                gcalc(this.grad.g, amount),
-                gcalc(this.grad.b, amount)
-            );
-        }
-    },
-    ukraineSunsetStatic: {
-        name: "Sunset Static",
-        image: "colors/ukrainesunsetstatic.png",
-        grad: {
-            r: [[0, 255], [152,  64], [255,   0]],
-            g: [[0, 213], [152, 122], [255,  91]],
-            b: [[0,   0], [152, 140], [255, 187]],
-            a: [[0, .25],             [255,   1]]
-        },
-        func: function(amount, position){
-            return csscolor("rgba",
-                gcalc(this.grad.r, position),
-                gcalc(this.grad.g, position),
-                gcalc(this.grad.b, position),
-                gcalc(this.grad.a, amount)
-            );
-        }
-    },
-    ukraineSunsetStaticSolid: {
-        name: "Sunset Static Solid",
-        image: "colors/ukrainesunsetstaticsolid.png",
-        grad: {
-            r: [[0, 255], [152,  64], [255,   0]],
-            g: [[0, 213], [152, 122], [255,  91]],
-            b: [[0,   0], [152, 140], [255, 187]]
-        },
-        func: function(amount, position){
-            return csscolor("rgb",
-                gcalc(this.grad.r, position),
-                gcalc(this.grad.g, position),
-                gcalc(this.grad.b, position)
             );
         }
     },
@@ -1952,6 +1735,149 @@ var colors = {
             }
         },
         prideColors: [0, 33, 55, 110, 175, 235, 265]
+    },
+    'SEPARATOR_UKRAINE" disabled="': {
+        name: "Ukraine",
+        category: "Ukraine",
+        func: function(){
+            return '#000';
+        }
+    },
+    ukraineSunrise: {
+        name: "Sunrise",
+        image: "colors/ukrainesunrise.png",
+        grad: {
+            r: [[0,   0], [104,  64], [255, 255]],
+            g: [[0,  91], [104, 122], [255, 213]],
+            b: [[0, 187], [104, 140], [255,   0]],
+            a: [[0, .25],             [255,   1]]
+        },
+        func: function(amount){
+            return csscolor("rgba",
+                gcalc(this.grad.r, amount),
+                gcalc(this.grad.g, amount),
+                gcalc(this.grad.b, amount),
+                gcalc(this.grad.a, amount)
+            );
+        }
+    },
+    ukraineSunriseSolid: {
+        name: "Sunrise Solid",
+        image: "colors/ukrainesunrisesolid.png",
+        grad: {
+            r: [[0,   0], [104,  64], [255, 255]],
+            g: [[0,  91], [104, 122], [255, 213]],
+            b: [[0, 187], [104, 140], [255,   0]]
+        },
+        func: function(amount){
+            return csscolor("rgb",
+                gcalc(this.grad.r, amount),
+                gcalc(this.grad.g, amount),
+                gcalc(this.grad.b, amount)
+            );
+        }
+    },
+    ukraineSunriseStatic: {
+        name: "Sunrise Static",
+        image: "colors/ukrainesunrisestatic.png",
+        grad: {
+            r: [[0,   0], [104,  64], [255, 255]],
+            g: [[0,  91], [104, 122], [255, 213]],
+            b: [[0, 187], [104, 140], [255,   0]],
+            a: [[0, .25],             [255,   1]]
+        },
+        func: function(amount, position){
+            return csscolor("rgba",
+                gcalc(this.grad.r, position),
+                gcalc(this.grad.g, position),
+                gcalc(this.grad.b, position),
+                gcalc(this.grad.a, amount)
+            );
+        }
+    },
+    ukraineSunriseStaticSolid: {
+        name: "Sunrise Static Solid",
+        image: "colors/ukrainesunrisestaticsolid.png",
+        grad: {
+            r: [[0,   0], [104,  64], [255, 255]],
+            g: [[0,  91], [104, 122], [255, 213]],
+            b: [[0, 187], [104, 140], [255,   0]]
+        },
+        func: function(amount, position){
+            return csscolor("rgb",
+                gcalc(this.grad.r, position),
+                gcalc(this.grad.g, position),
+                gcalc(this.grad.b, position)
+            );
+        }
+    },
+    ukraineSunset: {
+        name: "Sunset",
+        image: "colors/ukrainesunset.png",
+        grad: {
+            r: [[0, 255], [152,  64], [255,   0]],
+            g: [[0, 213], [152, 122], [255,  91]],
+            b: [[0,   0], [152, 140], [255, 187]],
+            a: [[0, .25],             [255,   1]]
+        },
+        func: function(amount){
+            return csscolor("rgba",
+                gcalc(this.grad.r, amount),
+                gcalc(this.grad.g, amount),
+                gcalc(this.grad.b, amount),
+                gcalc(this.grad.a, amount)
+            );
+        }
+    },
+    ukraineSunsetSolid: {
+        name: "Sunset Solid",
+        image: "colors/ukrainesunsetsolid.png",
+        grad: {
+            r: [[0, 255], [152,  64], [255,   0]],
+            g: [[0, 213], [152, 122], [255,  91]],
+            b: [[0,   0], [152, 140], [255, 187]]
+        },
+        func: function(amount){
+            return csscolor("rgba",
+                gcalc(this.grad.r, amount),
+                gcalc(this.grad.g, amount),
+                gcalc(this.grad.b, amount)
+            );
+        }
+    },
+    ukraineSunsetStatic: {
+        name: "Sunset Static",
+        image: "colors/ukrainesunsetstatic.png",
+        grad: {
+            r: [[0, 255], [152,  64], [255,   0]],
+            g: [[0, 213], [152, 122], [255,  91]],
+            b: [[0,   0], [152, 140], [255, 187]],
+            a: [[0, .25],             [255,   1]]
+        },
+        func: function(amount, position){
+            return csscolor("rgba",
+                gcalc(this.grad.r, position),
+                gcalc(this.grad.g, position),
+                gcalc(this.grad.b, position),
+                gcalc(this.grad.a, amount)
+            );
+        }
+    },
+    ukraineSunsetStaticSolid: {
+        name: "Sunset Static Solid",
+        image: "colors/ukrainesunsetstaticsolid.png",
+        grad: {
+            r: [[0, 255], [152,  64], [255,   0]],
+            g: [[0, 213], [152, 122], [255,  91]],
+            b: [[0,   0], [152, 140], [255, 187]]
+        },
+        func: function(amount, position){
+            return csscolor("rgb",
+                gcalc(this.grad.r, position),
+                gcalc(this.grad.g, position),
+                gcalc(this.grad.b, position)
+            );
+        }
     },
     'SEPARATOR_QUEEN" disabled="': {
         name: "Queen",
@@ -2585,254 +2511,6 @@ var vis = {
             }
         }
     },
-    curvedAudioVision: {
-        name: "Curved Lines",
-        image: "visualizers/curvedLines_av.png",
-        start: function(){
-
-        },
-        frame: function(){
-            canvas.clearRect(0, 0, size[0], size[1]);
-            smoke.clearRect(0, 0, size[0], size[1]);
-            canvas.lineCap = "round";
-            canvas.lineWidth = this.lineWidth - (performanceMode * 0.5 * this.lineWidth);
-            smoke.lineCap = "round";
-            smoke.lineWidth = this.lineWidth - (performanceMode * 0.5 * this.lineWidth);
-            var xdist = size[0] / (this.lineCount + 2) / 2;
-            var ydist = size[1] / (this.lineCount + 2) / 2;
-            xdist = Math.min(xdist, ydist);
-            var colorstep = 255 / this.lineCount;
-            var ringPools = [0, 0, 0, 0, 0, 0, 0, 0, 0];
-            for(var i = 0; i < 64; i++){
-                var currPool = Math.floor(i / (64 / 9));
-                ringPools[currPool] = Math.max(visData[i], ringPools[currPool]);
-            }
-            for(var i = 0; i < this.lineCount; i++){
-                var strength = ringPools[i] * 0.85;
-                canvas.strokeStyle = getColor(strength, i * colorstep);
-                smoke.strokeStyle = getColor(strength, i * colorstep);
-
-                var circlePoints = [
-                    {x: xdist * this.lineCount, y: 0},
-                    {x: xdist * this.lineCount, y: 2 * xdist * this.lineCount},
-                    {x: xdist * this.lineCount + (xdist * (i + 1)), y: xdist * this.lineCount}
-                ]
-                var currCircle = this.circleFromThreePoints(...circlePoints);
-                var tri = [
-                    Math.sqrt(
-                        Math.pow(
-                            circlePoints[2].x -
-                            circlePoints[0].x
-                        , 2) + 
-                        Math.pow(
-                            circlePoints[2].y - 
-                            circlePoints[0].y
-                        , 2)
-                    ),
-                    currCircle.r,
-                    currCircle.r
-                ];
-                // (b2 + c2 − a2) / 2bc
-                var angle = Math.acos(this.deg2rad((tri[1]*tri[1] + tri[2]*tri[2] - tri[0]*tri[0]) / (2 * tri[1] * tri[2])));
-                canvas.beginPath();
-                canvas.arc(
-                    currCircle.x + (size[0] - xdist * this.lineCount * 2) / 2,
-                    currCircle.y + (size[1] / 2 - xdist * this.lineCount),
-                    currCircle.r,
-                    ((angle - this.deg2rad(Math.pow((this.lineCount - i - 1) * 1.83, 1.61))) * -1) * (strength / 255),
-                    ((angle - this.deg2rad(Math.pow((this.lineCount - i - 1) * 1.83, 1.61)))) * (strength / 255)
-                );
-                canvas.stroke();
-                if(smokeEnabled){
-                    smoke.beginPath();
-                    smoke.arc(
-                        currCircle.x + (size[0] - xdist * this.lineCount * 2) / 2,
-                        currCircle.y + (size[1] / 2 - xdist * this.lineCount),
-                        currCircle.r,
-                        ((angle - this.deg2rad(Math.pow((this.lineCount - i - 1) * 1.83, 1.61))) * -1) * (strength / 255),
-                        ((angle - this.deg2rad(Math.pow((this.lineCount - i - 1) * 1.83, 1.61)))) * (strength / 255)
-                    );
-                    smoke.stroke();
-                }
-
-                circlePoints[0].x *= -1;
-                circlePoints[1].x *= -1;
-                circlePoints[2].x *= -1;
-                currCircle = this.circleFromThreePoints(...circlePoints);
-                canvas.beginPath();
-                canvas.arc(
-                    currCircle.x + (size[0] / 2 + xdist * this.lineCount),
-                    currCircle.y + (size[1] / 2 - xdist * this.lineCount),
-                    currCircle.r,
-                    ((angle - this.deg2rad(Math.pow((this.lineCount - i - 1) * 1.83, 1.61))) * -1) * (strength / 255) + this.deg2rad(180),
-                    ((angle - this.deg2rad(Math.pow((this.lineCount - i - 1) * 1.83, 1.61)))) * (strength / 255) + this.deg2rad(180)
-                );
-                canvas.stroke();
-                if(smokeEnabled){
-                    smoke.beginPath();
-                    smoke.arc(
-                        currCircle.x + (size[0] / 2 + xdist * this.lineCount),
-                        currCircle.y + (size[1] / 2 - xdist * this.lineCount),
-                        currCircle.r,
-                        ((angle - this.deg2rad(Math.pow((this.lineCount - i - 1) * 1.83, 1.61))) * -1) * (strength / 255) + this.deg2rad(180),
-                        ((angle - this.deg2rad(Math.pow((this.lineCount - i - 1) * 1.83, 1.61)))) * (strength / 255) + this.deg2rad(180)
-                    );
-                    smoke.stroke();
-                }
-            }
-        },
-        stop: function(){
-            canvas.lineCap = "square";
-            canvas.lineWidth = 1;
-            smoke.lineCap = "square";
-            smoke.lineWidth = 1;
-        },
-        sizechange: function(){
-
-        },
-        lineWidth: 6,
-        lineCount: 9,
-        sqrt255: Math.sqrt(255),
-        deg2rad: function(degrees){
-            return degrees * this.piBy180;
-        },
-        piBy180: Math.PI / 180,
-        circleFromThreePoints: function(p1, p2, p3) { // from Circle.js
-            var x1 = p1.x;
-            var y1 = p1.y;
-            var x2 = p2.x;
-            var y2 = p2.y;
-            var x3 = p3.x;
-            var y3 = p3.y;
-            
-            var a = x1 * (y2 - y3) - y1 * (x2 - x3) + x2 * y3 - x3 * y2;
-            
-            var b = (x1 * x1 + y1 * y1) * (y3 - y2) 
-                    + (x2 * x2 + y2 * y2) * (y1 - y3)
-                    + (x3 * x3 + y3 * y3) * (y2 - y1);
-            
-            var c = (x1 * x1 + y1 * y1) * (x2 - x3) 
-                    + (x2 * x2 + y2 * y2) * (x3 - x1) 
-                    + (x3 * x3 + y3 * y3) * (x1 - x2);
-            
-            var x = -b / (2 * a);
-            var y = -c / (2 * a);
-            
-            return {
-                x: x,
-                y: y,
-                r: Math.hypot(x - x1, y - y1)
-            };
-        }
-    },
-    centeredAudioVision: {
-        name: "Centered Lines",
-        image: "visualizers/centeredLines_av.png",
-        start: function(){
-            
-        },
-        frame: function(){
-            canvas.clearRect(0, 0, size[0], size[1]);
-            smoke.clearRect(0, 0, size[0], size[1]);
-            canvas.lineCap = "round";
-            canvas.lineWidth = this.lineWidth - (performanceMode * 0.5 * this.lineWidth);
-            smoke.lineCap = "round";
-            smoke.lineWidth = this.lineWidth - (performanceMode * 0.5 * this.lineWidth);
-            var xdist = size[0] / (this.lineCount + 2);
-            var colorstep = 255 / this.lineCount;
-            var center = size[1] / 2;
-            var ringPools = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-            for(var i = 0; i < 64; i++){
-                var currPool = Math.floor(i / (64 / 18));
-                ringPools[currPool] = Math.max(visData[i], ringPools[currPool]);
-            }
-            for(var i = 0; i < this.lineCount; i++){
-                var pos = Math.floor((i + 1) * xdist);
-                var strength = ringPools[i];
-                canvas.strokeStyle = getColor(strength, i * colorstep);
-                smoke.strokeStyle = getColor(strength, i * colorstep);
-                
-                canvas.beginPath();
-                canvas.moveTo(pos, center - (center * (strength / 383)) - 1);
-                canvas.lineTo(pos, center + (center * (strength / 383)) + 1);
-                canvas.stroke();
-                if(smokeEnabled){
-                    smoke.beginPath();
-                    smoke.moveTo(pos, center - (center * (strength / 383)) - 8);
-                    smoke.lineTo(pos, center + (center * (strength / 383)) + 8);
-                    smoke.stroke();
-                }
-            }
-        },
-        stop: function(){
-            canvas.lineCap = "square";
-            canvas.lineWidth = 1;
-            smoke.lineCap = "square";
-            smoke.lineWidth = 1;
-        },
-        sizechange: function(){
-
-        },
-        lineWidth: 6,
-        lineCount: 18,
-        sqrt255: Math.sqrt(255)
-    },
-    caveAudioVision: {
-        name: "Cave Lines",
-        image: "visualizers/caveLines_av.png",
-        start: function(){
-
-        },
-        frame: function(){
-            canvas.lineWidth = this.lineWidth - (performanceMode * 0.5 * this.lineWidth);
-            smoke.lineWidth = this.lineWidth - (performanceMode * 0.5 * this.lineWidth);
-            canvas.clearRect(0, 0, size[0], size[1]);
-            smoke.clearRect(0, 0, size[0], size[1]);
-            var xdist = size[0] / (this.lineCount + 2);
-            var colorstep = 255 / this.lineCount;
-            var caveCieling = Math.round(size[1] / 18);
-            var center = size[1] / 2;
-            var ringPools = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-            for(var i = 0; i < 64; i++){
-                var currPool = Math.floor(i / (64 / 18));
-                ringPools[currPool] = Math.max(visData[i], ringPools[currPool]);
-            }
-            for(var i = 0; i < this.lineCount; i++){
-                var pos = Math.floor((i + 1) * xdist);
-                var strength = ringPools[i];
-                canvas.strokeStyle = getColor(strength, i * colorstep);
-                smoke.strokeStyle = getColor(strength, i * colorstep);
-                
-                canvas.beginPath();
-                canvas.moveTo(pos, caveCieling);
-                canvas.lineTo(pos, (center * (strength / 383)) + caveCieling + 4);
-                canvas.moveTo(pos, size[1] - caveCieling);
-                canvas.lineTo(pos, size[1] - (center * (strength / 383)) - caveCieling - 4);
-                canvas.stroke();
-                if(smokeEnabled){
-                    smoke.beginPath();
-                    smoke.moveTo(pos, 0);
-                    smoke.lineTo(pos, (center * (strength / 383)) + caveCieling + 12);
-                    smoke.moveTo(pos, size[1]);
-                    smoke.lineTo(pos, size[1] - (center * (strength / 383)) - caveCieling - 12);
-                    smoke.stroke();
-                    canvas.fillStyle = "#000";
-                    canvas.fillRect(0, 0, size[0], caveCieling);
-                    canvas.fillRect(0, size[1] - caveCieling, size[0], size[1]);
-                }
-            }
-        },
-        stop: function(){
-            canvas.lineWidth = 1;
-            smoke.lineWidth = 1;
-        },
-        sizechange: function(){
-
-        },
-        lineWidth: 6,
-        lineCount: 18,
-        sqrt255: Math.sqrt(255)
-    },
     spikes1to1: {
         name: "Bars",
         image: "visualizers/spikesClassic.png",
@@ -3198,16 +2876,6 @@ var vis = {
 
                 smoke.strokeStyle = ringColor;
                 this.degArcSmoke(center[0], center[1], ringWidth * 2 * (i + 1), this.ringPositions[i], this.ringPositions[i] + 180);
-                /*
-                canvas.lineWidth = ringWidth;
-                canvas.strokeStyle = 'rgba(0, 0, 0, 0.85)';
-                this.degArc(center[0], center[1], ringWidth * 2 * (i + 1), this.ringPositions[i], this.ringPositions[i] + 180);
-                canvas.lineWidth = ringWidth - 4;
-                canvas.strokeStyle = 'rgba(0, 0, 0, 0.5)';
-                this.degArc(center[0], center[1], ringWidth * 2 * (i + 1), this.ringPositions[i], this.ringPositions[i] + 180);
-                canvas.lineWidth = ringWidth - 8;
-                canvas.strokeStyle = '#000';
-                this.degArc(center[0], center[1], ringWidth * 2 * (i + 1), this.ringPositions[i], this.ringPositions[i] + 180);*/
             }
             if(!smokeEnabled){
                 canvas.fillStyle = '#FFF';
@@ -3233,108 +2901,6 @@ var vis = {
             smoke.beginPath();
             smoke.arc(x, y, r, (a / 360) * this.TAU, (b / 360) * this.TAU);
             smoke.stroke();
-        }
-    },
-    circleLines: {
-        name: "Circle Lines",
-        image: "visualizers/circleLines.png",
-        start: function(){
-            canvas.lineCap = "round";
-            canvas.lineWidth = this.lineWidth - (performanceMode * 0.5 * this.lineWidth);
-            smoke.lineCap = "round";
-            smoke.lineWidth = this.lineWidth - (performanceMode * 0.5 * this.lineWidth);
-        },
-        frame: function(){
-            canvas.clearRect(0, 0, size[0], size[1]);
-            if(smokeEnabled){
-                smoke.clearRect(0, 0, size[0], size[1]);
-            }
-            var ringHeight = Math.round(Math.min(size[0], size[1]) * 0.6);
-            var ringMaxRadius = ringHeight * 0.35;
-            var ringMinRadius = ringHeight * 0.25;
-            var ringMaxExpand = (ringMaxRadius - ringMinRadius) / 4;
-            var drumStrength = 0;
-            var ringPools = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-            for(var i = 0; i < 64; i++){
-                var currPool = Math.floor(i / (64 / 36));
-                ringPools[currPool] = Math.max(visData[i], ringPools[currPool]);
-            }
-            for(var i = 0; i < 12; i++){
-                drumStrength += Math.pow(visData[i], 2) / 255;
-            }
-            drumStrength /= 12;
-
-            var randomOffset = [0, 0];
-
-            var lineDist = 360 / this.lineCount;
-            var colorDist = 255 / this.lineCount;
-            for(var i = 0; i < this.lineCount; i++){
-                var strength = ringPools[i];
-                
-                var firstPoint = this.findNewPoint(
-                    size[0] / 2,
-                    size[1] / 2,
-                    i * lineDist + 90,
-                    ringMinRadius + drumStrength / 255 * ringMaxRadius - 5
-                );
-                var secondPoint = this.findNewPoint(
-                    size[0] / 2,
-                    size[1] / 2,
-                    i * lineDist + 90,
-                    ringMinRadius + strength / 255 * ringMinRadius + drumStrength / 255 * ringMaxRadius + drumStrength / 255 * ringMaxExpand,
-                )
-                canvas.strokeStyle = getColor(strength, i * colorDist);
-                canvas.beginPath();
-                canvas.moveTo(firstPoint.x, firstPoint.y);
-                canvas.lineTo(secondPoint.x, secondPoint.y);
-                canvas.stroke();
-                if(smokeEnabled){
-                    smoke.strokeStyle = getColor(strength, i * colorDist);
-                    smoke.beginPath();
-                    smoke.moveTo(firstPoint.x, firstPoint.y);
-                    smoke.lineTo(secondPoint.x, secondPoint.y);
-                    smoke.stroke();
-                }
-            }
-
-            
-            canvas.fillStyle = '#212121';
-            this.degArc2(
-                size[0] / 2 + randomOffset[0],
-                size[1] / 2 + randomOffset[1],
-                ringMinRadius * 0.7 + drumStrength / 255 * ringMaxRadius - 5,
-                0,
-                360
-            );
-        },
-        stop: function(){
-            canvas.lineCap = "butt";
-            canvas.lineWidth = 1;
-            smoke.lineCap = "butt";
-            smoke.lineWidth = 1;
-        },
-        sizechange: function(){
-            canvas.lineCap = "round";
-            canvas.lineWidth = this.lineWidth - (performanceMode * 0.5 * this.lineWidth);
-            smoke.lineCap = "round";
-            smoke.lineWidth = this.lineWidth - (performanceMode * 0.5 * this.lineWidth);
-        },
-        lineCount: 36,
-        lineWidth: 6,
-        TAU: Math.PI * 2,
-        sqrt255: Math.sqrt(255),
-        degArc2: function(x, y, r, a, b){
-            canvas.beginPath();
-            canvas.arc(x, y, r, (a / 360) * this.TAU, (b / 360) * this.TAU);
-            canvas.fill();
-        },
-        findNewPoint: function(x, y, angle, distance) { // from codershop on Stack Overflow
-            var result = {};
-        
-            result.x = /*Math.round*/(Math.cos(angle * Math.PI / 180) * distance + x);
-            result.y = /*Math.round*/(Math.sin(angle * Math.PI / 180) * distance + y);
-        
-            return result;
         }
     },
     circle: {
@@ -3787,6 +3353,368 @@ var vis = {
         },
         ratio_360_1024: 360 / 1024,
         ratio_360_64: 360 / 64
+    },
+    'SEPARATOR_AUDIOVISION" disabled="': {
+        name: 'AudioVision',
+        start: function(){
+
+        },
+        frame: function(){
+
+        },
+        stop: function(){
+
+        }
+    },
+    curvedAudioVision: {
+        name: "Curved Lines",
+        image: "visualizers/curvedLines_av.png",
+        start: function(){
+
+        },
+        frame: function(){
+            canvas.clearRect(0, 0, size[0], size[1]);
+            smoke.clearRect(0, 0, size[0], size[1]);
+            canvas.lineCap = "round";
+            canvas.lineWidth = this.lineWidth - (performanceMode * 0.5 * this.lineWidth);
+            smoke.lineCap = "round";
+            smoke.lineWidth = this.lineWidth - (performanceMode * 0.5 * this.lineWidth);
+            var xdist = size[0] / (this.lineCount + 2) / 2;
+            var ydist = size[1] / (this.lineCount + 2) / 2;
+            xdist = Math.min(xdist, ydist);
+            var colorstep = 255 / this.lineCount;
+            var ringPools = [0, 0, 0, 0, 0, 0, 0, 0, 0];
+            for(var i = 0; i < 64; i++){
+                var currPool = Math.floor(i / (64 / 9));
+                ringPools[currPool] = Math.max(visData[i], ringPools[currPool]);
+            }
+            for(var i = 0; i < this.lineCount; i++){
+                var strength = ringPools[i] * 0.85;
+                canvas.strokeStyle = getColor(strength, i * colorstep);
+                smoke.strokeStyle = getColor(strength, i * colorstep);
+
+                var circlePoints = [
+                    {x: xdist * this.lineCount, y: 0},
+                    {x: xdist * this.lineCount, y: 2 * xdist * this.lineCount},
+                    {x: xdist * this.lineCount + (xdist * (i + 1)), y: xdist * this.lineCount}
+                ]
+                var currCircle = this.circleFromThreePoints(...circlePoints);
+                var tri = [
+                    Math.sqrt(
+                        Math.pow(
+                            circlePoints[2].x -
+                            circlePoints[0].x
+                        , 2) + 
+                        Math.pow(
+                            circlePoints[2].y - 
+                            circlePoints[0].y
+                        , 2)
+                    ),
+                    currCircle.r,
+                    currCircle.r
+                ];
+                // (b2 + c2 − a2) / 2bc
+                var angle = Math.acos(this.deg2rad((tri[1]*tri[1] + tri[2]*tri[2] - tri[0]*tri[0]) / (2 * tri[1] * tri[2])));
+                canvas.beginPath();
+                canvas.arc(
+                    currCircle.x + (size[0] - xdist * this.lineCount * 2) / 2,
+                    currCircle.y + (size[1] / 2 - xdist * this.lineCount),
+                    currCircle.r,
+                    ((angle - this.deg2rad(Math.pow((this.lineCount - i - 1) * 1.83, 1.61))) * -1) * (strength / 255),
+                    ((angle - this.deg2rad(Math.pow((this.lineCount - i - 1) * 1.83, 1.61)))) * (strength / 255)
+                );
+                canvas.stroke();
+                if(smokeEnabled){
+                    smoke.beginPath();
+                    smoke.arc(
+                        currCircle.x + (size[0] - xdist * this.lineCount * 2) / 2,
+                        currCircle.y + (size[1] / 2 - xdist * this.lineCount),
+                        currCircle.r,
+                        ((angle - this.deg2rad(Math.pow((this.lineCount - i - 1) * 1.83, 1.61))) * -1) * (strength / 255),
+                        ((angle - this.deg2rad(Math.pow((this.lineCount - i - 1) * 1.83, 1.61)))) * (strength / 255)
+                    );
+                    smoke.stroke();
+                }
+
+                circlePoints[0].x *= -1;
+                circlePoints[1].x *= -1;
+                circlePoints[2].x *= -1;
+                currCircle = this.circleFromThreePoints(...circlePoints);
+                canvas.beginPath();
+                canvas.arc(
+                    currCircle.x + (size[0] / 2 + xdist * this.lineCount),
+                    currCircle.y + (size[1] / 2 - xdist * this.lineCount),
+                    currCircle.r,
+                    ((angle - this.deg2rad(Math.pow((this.lineCount - i - 1) * 1.83, 1.61))) * -1) * (strength / 255) + this.deg2rad(180),
+                    ((angle - this.deg2rad(Math.pow((this.lineCount - i - 1) * 1.83, 1.61)))) * (strength / 255) + this.deg2rad(180)
+                );
+                canvas.stroke();
+                if(smokeEnabled){
+                    smoke.beginPath();
+                    smoke.arc(
+                        currCircle.x + (size[0] / 2 + xdist * this.lineCount),
+                        currCircle.y + (size[1] / 2 - xdist * this.lineCount),
+                        currCircle.r,
+                        ((angle - this.deg2rad(Math.pow((this.lineCount - i - 1) * 1.83, 1.61))) * -1) * (strength / 255) + this.deg2rad(180),
+                        ((angle - this.deg2rad(Math.pow((this.lineCount - i - 1) * 1.83, 1.61)))) * (strength / 255) + this.deg2rad(180)
+                    );
+                    smoke.stroke();
+                }
+            }
+        },
+        stop: function(){
+            canvas.lineCap = "square";
+            canvas.lineWidth = 1;
+            smoke.lineCap = "square";
+            smoke.lineWidth = 1;
+        },
+        sizechange: function(){
+
+        },
+        lineWidth: 6,
+        lineCount: 9,
+        sqrt255: Math.sqrt(255),
+        deg2rad: function(degrees){
+            return degrees * this.piBy180;
+        },
+        piBy180: Math.PI / 180,
+        circleFromThreePoints: function(p1, p2, p3) { // from Circle.js
+            var x1 = p1.x;
+            var y1 = p1.y;
+            var x2 = p2.x;
+            var y2 = p2.y;
+            var x3 = p3.x;
+            var y3 = p3.y;
+            
+            var a = x1 * (y2 - y3) - y1 * (x2 - x3) + x2 * y3 - x3 * y2;
+            
+            var b = (x1 * x1 + y1 * y1) * (y3 - y2) 
+                    + (x2 * x2 + y2 * y2) * (y1 - y3)
+                    + (x3 * x3 + y3 * y3) * (y2 - y1);
+            
+            var c = (x1 * x1 + y1 * y1) * (x2 - x3) 
+                    + (x2 * x2 + y2 * y2) * (x3 - x1) 
+                    + (x3 * x3 + y3 * y3) * (x1 - x2);
+            
+            var x = -b / (2 * a);
+            var y = -c / (2 * a);
+            
+            return {
+                x: x,
+                y: y,
+                r: Math.hypot(x - x1, y - y1)
+            };
+        }
+    },
+    centeredAudioVision: {
+        name: "Centered Lines",
+        image: "visualizers/centeredLines_av.png",
+        start: function(){
+            
+        },
+        frame: function(){
+            canvas.clearRect(0, 0, size[0], size[1]);
+            smoke.clearRect(0, 0, size[0], size[1]);
+            canvas.lineCap = "round";
+            canvas.lineWidth = this.lineWidth - (performanceMode * 0.5 * this.lineWidth);
+            smoke.lineCap = "round";
+            smoke.lineWidth = this.lineWidth - (performanceMode * 0.5 * this.lineWidth);
+            var xdist = size[0] / (this.lineCount + 2);
+            var colorstep = 255 / this.lineCount;
+            var center = size[1] / 2;
+            var ringPools = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+            for(var i = 0; i < 64; i++){
+                var currPool = Math.floor(i / (64 / 18));
+                ringPools[currPool] = Math.max(visData[i], ringPools[currPool]);
+            }
+            for(var i = 0; i < this.lineCount; i++){
+                var pos = Math.floor((i + 1) * xdist);
+                var strength = ringPools[i];
+                canvas.strokeStyle = getColor(strength, i * colorstep);
+                smoke.strokeStyle = getColor(strength, i * colorstep);
+                
+                canvas.beginPath();
+                canvas.moveTo(pos, center - (center * (strength / 383)) - 1);
+                canvas.lineTo(pos, center + (center * (strength / 383)) + 1);
+                canvas.stroke();
+                if(smokeEnabled){
+                    smoke.beginPath();
+                    smoke.moveTo(pos, center - (center * (strength / 383)) - 8);
+                    smoke.lineTo(pos, center + (center * (strength / 383)) + 8);
+                    smoke.stroke();
+                }
+            }
+        },
+        stop: function(){
+            canvas.lineCap = "square";
+            canvas.lineWidth = 1;
+            smoke.lineCap = "square";
+            smoke.lineWidth = 1;
+        },
+        sizechange: function(){
+
+        },
+        lineWidth: 6,
+        lineCount: 18,
+        sqrt255: Math.sqrt(255)
+    },
+    caveAudioVision: {
+        name: "Cave Lines",
+        image: "visualizers/caveLines_av.png",
+        start: function(){
+
+        },
+        frame: function(){
+            canvas.lineWidth = this.lineWidth - (performanceMode * 0.5 * this.lineWidth);
+            smoke.lineWidth = this.lineWidth - (performanceMode * 0.5 * this.lineWidth);
+            canvas.clearRect(0, 0, size[0], size[1]);
+            smoke.clearRect(0, 0, size[0], size[1]);
+            var xdist = size[0] / (this.lineCount + 2);
+            var colorstep = 255 / this.lineCount;
+            var caveCieling = Math.round(size[1] / 18);
+            var center = size[1] / 2;
+            var ringPools = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+            for(var i = 0; i < 64; i++){
+                var currPool = Math.floor(i / (64 / 18));
+                ringPools[currPool] = Math.max(visData[i], ringPools[currPool]);
+            }
+            for(var i = 0; i < this.lineCount; i++){
+                var pos = Math.floor((i + 1) * xdist);
+                var strength = ringPools[i];
+                canvas.strokeStyle = getColor(strength, i * colorstep);
+                smoke.strokeStyle = getColor(strength, i * colorstep);
+                
+                canvas.beginPath();
+                canvas.moveTo(pos, caveCieling);
+                canvas.lineTo(pos, (center * (strength / 383)) + caveCieling + 4);
+                canvas.moveTo(pos, size[1] - caveCieling);
+                canvas.lineTo(pos, size[1] - (center * (strength / 383)) - caveCieling - 4);
+                canvas.stroke();
+                if(smokeEnabled){
+                    smoke.beginPath();
+                    smoke.moveTo(pos, 0);
+                    smoke.lineTo(pos, (center * (strength / 383)) + caveCieling + 12);
+                    smoke.moveTo(pos, size[1]);
+                    smoke.lineTo(pos, size[1] - (center * (strength / 383)) - caveCieling - 12);
+                    smoke.stroke();
+                    canvas.fillStyle = "#000";
+                    canvas.fillRect(0, 0, size[0], caveCieling);
+                    canvas.fillRect(0, size[1] - caveCieling, size[0], size[1]);
+                }
+            }
+        },
+        stop: function(){
+            canvas.lineWidth = 1;
+            smoke.lineWidth = 1;
+        },
+        sizechange: function(){
+
+        },
+        lineWidth: 6,
+        lineCount: 18,
+        sqrt255: Math.sqrt(255)
+    },
+    circleLines: {
+        name: "Circle Lines",
+        image: "visualizers/circleLines.png",
+        start: function(){
+            canvas.lineCap = "round";
+            canvas.lineWidth = this.lineWidth - (performanceMode * 0.5 * this.lineWidth);
+            smoke.lineCap = "round";
+            smoke.lineWidth = this.lineWidth - (performanceMode * 0.5 * this.lineWidth);
+        },
+        frame: function(){
+            canvas.clearRect(0, 0, size[0], size[1]);
+            if(smokeEnabled){
+                smoke.clearRect(0, 0, size[0], size[1]);
+            }
+            var ringHeight = Math.round(Math.min(size[0], size[1]) * 0.6);
+            var ringMaxRadius = ringHeight * 0.35;
+            var ringMinRadius = ringHeight * 0.25;
+            var ringMaxExpand = (ringMaxRadius - ringMinRadius) / 4;
+            var drumStrength = 0;
+            var ringPools = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+            for(var i = 0; i < 64; i++){
+                var currPool = Math.floor(i / (64 / 36));
+                ringPools[currPool] = Math.max(visData[i], ringPools[currPool]);
+            }
+            for(var i = 0; i < 12; i++){
+                drumStrength += Math.pow(visData[i], 2) / 255;
+            }
+            drumStrength /= 12;
+
+            var randomOffset = [0, 0];
+
+            var lineDist = 360 / this.lineCount;
+            var colorDist = 255 / this.lineCount;
+            for(var i = 0; i < this.lineCount; i++){
+                var strength = ringPools[i];
+                
+                var firstPoint = this.findNewPoint(
+                    size[0] / 2,
+                    size[1] / 2,
+                    i * lineDist + 90,
+                    ringMinRadius + drumStrength / 255 * ringMaxRadius - 5
+                );
+                var secondPoint = this.findNewPoint(
+                    size[0] / 2,
+                    size[1] / 2,
+                    i * lineDist + 90,
+                    ringMinRadius + strength / 255 * ringMinRadius + drumStrength / 255 * ringMaxRadius + drumStrength / 255 * ringMaxExpand,
+                )
+                canvas.strokeStyle = getColor(strength, i * colorDist);
+                canvas.beginPath();
+                canvas.moveTo(firstPoint.x, firstPoint.y);
+                canvas.lineTo(secondPoint.x, secondPoint.y);
+                canvas.stroke();
+                if(smokeEnabled){
+                    smoke.strokeStyle = getColor(strength, i * colorDist);
+                    smoke.beginPath();
+                    smoke.moveTo(firstPoint.x, firstPoint.y);
+                    smoke.lineTo(secondPoint.x, secondPoint.y);
+                    smoke.stroke();
+                }
+            }
+
+            
+            canvas.fillStyle = '#212121';
+            this.degArc2(
+                size[0] / 2 + randomOffset[0],
+                size[1] / 2 + randomOffset[1],
+                ringMinRadius * 0.7 + drumStrength / 255 * ringMaxRadius - 5,
+                0,
+                360
+            );
+        },
+        stop: function(){
+            canvas.lineCap = "butt";
+            canvas.lineWidth = 1;
+            smoke.lineCap = "butt";
+            smoke.lineWidth = 1;
+        },
+        sizechange: function(){
+            canvas.lineCap = "round";
+            canvas.lineWidth = this.lineWidth - (performanceMode * 0.5 * this.lineWidth);
+            smoke.lineCap = "round";
+            smoke.lineWidth = this.lineWidth - (performanceMode * 0.5 * this.lineWidth);
+        },
+        lineCount: 36,
+        lineWidth: 6,
+        TAU: Math.PI * 2,
+        sqrt255: Math.sqrt(255),
+        degArc2: function(x, y, r, a, b){
+            canvas.beginPath();
+            canvas.arc(x, y, r, (a / 360) * this.TAU, (b / 360) * this.TAU);
+            canvas.fill();
+        },
+        findNewPoint: function(x, y, angle, distance) { // from codershop on Stack Overflow
+            var result = {};
+        
+            result.x = /*Math.round*/(Math.cos(angle * Math.PI / 180) * distance + x);
+            result.y = /*Math.round*/(Math.sin(angle * Math.PI / 180) * distance + y);
+        
+            return result;
+        }
     },
     'SEPARATOR_EDGES" disabled="': {
         name: "Edges",
@@ -4940,20 +4868,7 @@ var vis = {
                 canvas.lineTo(newLaserPos[0], newLaserPos[1]);
                 canvas.stroke();
                 
-                if(smokeEnabled){/*
-                    smoke.lineWidth = this.lasers[i].size * 4;
-                    smoke.strokeStyle = this.lasers[i].color;
-                    smoke.beginPath();
-                    smoke.moveTo(this.lasers[i].pos[0], this.lasers[i].pos[1]);
-                    var newLaserPosSmoke = this.pointFromAngle(
-                        this.lasers[i].pos[0],
-                        this.lasers[i].pos[1],
-                        this.lasers[i].angle,
-                        this.lasers[i].vel * 2
-                    );
-                    smoke.lineTo(newLaserPosSmoke[0], newLaserPosSmoke[1]);
-                    smoke.stroke();
-                    */
+                if(smokeEnabled){
                     smoke.fillStyle = this.lasers[i].color;
                     smoke.beginPath();
                     smoke.arc(this.lasers[i].pos[0], this.lasers[i].pos[1], this.settings.laserLength * 1.5, 0, this.deg2rad(360));
@@ -5978,10 +5893,6 @@ function toggleSmoke(){
         smokeScreen1.classList.add("disabled");
         smokeScreen2.classList.add("disabled");
         getId("smokeButton").style.borderColor = "#C00";
-        /*
-        canvasElement.style.backgroundPosition = "";
-        canvasElement.style.backgroundImage = "";
-        */
         smokeEnabled = 0;
     }else{
         smokeElement.classList.remove("disabled");
@@ -5990,10 +5901,6 @@ function toggleSmoke(){
             smokeScreen2.classList.remove("disabled");
         }
         getId("smokeButton").style.borderColor = "#0A0";
-        /*
-        canvasElement.style.backgroundPosition = "0px 0px";
-        canvasElement.style.backgroundImage = "url(smoke_transparent.png)";
-        */
         smokeEnabled = 1;
         resizeSmoke();
         if(vis[currVis].sizechange){
@@ -6051,7 +5958,6 @@ resizeSmoke();
 
 var featuredVis = {
     reflection: 1,
-    bassWave: 1,
     triWave: 1,
     circle: 1,
     bassCircle: 1,
@@ -6283,12 +6189,6 @@ function checkSelfClose(){
 
 var transparentMode = 0;
 function updateWindowType(){
-    /*if(windowType === "opaque"){
-        transparentMode = 0;
-        document.body.classList.remove("transparent");
-        document.body.parentNode.classList.remove("transparent");
-        document.getElementsByClassName("winHTML")[0].classList.remove("transparent");
-    }else */
     if(windowType === "transparent"){
         transparentMode = 1;
         document.body.classList.add("transparent");
@@ -6300,6 +6200,8 @@ function updateWindowType(){
         getId("songList").classList.add("transparentPlatform");
         getId("visualizer").classList.add("transparent");
         getId("smokeButton").innerHTML = "Glow";
+        getId("transparentModeIconText").innerHTML = "Disable Transparency";
+        getId("transparentModeIconNoGPU").style.display = "none";
         remote.getCurrentWindow().setIgnoreMouseEvents(false);
 
         featuredVis = {
@@ -6318,14 +6220,6 @@ var taskbarMode = 0;
 var previousVis = "";
 function toggleTaskbarMode(){
     if(taskbarMode){
-        /*
-        aosTools.setDims({
-            x: "auto",
-            y: "auto",
-            width: 1038,
-            height: 626
-        });
-        */
         remote.getCurrentWindow().setBounds({
             x: (screen.width - 1048) / 2,
             y: (screen.height - 632) / 2,
@@ -6338,9 +6232,6 @@ function toggleTaskbarMode(){
             overrideVis(previousVis);
         }
     }else{
-        /*
-        aosTools.getScreenDims(finishSettingTaskbarMode);
-        */
         remote.getCurrentWindow().setBounds({
             x: -9,
             y: screen.height - 148,
@@ -6354,14 +6245,6 @@ function toggleTaskbarMode(){
     }
 }
 function finishSettingTaskbarMode(res){
-    /*
-    aosTools.setDims({
-        x: -0.5 * windowBorders[0] - 4,
-        y: res.content.height - 109 - windowBorders[1] + windowBorders[0] * 0.5,
-        width: res.content.width + 8 + windowBorders[0],
-        height: 113 + windowBorders[1],
-    });
-    */
     overrideVis("spectrumBass");
 }
 
