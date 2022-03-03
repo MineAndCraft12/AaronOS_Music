@@ -126,16 +126,28 @@ app.on('activate', () => {
 
 ipcMain.on('toggle-transparent', function(event, args){
     if(windowType === "opaque"){
-        app.relaunch({ args: process.argv.slice(1).concat(['--enable-transparent-visuals']) });
+        if(process.argv[1] === "."){
+            app.relaunch({ args: process.argv.slice(1).concat(['--enable-transparent-visuals']) });
+        }else{
+            app.relaunch({args: process.argv.slice(0).concat(['--enable-transparent-visuals'])});
+        }
         app.quit();
     }else if(windowType === "transparent"){
-        app.relaunch({ args: process.argv.slice(1, 2) });
+        if(process.argv[1] === "."){
+            app.relaunch({ args: process.argv.slice(1, 2) });
+        }else{
+            app.relaunch({ args: process.argv.slice(0, 1) });
+        }
         app.quit();
     }
 });
 
 ipcMain.on('toggle-transparent-no-gpu', function(event, args){
-    app.relaunch({ args: process.argv.slice(1).concat(['--enable-transparent-visuals', '--disable-hardware-acceleration']) });
+    if(process.argv[1] === "."){
+        app.relaunch({ args: process.argv.slice(1).concat(['--enable-transparent-visuals', '--disable-hardware-acceleration']) });
+    }else{
+        app.relaunch({args: process.argv.slice(0).concat(['--enable-transparent-visuals', '--disable-hardware-acceleration'])});
+    }
     app.quit();
 });
 
