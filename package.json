@@ -8,9 +8,9 @@
     "start": "electron .",
     "start-transparent": "electron . --enable-transparent-visuals",
     "start-transparent-no-gpu": "electron . --enable-transparent-visuals --disable-hardware-acceleration",
-    "package-mac": "node build_mac.js",
     "package-win": "node build_win.js",
-    "package-linux": "node build_linux.js"
+    "package-linux": "node build_linux.js",
+    "package-mac": "node build_mac.js"
   },
   "repository": {
     "type": "git",

@@ -2091,7 +2091,7 @@ var vis = {
         }
     },
     'SEPARATOR_BARS" disabled="': {
-        name: 'Bars and Lines',
+        name: 'Bars and Waves',
         start: function(){
 
         },
@@ -4587,15 +4587,41 @@ var vis = {
             smoke.clearRect(0, 0, size[0], size[1]);
         },
         frame: function(){
-            var left = size[0] / 2 - 512;
-            canvas.putImageData(canvas.getImageData(left, 0, left + 1024, size[1]), left, -1);
+            var left = size[0] / 2 - 64;
+            canvas.putImageData(canvas.getImageData(left, 0, left + 128, size[1]), left, -1);
             var strength = 0;
             canvas.fillStyle = "#000";
             canvas.fillRect(0, size[1] - 1, size[0], 1);
             for(var i = 0; i < 64; i++){
                 strength = visData[i];
                 canvas.fillStyle = getColor(strength, i * 4);
-                canvas.fillRect(left + i * 16, size[1] - 1, 16, 1);
+                canvas.fillRect(left + i * 2, size[1] - 1, 2, 1);
+            }
+        },
+        sizechange: function(){
+            canvas.clearRect(0, 0, size[0], size[1]);
+        },
+        stop: function(){
+            
+        }
+    },
+    spectrogramStretched: {
+        name: "Spectrogram Stretched",
+        image: "visualizers/spectrogramStretched.png",
+        start: function(){
+            canvas.clearRect(0, 0, size[0], size[1]);
+            smoke.clearRect(0, 0, size[0], size[1]);
+        },
+        frame: function(){
+            var left = size[0] / 2 - 256;
+            canvas.putImageData(canvas.getImageData(left, 0, left + 512, size[1]), left, -1);
+            var strength = 0;
+            canvas.fillStyle = "#000";
+            canvas.fillRect(0, size[1] - 1, size[0], 1);
+            for(var i = 0; i < 64; i++){
+                strength = visData[i];
+                canvas.fillStyle = getColor(strength, i * 4);
+                canvas.fillRect(left + i * 8, size[1] - 1, 8, 1);
             }
         },
         sizechange: function(){
@@ -5959,9 +5985,9 @@ resizeSmoke();
 var featuredVis = {
     reflection: 1,
     triWave: 1,
-    circle: 1,
     bassCircle: 1,
-    dynamicTiles: 1
+    dynamicTiles: 1,
+    spectrogramStretched: 1
 };
 
 function openVisualizerMenu(){

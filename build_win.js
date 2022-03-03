@@ -1,22 +1,29 @@
+console.log("Preparing packager...");
+
 const packager = require('electron-packager');
 
-console.log("initializing bundleElectronApp...");
 async function bundleElectronApp(options){
     const appPaths = await packager(options);
-    console.log(`Electron app bundles created:\n${appPaths.join("\n")}`);
+    if(appPaths.length > 0){
+        console.log(`Electron app package created: ${appPaths.join(", ")}`);
+    }else{
+        console.log(`Electron app package failed to create.`);
+    }
 }
 
 var options_win = {
     dir: ".",
-    arch: "ia32",
+    arch: "x64",
     asar: true,
     platform: "win32",
     icon: "win_icon.ico",
     out: "release-builds/win",
     overwrite: "true",
-    ignore: /release\-builds\//,
-
+    ignore: /release\-builds\//
 };
 
-console.log("building for Windows...");
+bundleElectronApp(options_win);
+options_win.arch = "ia32";
+bundleElectronApp(options_win);
+options_win.arch = "arm64";
 bundleElectronApp(options_win);
