@@ -1,3 +1,11 @@
+window.onerror = (message, source, lineno, colno, error) => {
+    console.log(
+        "AaronOS Music Player\n" +
+        "Error in " + source + '[' + lineno + ', ' + colno + ']:\n\n' +
+        message
+    );
+};
+
 var webVersion = 0;
 var aosToolsConnected = 0;
 //let remote, ipcRenderer, desktopCapturer = null;
@@ -5,7 +13,7 @@ try{
     var {
         // remote,
         ipcRenderer,
-        desktopCapturer
+        // desktopCapturer
     } = require('electron');
     var remote = require('@electron/remote');
 }catch(err){
@@ -111,10 +119,6 @@ if(webVersion){
     if(navigatorPlatform.indexOf("Win") !== 0){
         getId("tskbrModeRange").style.display = "none";
     }
-}
-
-window.onerror = function(errorMsg, url, lineNumber){
-    console.log("oof, u got a error\n\n" + url + '[' + lineNumber + ']:\n' + errorMsg);
 }
 
 function getId(target){
@@ -717,7 +721,7 @@ function loadSystemAudio(event){
     getId("visCanvas").width = size[0];
     getId("visCanvas").height = size[1];
 
-    desktopCapturer.getSources({types: ['screen']}).then(async sources => {
+    remote.desktopCapturer.getSources({types: ['screen']}).then(async sources => {
         for(const source of sources){
             console.log(source);
             if(source.name === "Entire Screen" || source.name === "Screen 1"){
@@ -3287,6 +3291,285 @@ var vis = {
             smoke.arc(x, y, r, (a / 360) * this.TAU, (b / 360) * this.TAU);
             smoke.fill();
         },
+    },
+    orbsAround: {
+        name: "Orbs Around",
+        image: "visualizers/orbsAround.png",
+        start: function(){
+            this.speed = 1;
+            this.angle = 90;
+            this.rotation = 0;
+            canvas.clearRect(0, 0, size[0], size[1]);
+            if(smokeEnabled){
+                smoke.clearRect(0, 0, size[0], size[1]);
+            }
+        },
+        frame: function(){
+            var bassAmount = 0;
+            var bassAmounts = [];
+            var trebleAmount = 0;
+            var totalAmount = 0;
+            for(var i = 0; i < 64; i++){
+                totalAmount += visData[i];
+                if(i < 12){
+                    bassAmount += visData[i];
+                    bassAmounts.push(visData[i]);
+                }else{
+                    trebleAmount += visData[i];
+                }
+            }
+            bassAmount /= 12;
+            trebleAmount /= 52;
+            totalAmount /= 64;
+            bassAmounts.sort();
+            bassAmounts = bassAmounts.slice(-6);
+            var bassMax = 0;
+            for(var i in bassAmounts){
+                bassMax += bassAmounts[i];
+            }
+            bassMax /= bassAmounts.length;
+
+            this.speed = (1 + totalAmount / 8) * fpsCompensation;
+            this.angle -= (trebleAmount / 256) * fpsCompensation;
+            this.rotation += (trebleAmount / 16) * fpsCompensation;
+            if(this.angle < 0){
+                this.angle += 360;
+            }
+            if(this.rotation > 360){
+                this.rotation -= 360;
+            }
+
+            var resizeScale = (256 - this.speed) / 256;
+            var corner = [
+                size[0] - size[0] * (512 - this.speed) / 512,
+                size[1] - size[1] * (512 - this.speed) / 512
+            ];
+            corner = this.findNewPoint(corner[0], corner[1], this.angle, this.speed);
+
+            canvas.globalAlpha = 0.9 + (1 - fpsCompensation) * 0.1;
+            canvas.globalCompositeOperation = 'copy';
+            canvas.drawImage(
+                canvasElement,
+                corner.x,
+                corner.y,
+                size[0] * resizeScale,
+                size[1] * resizeScale
+            );
+            canvas.globalCompositeOperation = 'source-over';
+            canvas.globalAlpha = 1;
+            //canvas.fillStyle = "rgba(0, 0, 0, 0.1)";
+            //canvas.fillRect(0, 0, size[0], size[1]);
+
+            if(smokeEnabled){
+                smoke.globalAlpha = 0.9 + (1 - fpsCompensation) * 0.1;
+                smoke.globalCompositeOperation = 'copy';
+                smoke.drawImage(
+                    smokeElement,
+                    corner.x,
+                    corner.y,
+                    size[0] * resizeScale,
+                    size[1] * resizeScale
+                );
+                smoke.globalCompositeOperation = 'source-over';
+                smoke.globalAlpha = 1;
+                //smoke.fillStyle = "rgba(0, 0, 0, 0.1)";
+                //smoke.fillRect(0, 0, size[0], size[1]);
+            }
+
+            var centerPoint = this.findNewPoint(size[0] / 2, size[1] / 2, this.angle, this.speed * -10);
+            var orb1 = this.findNewPoint(centerPoint.x, centerPoint.y, this.rotation, 64 + bassAmount / 32);
+            var orb2 = this.findNewPoint(centerPoint.x, centerPoint.y, (this.rotation + 180) % 360, 64 + bassAmount / 32);
+
+            canvas.fillStyle = '#FFF';
+            if(Math.random() * 255 < trebleAmount * 2 * fpsCompensation){
+                canvas.fillRect(Math.random() * size[0], Math.random() * size[1], 2, 2);
+            }
+
+            if(debugForce){
+                canvas.fillRect(centerPoint.x, centerPoint.y, 1, 1);
+            }
+
+            canvas.fillStyle = getColor(bassMax, Math.abs(this.angle / 360 - 0.5) * 255 * 2);
+
+            this.degArc2(orb1.x, orb1.y, 32 + bassAmount / 8, 0, 360);
+            this.degArc2(orb2.x, orb2.y, 32 + bassAmount / 8, 0, 360);
+            if(smokeEnabled){
+                smoke.fillStyle = getColor(bassMax, Math.abs(this.angle / 360 - 0.5) * 255 * 2);
+                this.degArc2smoke(orb1.x, orb1.y, 34 + bassAmount / 8, 0, 360);
+                this.degArc2smoke(orb2.x, orb2.y, 34 + bassAmount / 8, 0, 360);
+            }
+        },
+        stop: function(){
+
+        },
+        speed: 1, // how fast do the circles move? This makes the background shrink faster, and offsets the center point further.
+        angle: 90, // what angle are the circles moving? This changes the direction the background fades to, and sets offset angle of center point.
+        rotation: 0, // where are the orbs relative to each other? This changes the orbs' position around the center point.
+        TAU: Math.PI * 2,
+        degArc: function(x, y, r, a, b){
+            canvas.arc(x, y, r, (a / 360) * this.TAU, (b / 360) * this.TAU);
+        },
+        degArc2: function(x, y, r, a, b){
+            canvas.beginPath();
+            canvas.arc(x, y, r, (a / 360) * this.TAU, (b / 360) * this.TAU);
+            canvas.fill();
+        },
+        degArcSmoke: function(x, y, r, a, b){
+            smoke.arc(x, y, r, (a / 360) * this.TAU, (b / 360) * this.TAU);
+        },
+        degArc2smoke: function(x, y, r, a, b){
+            smoke.beginPath();
+            smoke.arc(x, y, r, (a / 360) * this.TAU, (b / 360) * this.TAU);
+            smoke.fill();
+        },
+        findNewPoint: function(x, y, angle, distance) { // from codershop on Stack Overflow
+            var result = {};
+        
+            result.x = /*Math.round*/(Math.cos(angle * Math.PI / 180) * distance + x);
+            result.y = /*Math.round*/(Math.sin(angle * Math.PI / 180) * distance + y);
+        
+            return result;
+        }
+    },
+    orbsArise: {
+        name: "Orbs Arise",
+        image: "visualizers/orbsArise.png",
+        start: function(){
+            this.speed = 1;
+            this.angle = 90;
+            this.rotation = 0;
+            canvas.clearRect(0, 0, size[0], size[1]);
+            if(smokeEnabled){
+                smoke.clearRect(0, 0, size[0], size[1]);
+            }
+        },
+        frame: function(){
+            var bassAmount = 0;
+            var bassAmounts = [];
+            var trebleAmount = 0;
+            var totalAmount = 0;
+            for(var i = 0; i < 64; i++){
+                totalAmount += visData[i];
+                if(i < 12){
+                    bassAmount += visData[i];
+                    bassAmounts.push(visData[i]);
+                }else{
+                    trebleAmount += visData[i];
+                }
+            }
+            bassAmount /= 12;
+            trebleAmount /= 52;
+            totalAmount /= 64;
+            bassAmounts.sort();
+            bassAmounts = bassAmounts.slice(-6);
+            var bassMax = 0;
+            for(var i in bassAmounts){
+                bassMax += bassAmounts[i];
+            }
+            bassMax /= bassAmounts.length;
+
+            this.speed = (1 + totalAmount / 8) * fpsCompensation;
+            //this.angle -= trebleAmount / 128;
+            this.angle = 90;
+            this.rotation += trebleAmount / 16 * fpsCompensation;
+            //if(this.angle < 0){
+            //    this.angle += 360;
+            //}
+            if(this.rotation > 360){
+                this.rotation -= 360;
+            }
+
+            var resizeScale = (256 - this.speed) / 256;
+            var corner = [
+                size[0] - size[0] * (512 - this.speed) / 512,
+                size[1] - size[1] * (512 - this.speed) / 512
+            ];
+            corner = this.findNewPoint(corner[0], corner[1], this.angle, this.speed);
+
+            canvas.globalAlpha = 0.9 + (1 - fpsCompensation) * 0.1;
+            canvas.globalCompositeOperation = 'copy';
+            canvas.drawImage(
+                canvasElement,
+                corner.x,
+                corner.y,
+                size[0] * resizeScale,
+                size[1] * resizeScale
+            );
+            canvas.globalCompositeOperation = 'source-over';
+            canvas.globalAlpha = 1;
+            //canvas.fillStyle = "rgba(0, 0, 0, 0.1)";
+            //canvas.fillRect(0, 0, size[0], size[1]);
+
+            if(smokeEnabled){
+                smoke.globalAlpha = 0.9 + (1 - fpsCompensation) * 0.1;
+                smoke.globalCompositeOperation = 'copy';
+                smoke.drawImage(
+                    smokeElement,
+                    corner.x,
+                    corner.y,
+                    size[0] * resizeScale,
+                    size[1] * resizeScale
+                );
+                smoke.globalCompositeOperation = 'source-over';
+                smoke.globalAlpha = 1;
+                //smoke.fillStyle = "rgba(0, 0, 0, 0.1)";
+                //smoke.fillRect(0, 0, size[0], size[1]);
+            }
+
+            var centerPoint = this.findNewPoint(size[0] / 2, size[1] / 2, this.angle, this.speed * -10);
+            var orb1 = this.findNewPoint(centerPoint.x, centerPoint.y, this.rotation, 64 + bassAmount / 32);
+            var orb2 = this.findNewPoint(centerPoint.x, centerPoint.y, (this.rotation + 180) % 360, 64 + bassAmount / 32);
+            
+            canvas.fillStyle = '#FFF';
+            if(Math.random() * 255 < trebleAmount * 2 * fpsCompensation){
+                canvas.fillRect(Math.random() * size[0], Math.random() * size[1], 2, 2);
+            }
+
+            if(debugForce){
+                canvas.fillRect(centerPoint.x, centerPoint.y, 1, 1);
+            }
+
+            canvas.fillStyle = getColor(bassMax, Math.abs(this.angle / 360 - 0.5) * 255 * 2);
+
+            this.degArc2(orb1.x, orb1.y, 32 + bassAmount / 8, 0, 360);
+            this.degArc2(orb2.x, orb2.y, 32 + bassAmount / 8, 0, 360);
+            if(smokeEnabled){
+                smoke.fillStyle = getColor(bassMax, Math.abs(this.angle / 360 - 0.5) * 255 * 2);
+                this.degArc2smoke(orb1.x, orb1.y, 34 + bassAmount / 8, 0, 360);
+                this.degArc2smoke(orb2.x, orb2.y, 34 + bassAmount / 8, 0, 360);
+            }
+        },
+        stop: function(){
+
+        },
+        speed: 1, // how fast do the circles move? This makes the background shrink faster, and offsets the center point further.
+        angle: 90, // what angle are the circles moving? This changes the direction the background fades to, and sets offset angle of center point.
+        rotation: 0, // where are the orbs relative to each other? This changes the orbs' position around the center point.
+        TAU: Math.PI * 2,
+        degArc: function(x, y, r, a, b){
+            canvas.arc(x, y, r, (a / 360) * this.TAU, (b / 360) * this.TAU);
+        },
+        degArc2: function(x, y, r, a, b){
+            canvas.beginPath();
+            canvas.arc(x, y, r, (a / 360) * this.TAU, (b / 360) * this.TAU);
+            canvas.fill();
+        },
+        degArcSmoke: function(x, y, r, a, b){
+            smoke.arc(x, y, r, (a / 360) * this.TAU, (b / 360) * this.TAU);
+        },
+        degArc2smoke: function(x, y, r, a, b){
+            smoke.beginPath();
+            smoke.arc(x, y, r, (a / 360) * this.TAU, (b / 360) * this.TAU);
+            smoke.fill();
+        },
+        findNewPoint: function(x, y, angle, distance) { // from codershop on Stack Overflow
+            var result = {};
+        
+            result.x = /*Math.round*/(Math.cos(angle * Math.PI / 180) * distance + x);
+            result.y = /*Math.round*/(Math.sin(angle * Math.PI / 180) * distance + y);
+        
+            return result;
+        }
     },
     eclipse: {
         name: "Eclipse",
@@ -5986,6 +6269,7 @@ var featuredVis = {
     reflection: 1,
     triWave: 1,
     bassCircle: 1,
+    orbsAround: 1,
     dynamicTiles: 1,
     spectrogramStretched: 1
 };

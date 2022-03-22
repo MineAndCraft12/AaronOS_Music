@@ -2,7 +2,7 @@ const {
     app,
     BrowserWindow,
     ipcMain,
-    screen
+    screen,
 } = require('electron');
 
 require('@electron/remote/main').initialize();
