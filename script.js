@@ -3309,6 +3309,7 @@ var vis = {
             var bassAmounts = [];
             var trebleAmount = 0;
             var totalAmount = 0;
+            var avgPitch = [];
             for(var i = 0; i < 64; i++){
                 totalAmount += visData[i];
                 if(i < 12){
@@ -3316,12 +3317,14 @@ var vis = {
                     bassAmounts.push(visData[i]);
                 }else{
                     trebleAmount += visData[i];
+                    avgPitch.push([i - 12, visData[i]]);
                 }
             }
             bassAmount /= 12;
             trebleAmount /= 52;
             totalAmount /= 64;
-            bassAmounts.sort();
+
+            bassAmounts.sort((a, b) => a - b);
             bassAmounts = bassAmounts.slice(-6);
             var bassMax = 0;
             for(var i in bassAmounts){
@@ -3329,9 +3332,27 @@ var vis = {
             }
             bassMax /= bassAmounts.length;
 
+            avgPitch.sort((a, b) => a[1] - b[1]);
+            avgPitch = avgPitch.slice(-4);
+            if(avgPitch[3][1] === 0){
+                avgPitch = [[0, 0], [0, 0], [0, 0], [0, 0]];
+            }else{
+                for(var i = 0; i < 3; i++){
+                    if(avgPitch[i][1] === 0){
+                        avgPitch[i][0] = avgPitch[3][0];
+                    }
+                }
+            }
+            avgPitch = avgPitch[0][0] + avgPitch[1][0] + avgPitch[2][0] + avgPitch[3][0]// + avgPitch[4][0] + avgPitch[5][0] + avgPitch[6][0] + avgPitch[7][0];
+            avgPitch /= 4;
+            avgPitch /= 52;
+            if(isNaN(avgPitch)){
+                avgPitch = 0;
+            }
+
             this.speed = (1 + totalAmount / 8) * fpsCompensation;
             this.angle -= (trebleAmount / 256) * fpsCompensation;
-            this.rotation += (trebleAmount / 16) * fpsCompensation;
+            this.rotation += (trebleAmount / 20 * (1 + avgPitch)) * fpsCompensation;
             if(this.angle < 0){
                 this.angle += 360;
             }
@@ -3376,17 +3397,26 @@ var vis = {
                 //smoke.fillRect(0, 0, size[0], size[1]);
             }
 
-            var centerPoint = this.findNewPoint(size[0] / 2, size[1] / 2, this.angle, this.speed * -10);
+            var centerPoint = this.findNewPoint(size[0] / 2, size[1] / 2, this.angle, this.speed * -10 * (1 / fpsCompensation));
             var orb1 = this.findNewPoint(centerPoint.x, centerPoint.y, this.rotation, 64 + bassAmount / 32);
             var orb2 = this.findNewPoint(centerPoint.x, centerPoint.y, (this.rotation + 180) % 360, 64 + bassAmount / 32);
 
             canvas.fillStyle = '#FFF';
-            if(Math.random() * 255 < trebleAmount * 2 * fpsCompensation){
-                canvas.fillRect(Math.random() * size[0], Math.random() * size[1], 2, 2);
+            if(Math.random() * 255 < trebleAmount * 2 * (1 + avgPitch) * fpsCompensation){
+                canvas.fillRect(Math.random() * size[0] - 1, Math.random() * size[1] - 1, 2, 2);
             }
 
             if(debugForce){
-                canvas.fillRect(centerPoint.x, centerPoint.y, 1, 1);
+                canvas.fillRect(centerPoint.x - 1, centerPoint.y - 1, 2, 2);
+                canvas.fillStyle = "#111";
+                canvas.fillRect(5, 5, 265, 100);
+                canvas.fillStyle = "#FFF";
+                canvas.fillRect(10, 10, totalAmount, 10);
+                canvas.fillRect(10, 40, trebleAmount, 10);
+                canvas.fillRect(10, 70, bassAmount, 10);
+                canvas.fillRect(10, 90, bassMax, 10);
+                canvas.fillStyle = "#F00";
+                canvas.fillRect(avgPitch * 255 + 10, 40, 1, 10);
             }
 
             canvas.fillStyle = getColor(bassMax, Math.abs(this.angle / 360 - 0.5) * 255 * 2);
@@ -3444,10 +3474,12 @@ var vis = {
             }
         },
         frame: function(){
+            
             var bassAmount = 0;
             var bassAmounts = [];
             var trebleAmount = 0;
             var totalAmount = 0;
+            var avgPitch = [];
             for(var i = 0; i < 64; i++){
                 totalAmount += visData[i];
                 if(i < 12){
@@ -3455,12 +3487,14 @@ var vis = {
                     bassAmounts.push(visData[i]);
                 }else{
                     trebleAmount += visData[i];
+                    avgPitch.push([i - 12, visData[i]]);
                 }
             }
             bassAmount /= 12;
             trebleAmount /= 52;
             totalAmount /= 64;
-            bassAmounts.sort();
+
+            bassAmounts.sort((a, b) => a - b);
             bassAmounts = bassAmounts.slice(-6);
             var bassMax = 0;
             for(var i in bassAmounts){
@@ -3468,10 +3502,28 @@ var vis = {
             }
             bassMax /= bassAmounts.length;
 
+            avgPitch.sort((a, b) => a[1] - b[1]);
+            avgPitch = avgPitch.slice(-4);
+            if(avgPitch[3][1] === 0){
+                avgPitch = [[0, 0], [0, 0], [0, 0], [0, 0]];
+            }else{
+                for(var i = 0; i < 3; i++){
+                    if(avgPitch[i][1] === 0){
+                        avgPitch[i][0] = avgPitch[3][0];
+                    }
+                }
+            }
+            avgPitch = avgPitch[0][0] + avgPitch[1][0] + avgPitch[2][0] + avgPitch[3][0]// + avgPitch[4][0] + avgPitch[5][0] + avgPitch[6][0] + avgPitch[7][0];
+            avgPitch /= 4;
+            avgPitch /= 52;
+            if(isNaN(avgPitch)){
+                avgPitch = 0;
+            }
+
             this.speed = (1 + totalAmount / 8) * fpsCompensation;
             //this.angle -= trebleAmount / 128;
             this.angle = 90;
-            this.rotation += trebleAmount / 16 * fpsCompensation;
+            this.rotation += trebleAmount / 20 * (1 + avgPitch) * fpsCompensation;
             //if(this.angle < 0){
             //    this.angle += 360;
             //}
@@ -3516,17 +3568,25 @@ var vis = {
                 //smoke.fillRect(0, 0, size[0], size[1]);
             }
 
-            var centerPoint = this.findNewPoint(size[0] / 2, size[1] / 2, this.angle, this.speed * -10);
+            var centerPoint = this.findNewPoint(size[0] / 2, size[1] / 2, this.angle, this.speed * -10 * (1 / fpsCompensation));
             var orb1 = this.findNewPoint(centerPoint.x, centerPoint.y, this.rotation, 64 + bassAmount / 32);
             var orb2 = this.findNewPoint(centerPoint.x, centerPoint.y, (this.rotation + 180) % 360, 64 + bassAmount / 32);
             
             canvas.fillStyle = '#FFF';
-            if(Math.random() * 255 < trebleAmount * 2 * fpsCompensation){
+            if(Math.random() * 255 < trebleAmount * 2 * (1 + avgPitch) * fpsCompensation){
                 canvas.fillRect(Math.random() * size[0], Math.random() * size[1], 2, 2);
             }
 
             if(debugForce){
-                canvas.fillRect(centerPoint.x, centerPoint.y, 1, 1);
+                canvas.fillRect(centerPoint.x - 1, centerPoint.y - 1, 2, 2);
+                canvas.fillStyle = "#111";
+                canvas.fillRect(5, 5, 265, 120);
+                canvas.fillStyle = "#FFF";
+                canvas.fillRect(10, 10, totalAmount, 10);
+                canvas.fillRect(10, 40, trebleAmount, 10);
+                canvas.fillRect(10, 60, trebleMax, 10);
+                canvas.fillRect(10, 90, bassAmount, 10);
+                canvas.fillRect(10, 110, bassMax, 10);
             }
 
             canvas.fillStyle = getColor(bassMax, Math.abs(this.angle / 360 - 0.5) * 255 * 2);
