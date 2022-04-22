@@ -55,22 +55,22 @@
             <div id="currentlyPlaying" class="disabled">No Song Playing</div>
             <div id="controls" class="disabled">
 
-                <button onclick="refresh()" title="Return to welcome screen and select a new set of songs.">Reset</button> &nbsp; &nbsp; &nbsp;
+                <button onclick="refresh()" title="Return to welcome screen and select a new set of songs.">Reset</button> &nbsp; &nbsp;
 
-                <button onclick="openSettingsMenu()">Settings</button> &nbsp; &nbsp; &nbsp;
+                <button onclick="openSettingsMenu()">Settings</button> &nbsp; &nbsp;
 
                 <span id="nonLiveControls">
                     <!--
                         Delay: <input style="width: 50px" type="number" id="delayinput" min="0" max="1" value="0.25" step="0.01" onchange="setDelay(this.value)"> &nbsp; &nbsp; &nbsp;
                     -->
 
-                    Volume: <input style="width:40px" type="number" value="1" min="0" max="1" step="0.1" onchange="setVolume(this.value)" title="Can affect visualizer quality."> &nbsp; &nbsp; &nbsp;
+                    Volume: <input style="width:40px" type="number" value="1" min="0" max="1" step="0.1" onchange="setVolume(this.value)" title="Can affect visualizer quality."> &nbsp; &nbsp;
 
                     <button onclick="back()"><b>|</b>&#9668;</button>
                     <button onclick="if(audio.paused){play();}else{pause();}" id="playbutton">&#9658;</button>
-                    <button onclick="next()">&#9658;<b>|</b></button> &nbsp; &nbsp; &nbsp;
+                    <button onclick="next()">&#9658;<b>|</b></button> &nbsp; &nbsp;
 
-                    <button onclick="shuffle()">Shuffle</button> &nbsp; &nbsp; &nbsp;
+                    <button onclick="shuffle()">Shuffle</button> &nbsp; &nbsp;
                 </span>
 
                 <!--
@@ -89,7 +89,7 @@
                     <button onclick="togglePerformance()" id="performanceButton" style="border-color:#C00">Fast Mode</button>
                 -->
 
-                <span style="display:none" id="tskbrModeRange"><span id="ambienceSpacing"> &nbsp; &nbsp; &nbsp;</span>
+                <span style="display:none" id="tskbrModeRange"><span id="ambienceSpacing"> &nbsp; &nbsp;</span>
                     <button onclick="toggleTaskbarMode()" id="taskbarButton" style="border-color:#C00" title="Fit the visualizer to your taskbar, good for background music while working.">Taskbar</button>
                 </span>
 
@@ -97,13 +97,14 @@
                 <br>
 
                 Visuals: <select id="visfield" onchange="setVis(this.value)" onmousedown="if(!taskbarMode){requestAnimationFrame(()=>{this.blur()}); event.preventDefault();}" onclick="if(!taskbarMode){openVisualizerMenu(); event.preventDefault();}"></select>
-                <button id="smokeButton" onclick="toggleSmoke()" style="border-color:#C00" title="Adds a smoke and glow effect to visualizers.">Smoke</button> &nbsp; &nbsp; &nbsp;
+                <button id="visSettingsButton" onclick="openVisSettingsMenu()" style="opacity:0.25;pointer-events:none;line-height:15px;">&#9881;</button>
+                <button id="smokeButton" onclick="toggleSmoke()" style="border-color:#C00" title="Adds a smoke and glow effect to visualizers.">Smoke</button> &nbsp; &nbsp;
 
-                Colors: <select id="colorfield" onchange="setColor(this.value)" onmousedown="if(!taskbarMode){requestAnimationFrame(()=>{this.blur()}); event.preventDefault();}" onclick="if(!taskbarMode){openColorMenu(); event.preventDefault();}"></select> &nbsp; &nbsp; &nbsp;
+                Colors: <select id="colorfield" onchange="setColor(this.value)" onmousedown="if(!taskbarMode){requestAnimationFrame(()=>{this.blur()}); event.preventDefault();}" onclick="if(!taskbarMode){openColorMenu(); event.preventDefault();}"></select> &nbsp; &nbsp;
 
                 Curve: <select id="modfield" onchange="selectMod(this.value)" onmousedown="if(!taskbarMode){requestAnimationFrame(()=>{this.blur()}); event.preventDefault();}" onclick="if(!taskbarMode){openModMenu(); event.preventDefault();}" title="Processes visualizer data to increase or decrease power of visualizer movement. Power Sine tends to work best.">
                     <option value="null">None</option>
-                </select> &nbsp; &nbsp; &nbsp;
+                </select> &nbsp; &nbsp;
 
                 <button id="fullscreenButton" onclick="exclusiveFullscreen()" title="Toggle Fullscreen">F</button>
 

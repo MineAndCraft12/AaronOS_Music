@@ -299,8 +299,8 @@ function loadFolder(event){
                     filePath.pop();
                     filePath.shift();
                     if(filePath.length > 0){
-                        filePath = filePath.join(": ");
-                        filePath += ': ';
+                        filePath = filePath.join(" / ");
+                        filePath += ' / ';
                     }else{
                         filePath = '';
                     }
@@ -400,8 +400,8 @@ function loadFiles(event){
                     filePath = files[i].webkitRelativePath.split('/');
                     filePath.pop();
                     filePath.shift();
-                    filePath.join(": ");
-                    filePath += ': ';
+                    filePath.join(" / ");
+                    filePath += ' / ';
                 }
                 filesLength++;
                 if(supportedFormats.indexOf(fileName[fileName.length - 1]) > -1){
@@ -491,8 +491,8 @@ function loadWeirdFiles(event){
             filePath = files[i].webkitRelativePath.split('/');
             filePath.pop();
             filePath.shift();
-            filePath.join(": ");
-            filePath += ': ';
+            filePath.join(" / ");
+            filePath += ' / ';
         }
         filesLength++;
         if(supportedFormats.indexOf(fileName[fileName.length - 1]) > -1){
@@ -928,7 +928,7 @@ function setProgress(e){
         if(timeToSet < 5){
             timeToSet = 0;
         }
-        timeToSet /= size[0];
+        timeToSet /= size[0] * (performanceMode + 1);
         timeToSet *= audio.duration;
         audio.currentTime = timeToSet;
         if(ambienceWaiting){
@@ -1094,6 +1094,24 @@ function togglePerformance(){
     if(vis[currVis].sizechange){
         vis[currVis].sizechange();
     }
+}
+
+var bestColorsMode = 1;
+function toggleBestColors(){
+    if(bestColorsMode){
+        if(getId("bestColorsButton")){
+            getId("bestColorsButton").style.borderColor = "#C00";
+        }
+    }else{
+        if(getId("bestColorsButton")){
+            getId("bestColorsButton").style.borderColor = "#0A0";
+        }
+    }
+    bestColorsMode = Math.abs(bestColorsMode - 1);
+    localStorage.setItem("AaronOSMusic_BestColors", String(bestColorsMode));
+}
+if(localStorage.getItem("AaronOSMusic_BestColors")){
+    bestColorsMode = parseInt(localStorage.getItem("AaronOSMusic_BestColors"));
 }
 
 var winsize = [window.innerWidth, window.innerHeight];
@@ -1651,6 +1669,19 @@ var colors = {
         multiplier: 360 / 255,
         alphaDivisor: 255 * (4/3)
     },
+    rainbowActive2: {
+        name: "Rainbow Static 2",
+        image: "colors/rainbowActive2.png",
+        func: function(amount, position){
+            return csscolor('hsla',
+                ((typeof position === "number") ? position : amount) * this.multiplier,
+                '100%',
+                '50%',
+                amount / 255
+            );
+        },
+        multiplier: 360 / 255
+    },
     rainbowStatic: {
         name: "Rainbow Static Solid",
         image: "colors/rainbowStatic.png",
@@ -2045,7 +2076,7 @@ function setColor(newcolor){
     if(colors[newcolor]){
         currColor = newcolor;
     }else{
-        currColor = "redgreenblue";
+        currColor = "bluegreenred";
     }
     progressBar.style.outline = "2px solid " + getColor(255);
     if(vis[currVis].sizechange){
@@ -2068,6 +2099,17 @@ function setVis(newvis){
     }
     if(smokeEnabled){
         resizeSmoke();
+    }
+    if(vis[currVis].settings){
+        getId("visSettingsButton").style.opacity = "1";
+        getId("visSettingsButton").style.pointerEvents = "";
+    }else{
+        getId("visSettingsButton").style.opacity = "0.25";
+        getId("visSettingsButton").style.pointerEvents = "none";
+    }
+    if(bestColorsMode && vis[currVis].bestColor){
+        getId('colorfield').value = vis[currVis].bestColor;
+        setColor(vis[currVis].bestColor);
     }
     vis[currVis].start();
 }
@@ -2109,6 +2151,7 @@ var vis = {
     reflection: {
         name: "Reflection",
         image: "visualizers/reflection.png",
+        bestColor: "beta",
         start: function(){
             
         },
@@ -2169,6 +2212,7 @@ var vis = {
     monstercat: {
         name: "Monstercat",
         image: "visualizers/monstercat.png",
+        bestColor: "beta",
         start: function(){
             
         },
@@ -2183,10 +2227,12 @@ var vis = {
             var barSpacing = maxWidth / 64;
             var maxHeight = size[1] * 0.5 - size[1] * 0.2;
             
-            var monstercatGradient = canvas.createLinearGradient(0, Math.round(size[1] / 2) + 4, 0, size[1]);
-            monstercatGradient.addColorStop(0, 'rgba(0, 0, 0, 0.8)'); // 0.8
-            monstercatGradient.addColorStop(0.025, 'rgba(0, 0, 0, 0.9)'); // 0.9
-            monstercatGradient.addColorStop(0.1, 'rgba(0, 0, 0, 1)');// 1
+            if(this.settings.showReflection.value){
+                var monstercatGradient = canvas.createLinearGradient(0, Math.round(size[1] / 2) + 4, 0, size[1]);
+                monstercatGradient.addColorStop(0, 'rgba(0, 0, 0, 0.8)'); // 0.8
+                monstercatGradient.addColorStop(0.025, 'rgba(0, 0, 0, 0.9)'); // 0.9
+                monstercatGradient.addColorStop(0.1, 'rgba(0, 0, 0, 1)');// 1
+            }
             
             for(var i = 0; i < 64; i++){
                 var strength = visData[i];
@@ -2200,26 +2246,28 @@ var vis = {
                     Math.round(strength / 255 * maxHeight + 5)
                 );
                 //canvas.fillStyle = "#000";
-                if(strength > 10){
-                    canvas.fillRect(
-                        Math.round(left + i * barSpacing),
-                        Math.floor(size[1] / 2) + 4,
-                        Math.round(barWidth),
-                        Math.round(10 / 255 * maxHeight + 4)
-                    );
-                    canvas.fillRect(
-                        Math.round(left + i * barSpacing - 1),
-                        Math.floor(size[1] / 2) + 4 + (10 / 255 * maxHeight) + 4,
-                        Math.round(barWidth + 2),
-                        Math.round((strength - 10) / 255 * maxHeight)
-                    );
-                }else{
-                    canvas.fillRect(
-                        Math.round(left + i * barSpacing),
-                        Math.floor(size[1] / 2) + 4,
-                        Math.round(barWidth),
-                        Math.round(strength / 255 * maxHeight + 4)
-                    );
+                if(this.settings.showReflection.value){
+                    if(strength > 10){
+                        canvas.fillRect(
+                            Math.round(left + i * barSpacing),
+                            Math.floor(size[1] / 2) + 4,
+                            Math.round(barWidth),
+                            Math.round(10 / 255 * maxHeight + 4)
+                        );
+                        canvas.fillRect(
+                            Math.round(left + i * barSpacing - 1),
+                            Math.floor(size[1] / 2) + 4 + (10 / 255 * maxHeight) + 4,
+                            Math.round(barWidth + 2),
+                            Math.round((strength - 10) / 255 * maxHeight)
+                        );
+                    }else{
+                        canvas.fillRect(
+                            Math.round(left + i * barSpacing),
+                            Math.floor(size[1] / 2) + 4,
+                            Math.round(barWidth),
+                            Math.round(strength / 255 * maxHeight + 4)
+                        );
+                    }
                 }
                 if(smokeEnabled){
                     smoke.fillStyle = fillColor;
@@ -2232,24 +2280,43 @@ var vis = {
                 }
             }
 
-            canvas.fillStyle = monstercatGradient;
-            canvas.fillRect(0, Math.round(size[1] / 2) + 4, size[0], Math.round(size[1] / 2) - 4);
+            if(this.settings.showReflection.value){
+                canvas.fillStyle = monstercatGradient;
+                canvas.fillRect(0, Math.round(size[1] / 2) + 4, size[0], Math.round(size[1] / 2) - 4);
+            }
 
             //updateSmoke(left, size[1] * 0.2, maxWidth, size[1] * 0.3 + 10);
-            canvas.fillStyle = '#FFF';
-            canvas.font = (size[1] * 0.25) + 'px aosProFont, sans-serif';
-            if(!microphoneActive){
-                canvas.fillText((fileNames[currentSong] || ["No Song"])[0].toUpperCase(), Math.round(left) + 0.5, size[1] * 0.75, Math.floor(maxWidth));
+            if(this.settings.songTitle.value){
+                canvas.fillStyle = '#FFF';
+                canvas.font = (size[1] * 0.25) + 'px aosProFont, sans-serif';
+                if(!microphoneActive){
+                    canvas.fillText((fileNames[currentSong] || ["No Song"])[0].toUpperCase(), Math.round(left) + 0.5, size[1] * 0.75, Math.floor(maxWidth));
+                }
             }
         },
         stop: function(){
             
         },
-        sqrt255: Math.sqrt(255)
+        sqrt255: Math.sqrt(255),
+        settings: {
+            songTitle: {
+                type: "toggle",
+                value: 1,
+                default: 1,
+                title: "Display Song Title"
+            },
+            showReflection: {
+                type: "toggle",
+                value: 1,
+                default: 1,
+                title: "Reflections Under Bars"
+            }
+        }
     },
     obelisks: {
         name: "Obelisks",
         image: "visualizers/obelisks.png",
+        bestColor: "beta",
         start: function(){
             
         },
@@ -2317,6 +2384,7 @@ var vis = {
     central: {
         name: "Central",
         image: "visualizers/central.png",
+        bestColor: "beta",
         start: function(){
             
         },
@@ -2361,6 +2429,7 @@ var vis = {
     wave: {
         name: "Wave",
         image: "visualizers/wave.png",
+        bestColor: "beta",
         start: function(){
             
         },
@@ -2407,6 +2476,7 @@ var vis = {
     bassWave: {
         name: "Bass Wave",
         image: "visualizers/bassWave.png",
+        bestColor: "bluegreenred",
         start: function(){
             
         },
@@ -2452,6 +2522,7 @@ var vis = {
     triWave: {
         name: "Triple Wave",
         image: "visualizers/tripleWave.png",
+        bestColor: "bluegreenred",
         start: function(){
             
         },
@@ -2515,9 +2586,350 @@ var vis = {
             }
         }
     },
+    lasers: {
+        name: "Light Show",
+        image: "visualizers/lasers.png",
+        bestColor: "rainbowActive",
+        start: function(){
+
+        },
+        frame: function(){
+            var spaceBetweenFixtures = size[0] * 0.05859375;
+            var fixtureHeight = 30;
+            if(this.settings.halfFixtureSize.value){
+                spaceBetweenFixtures /= 2;
+                fixtureHeight /= 2;
+            }
+
+            if(this.settings.separation.value){
+                var separationDistance = size[0] / 2 - (spaceBetweenFixtures * 6);
+            }else{
+                var separationDistance = 0;
+            }
+
+            var angleBias = 15;
+            if(this.settings.doubleAngleBias.value){
+                angleBias *= 2;
+            }
+            
+            canvas.clearRect(0, 0, size[0], size[1]);
+            if(smokeEnabled){
+                smoke.clearRect(0, 0, size[0], size[1]);
+            }
+
+            // RIGHT SIDE OF LASERS
+            for(var i = 0; i < 12; i += 2){
+                canvas.globalCompositeOperation = 'screen';
+
+                var laserPos = size[0] / 2 + i * 2 * (spaceBetweenFixtures / 4) + separationDistance + spaceBetweenFixtures / 2;
+                if(!separationDistance && this.settings.middleLasers.value){
+                    laserPos += spaceBetweenFixtures;
+                }
+
+                if(this.settings.dataFilter.value){
+                    var laserColor = getColor(mods.pow2.test(visData[i]), i * (255 / 12));
+                    var laserAngle = (255 - mods.pow2.test(visData[i])) / 3 - 132 - angleBias;
+                    var laserWidth = mods.pow2.test(visData[i]) / 32 + 0.03125;
+                }else{
+                    var laserColor = getColor(visData[i], i * (255 / 12));
+                    var laserAngle = (255 - visData[i]) / 3 - 132 - angleBias;
+                    var laserWidth = visData[i] / 32 + 0.03125;
+                }
+                if(this.settings.fixedLaserWidth.value){
+                    laserWidth = 8;
+                }
+                if(this.settings.halfFixtureSize.value){
+                    laserWidth /= 2;
+                }
+
+                canvas.strokeStyle = laserColor;
+                canvas.lineWidth = laserWidth;
+                canvas.beginPath();
+                canvas.moveTo(laserPos, size[1] - fixtureHeight);
+                var newPoint = this.findNewPoint(
+                    laserPos,
+                    size[1] - fixtureHeight,
+                    laserAngle,
+                    size[0] + size[1]
+                );
+                canvas.lineTo(newPoint.x, newPoint.y);
+                canvas.stroke();
+
+                var fixture1 = this.findNewPoint(
+                    laserPos, 
+                    size[1] - fixtureHeight,
+                    laserAngle,
+                    10 / (this.settings.halfFixtureSize.value + 1)
+                );
+                var fixture2 = this.findNewPoint(
+                    laserPos, 
+                    size[1] - fixtureHeight,
+                    laserAngle,
+                    -10 / (this.settings.halfFixtureSize.value + 1)
+                );
+
+                if(smokeEnabled){
+                    smoke.strokeStyle = laserColor;
+                    smoke.lineWidth = laserWidth * 2.5;
+                    smoke.beginPath();
+                    smoke.moveTo(fixture1.x, size[1] - fixtureHeight);
+                    smoke.lineTo(newPoint.x, newPoint.y);
+                    smoke.stroke();
+                }
+
+                canvas.globalCompositeOperation = 'source-over';
+                canvas.strokeStyle = "#222";
+                canvas.lineWidth = 4 / (this.settings.halfFixtureSize.value + 1);
+                canvas.beginPath();
+                canvas.moveTo(laserPos, size[1] - fixtureHeight);
+                canvas.lineTo(laserPos, size[1]);
+                canvas.stroke();
+                canvas.strokeStyle = "#333";
+                canvas.lineWidth = 10 / (this.settings.halfFixtureSize.value + 1);
+                canvas.beginPath();
+                canvas.moveTo(fixture1.x, fixture1.y);
+                canvas.lineTo(fixture2.x, fixture2.y);
+                canvas.stroke();
+            }
+
+            // LEFT SIDE OF LASERS
+            for(var i = 1; i < 12; i += 2){
+                canvas.globalCompositeOperation = 'screen';
+
+                var laserPos = size[0] / 2 - (i * 2 + 2) * (spaceBetweenFixtures / 4) - separationDistance + spaceBetweenFixtures / 2;
+                if(!separationDistance && this.settings.middleLasers.value){
+                    laserPos -= spaceBetweenFixtures;
+                }
+
+                if(this.settings.dataFilter.value){
+                    var laserColor = getColor(mods.pow2.test(visData[i]), i * (255 / 12));
+                    var laserAngle = mods.pow2.test(visData[i]) / 3 - 132 + angleBias;
+                    var laserWidth = mods.pow2.test(visData[i]) / 32 + 0.03125;
+                }else{
+                    var laserColor = getColor(visData[i], i * (255 / 12));
+                    var laserAngle = visData[i] / 3 - 132 + angleBias;
+                    var laserWidth = visData[i] / 32 + 0.03125;
+                }
+                if(this.settings.fixedLaserWidth.value){
+                    laserWidth = 8;
+                }
+                if(this.settings.halfFixtureSize.value){
+                    laserWidth /= 2;
+                }
+
+                canvas.strokeStyle = laserColor;
+                canvas.lineWidth = laserWidth;
+                canvas.beginPath();
+                canvas.moveTo(laserPos, size[1] - fixtureHeight);
+                var newPoint = this.findNewPoint(
+                    laserPos,
+                    size[1] - fixtureHeight,
+                    laserAngle,
+                    size[0] + size[1]
+                );
+                canvas.lineTo(newPoint.x, newPoint.y);
+                canvas.stroke();
+                
+                var fixture1 = this.findNewPoint(
+                    laserPos, 
+                    size[1] - fixtureHeight,
+                    laserAngle,
+                    10 / (this.settings.halfFixtureSize.value + 1)
+                );
+                var fixture2 = this.findNewPoint(
+                    laserPos, 
+                    size[1] - fixtureHeight,
+                    laserAngle,
+                    -10 / (this.settings.halfFixtureSize.value + 1)
+                );
+
+                if(smokeEnabled){
+                    smoke.strokeStyle = laserColor;
+                    smoke.lineWidth = laserWidth * 2.5;
+                    smoke.beginPath();
+                    smoke.moveTo(fixture1.x, size[1] - fixtureHeight);
+                    smoke.lineTo(newPoint.x, newPoint.y);
+                    smoke.stroke();
+                }
+
+                canvas.globalCompositeOperation = 'source-over';
+                canvas.strokeStyle = "#222";
+                canvas.lineWidth = 4 / (this.settings.halfFixtureSize.value + 1);
+                canvas.beginPath();
+                canvas.moveTo(laserPos, size[1] - fixtureHeight);
+                canvas.lineTo(laserPos, size[1]);
+                canvas.stroke();
+                canvas.strokeStyle = "#333";
+                canvas.lineWidth = 10 / (this.settings.halfFixtureSize.value + 1);
+                canvas.beginPath();
+                canvas.moveTo(fixture1.x, fixture1.y);
+                canvas.lineTo(fixture2.x, fixture2.y);
+                canvas.stroke();
+            }
+            
+            // CENTER LASERS
+            if(this.settings.middleLasers.value){
+                var trebleAmount = 0;
+                for(var i = 12; i < 64; i++){
+                    trebleAmount = Math.max(trebleAmount, visData[i]);
+                }
+
+                for(var j = -1; j < 2; j += 2){
+                    canvas.globalCompositeOperation = 'screen';
+
+                    var laserPos = size[0] / 2 + j * spaceBetweenFixtures / 2;
+                    if(this.settings.dataFilter.value){
+                        var laserColor = getColor(mods.pow2.test(trebleAmount), mods.pow2.test(trebleAmount));
+                        if(j === 1){
+                            var laserAngle = (255 - mods.pow2.test(trebleAmount)) / 3 - 132;
+                        }else{
+                            var laserAngle = mods.pow2.test(trebleAmount) / 3 - 132;
+                        }
+                        var laserWidth = mods.pow2.test(trebleAmount) / 32 + 0.03125;
+                    }else{
+                        var laserColor = getColor(trebleAmount, i * (255 / 12));
+                        if(j == 1){
+                            var laserAngle = (255 - trebleAmount) / 3 - 132;
+                        }else{
+                            var laserAngle = trebleAmount / 3 - 132;
+                        }
+                        var laserWidth = trebleAmount / 32 + 0.03125;
+                    }
+                    if(this.settings.fixedLaserWidth.value){
+                        laserWidth = 8;
+                    }
+                    if(this.settings.halfFixtureSize.value){
+                        laserWidth /= 2;
+                    }
+
+                    canvas.strokeStyle = laserColor;
+                    canvas.lineWidth = laserWidth;
+                    canvas.beginPath();
+                    canvas.moveTo(laserPos, size[1] - fixtureHeight);
+                    var newPoint = this.findNewPoint(
+                        laserPos,
+                        size[1] - fixtureHeight,
+                        laserAngle,
+                        size[0] + size[1]
+                    );
+                    canvas.lineTo(newPoint.x, newPoint.y);
+                    canvas.stroke();
+
+                    var fixture1 = this.findNewPoint(
+                        laserPos, 
+                        size[1] - fixtureHeight,
+                        laserAngle,
+                        10 / (this.settings.halfFixtureSize.value + 1)
+                    );
+                    var fixture2 = this.findNewPoint(
+                        laserPos, 
+                        size[1] - fixtureHeight,
+                        laserAngle,
+                        -10 / (this.settings.halfFixtureSize.value + 1)
+                    );
+
+                    if(smokeEnabled){
+                        smoke.strokeStyle = laserColor;
+                        smoke.lineWidth = laserWidth * 2.5;
+                        smoke.beginPath();
+                        smoke.moveTo(fixture1.x, size[1] - fixtureHeight);
+                        smoke.lineTo(newPoint.x, newPoint.y);
+                        smoke.stroke();
+                    }
+
+                    canvas.globalCompositeOperation = 'source-over';
+                    canvas.strokeStyle = "#222";
+                    canvas.lineWidth = 4 / (this.settings.halfFixtureSize.value + 1);
+                    canvas.beginPath();
+                    canvas.moveTo(laserPos, size[1] - fixtureHeight);
+                    canvas.lineTo(laserPos, size[1]);
+                    canvas.stroke();
+                    canvas.strokeStyle = "#333";
+                    canvas.lineWidth = 10 / (this.settings.halfFixtureSize.value + 1);
+                    canvas.beginPath();
+                    canvas.moveTo(fixture1.x, fixture1.y);
+                    canvas.lineTo(fixture2.x, fixture2.y);
+                    canvas.stroke();
+                }
+            }
+        },
+        stop: function(){
+
+        },
+        TAU: Math.PI * 2,
+        degArc: function(x, y, r, a, b){
+            canvas.arc(x, y, r, (a / 360) * this.TAU, (b / 360) * this.TAU);
+        },
+        degArc2: function(x, y, r, a, b){
+            canvas.beginPath();
+            canvas.arc(x, y, r, (a / 360) * this.TAU, (b / 360) * this.TAU);
+            canvas.fill();
+        },
+        degArcSmoke: function(x, y, r, a, b){
+            smoke.arc(x, y, r, (a / 360) * this.TAU, (b / 360) * this.TAU);
+        },
+        degArc2smoke: function(x, y, r, a, b){
+            smoke.beginPath();
+            smoke.arc(x, y, r, (a / 360) * this.TAU, (b / 360) * this.TAU);
+            smoke.fill();
+        },
+        findNewPoint: function(x, y, angle, distance) { // from codershop on Stack Overflow
+            var result = {};
+        
+            result.x = /*Math.round*/(Math.cos(angle * Math.PI / 180) * distance + x);
+            result.y = /*Math.round*/(Math.sin(angle * Math.PI / 180) * distance + y);
+        
+            return result;
+        },
+        settings: {
+            middleLasers: {
+                type: "toggle",
+                value: 0,
+                default: 0,
+                title: "Treble Lasers",
+                desc: "Lasers in the center which are affected by the treble."
+            },
+            separation: {
+                type: "toggle",
+                value: 1,
+                default: 1,
+                title: "Fixture Separation",
+                desc: "Splits laser fixtures into two groups at either edge of the screen."
+            },
+            halfFixtureSize: {
+                type: "toggle",
+                value: 0,
+                default: 0,
+                title: "Half Fixture Size",
+                desc: "Halves size of the laser fixtures. Laser beams will be thinner too."
+            },
+            fixedLaserWidth: {
+                type: "toggle",
+                value: 0,
+                default: 0,
+                title: "Fixed Laser Width",
+                desc: "Lasers are always full-width, even with weak frequency amplitudes."
+            },
+            doubleAngleBias: {
+                type: "toggle",
+                value: 0,
+                default: 0,
+                title: "Double Angle Bias",
+                desc: "Doubles the angle bias, causing laser fixtures to point more sharply towards the center."
+            },
+            dataFilter: {
+                type: "toggle",
+                value: 1,
+                default: 1,
+                title: "Data Filter",
+                desc: "Filters data to lower the impact of quiet noises. Makes the light show less chaotic."
+            }
+        }
+    },
     spikes1to1: {
         name: "Bars",
         image: "visualizers/spikesClassic.png",
+        bestColor: "beta",
         start: function(){
             
         },
@@ -2556,6 +2968,7 @@ var vis = {
     spikes: {
         name: "Spikes",
         image: "visualizers/spikesStretch.png",
+        bestColor: "beta",
         start: function(){
             
         },
@@ -2641,6 +3054,7 @@ var vis = {
     pitchmograph: {
         name: "Pitchmograph",
         image: "visualizers/pitchmograph.png",
+        bestColor: "beta",
         start: function(){
             this.graph = new Array(size[1]);
             this.graph.fill([-1, 0], 0, size[1]);
@@ -2697,6 +3111,7 @@ var vis = {
     seismograph: {
         name: "Beatmograph 1",
         image: "visualizers/seismograph.png",
+        bestColor: "beta",
         start: function(){
             this.graph = new Array(size[0]);
             this.graph.fill(-1, 0, size[0]);
@@ -2742,6 +3157,7 @@ var vis = {
     barsmograph: {
         name: "Beatmograph 2",
         image: "visualizers/barsmograph.png",
+        bestColor: "beta",
         start: function(){
             this.graph = new Array(size[0]);
             this.graph.fill(-1, 0, size[0]);
@@ -2789,6 +3205,7 @@ var vis = {
     rings: {
         name: "Rings",
         image: "visualizers/rings.png",
+        bestColor: "beta",
         start: function(){
             this.ringPositions = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
         },
@@ -2810,7 +3227,11 @@ var vis = {
                 ringPools[currPool] = Math.max(visData[i], ringPools[currPool]);
             }
             for(var i = 0; i < 10; i++){
-                var strength = Math.pow(ringPools[i], 2) / 65025;
+                if(this.settings.dataFilter.value){
+                    var strength = Math.pow(ringPools[i], 2) / 65025;
+                }else{
+                    var strength = ringPools[i];
+                }
                 var ringColor = getColor(strength * 255, (9 - i) * 28);
                 this.ringPositions[i] += strength * 5 * fpsCompensation;
                 if(this.ringPositions[i] >= 360){
@@ -2842,11 +3263,21 @@ var vis = {
             smoke.beginPath();
             smoke.arc(x, y, r, (a / 360) * this.TAU, (b / 360) * this.TAU);
             smoke.stroke();
+        },
+        settings: {
+            dataFilter: {
+                type: "toggle",
+                value: 1,
+                default: 1,
+                title: "Data Filter",
+                desc: "Filters data to get more contrast between highs and lows."
+            }
         }
     },
     ghostRings: {
         name: "Ghost Rings",
         image: "visualizers/ghostRings.png",
+        bestColor: "beta",
         start: function(){
             this.ringPositions = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
         },
@@ -2871,7 +3302,11 @@ var vis = {
             //    ringPools[i] /= ringAvgs[i];
             //}
             for(var i = 0; i < 10; i++){
-                var strength = Math.pow(ringPools[i], 2) / 65025;
+                if(this.settings.dataFilter.value){
+                    var strength = Math.pow(ringPools[i], 2) / 65025;
+                }else{
+                    var strength = ringPools[i];
+                }
                 var ringColor = getColor(strength * 255, (9 - i) * 28);
                 this.ringPositions[i] += strength * 5 * fpsCompensation;
                 if(this.ringPositions[i] >= 360){
@@ -2905,11 +3340,21 @@ var vis = {
             smoke.beginPath();
             smoke.arc(x, y, r, (a / 360) * this.TAU, (b / 360) * this.TAU);
             smoke.stroke();
+        },
+        settings: {
+            dataFilter: {
+                type: "toggle",
+                value: 1,
+                default: 1,
+                title: "Data Filter",
+                desc: "Filters data to get more contrast between highs and lows."
+            }
         }
     },
     circle: {
         name: "Circle",
         image: "visualizers/trebleCircle.png",
+        bestColor: "beta",
         start: function(){
             
         },
@@ -2930,7 +3375,11 @@ var vis = {
             }
             drumStrength /= 12;
 
-            var randomOffset = [(Math.random() - 0.5) * drumStrength / 255 * randomShake, (Math.random() - 0.5) * drumStrength / 255 * randomShake];
+            if(this.settings.rumble.value){
+                var randomOffset = [(Math.random() - 0.5) * drumStrength / 255 * randomShake, (Math.random() - 0.5) * drumStrength / 255 * randomShake];
+            }else{
+                var randomOffset = [0, 0];
+            }
 
             for(var i = 0; i < 64; i += 1){
                 var strength = visData[i];
@@ -3014,10 +3463,20 @@ var vis = {
             smoke.arc(x, y, r, (a / 360) * this.TAU, (b / 360) * this.TAU);
             smoke.fill();
         },
+        settings: {
+            rumble: {
+                type: "toggle",
+                value: 1,
+                default: 1,
+                title: "Rumble",
+                desc: "Shakes the circle like an earthquake from heavy bass."
+            }
+        }
     },
     bassCircle: {
         name: "Bass Circle",
         image: "visualizers/bassCircle.png",
+        bestColor: "beta",
         start: function(){
             
         },
@@ -3038,7 +3497,11 @@ var vis = {
             }
             drumStrength /= 12;
 
-            var randomOffset = [(Math.random() - 0.5) * drumStrength / 255 * randomShake, (Math.random() - 0.5) * drumStrength / 255 * randomShake];
+            if(this.settings.rumble.value){
+                var randomOffset = [(Math.random() - 0.5) * drumStrength / 255 * randomShake, (Math.random() - 0.5) * drumStrength / 255 * randomShake];
+            }else{
+                var randomOffset = [0, 0];
+            }
 
             for(var i = 0; i < 12; i++){
                 canvas.fillStyle = getColor(visData[i], i * 21.25);
@@ -3121,10 +3584,20 @@ var vis = {
             smoke.arc(x, y, r, (a / 360) * this.TAU, (b / 360) * this.TAU);
             smoke.fill();
         },
+        settings: {
+            rumble: {
+                type: "toggle",
+                value: 1,
+                default: 1,
+                title: "Rumble",
+                desc: "Shakes the circle like an earthquake from heavy bass."
+            }
+        }
     },
     layerCircle: {
         name: "Layered Circle",
         image: "visualizers/layeredCircle.png",
+        bestColor: "beta",
         start: function(){
             
         },
@@ -3145,7 +3618,11 @@ var vis = {
             }
             drumStrength /= 12;
 
-            var randomOffset = [(Math.random() - 0.5) * drumStrength / 255 * randomShake, (Math.random() - 0.5) * drumStrength / 255 * randomShake];
+            if(this.settings.rumble.value){
+                var randomOffset = [(Math.random() - 0.5) * drumStrength / 255 * randomShake, (Math.random() - 0.5) * drumStrength / 255 * randomShake];
+            }else{
+                var randomOffset = [0, 0];
+            }
 
             canvas.fillStyle = getColor(127);
             canvas.beginPath();
@@ -3291,10 +3768,20 @@ var vis = {
             smoke.arc(x, y, r, (a / 360) * this.TAU, (b / 360) * this.TAU);
             smoke.fill();
         },
+        settings: {
+            rumble: {
+                type: "toggle",
+                value: 1,
+                default: 1,
+                title: "Rumble",
+                desc: "Shakes the circle like an earthquake from heavy bass."
+            }
+        }
     },
     orbsAround: {
         name: "Orbs Around",
         image: "visualizers/orbsAround.png",
+        bestColor: "beta",
         start: function(){
             this.speed = 1;
             this.angle = 90;
@@ -3343,7 +3830,7 @@ var vis = {
                     }
                 }
             }
-            avgPitch = avgPitch[0][0] + avgPitch[1][0] + avgPitch[2][0] + avgPitch[3][0]// + avgPitch[4][0] + avgPitch[5][0] + avgPitch[6][0] + avgPitch[7][0];
+            avgPitch = avgPitch[0][0] + avgPitch[1][0] + avgPitch[2][0] + avgPitch[3][0];
             avgPitch /= 4;
             avgPitch /= 52;
             if(isNaN(avgPitch)){
@@ -3352,7 +3839,11 @@ var vis = {
 
             this.speed = (1 + totalAmount / 8) * fpsCompensation;
             this.angle -= (trebleAmount / 256) * fpsCompensation;
-            this.rotation += (trebleAmount / 20 * (1 + avgPitch)) * fpsCompensation;
+            if(this.settings.pitchAffectsRotation.value){
+                this.rotation += (trebleAmount / 20 * (1 + avgPitch)) * fpsCompensation;
+            }else{
+                this.rotation += (trebleAmount / 20 * (1.25)) * fpsCompensation;
+            }
             if(this.angle < 0){
                 this.angle += 360;
             }
@@ -3367,7 +3858,11 @@ var vis = {
             ];
             corner = this.findNewPoint(corner[0], corner[1], this.angle, this.speed);
 
-            canvas.globalAlpha = 0.9 + (1 - fpsCompensation) * 0.1;
+            if(this.settings.doubleViewDistance.value){
+                canvas.globalAlpha = 0.95 + (1 - fpsCompensation) * 0.05;
+            }else{
+                canvas.globalAlpha = 0.9 + (1 - fpsCompensation) * 0.1;
+            }
             canvas.globalCompositeOperation = 'copy';
             canvas.drawImage(
                 canvasElement,
@@ -3382,7 +3877,11 @@ var vis = {
             //canvas.fillRect(0, 0, size[0], size[1]);
 
             if(smokeEnabled){
-                smoke.globalAlpha = 0.9 + (1 - fpsCompensation) * 0.1;
+                if(this.settings.doubleViewDistance.value){
+                    smoke.globalAlpha = 0.95 + (1 - fpsCompensation) * 0.05;
+                }else{
+                    smoke.globalAlpha = 0.9 + (1 - fpsCompensation) * 0.1;
+                }
                 smoke.globalCompositeOperation = 'copy';
                 smoke.drawImage(
                     smokeElement,
@@ -3397,13 +3896,25 @@ var vis = {
                 //smoke.fillRect(0, 0, size[0], size[1]);
             }
 
-            var centerPoint = this.findNewPoint(size[0] / 2, size[1] / 2, this.angle, this.speed * -10 * (1 / fpsCompensation));
+            if(this.settings.cameraVelocity.value){
+                var centerPoint = this.findNewPoint(size[0] / 2, size[1] / 2, this.angle, this.speed * -10 * (1 / fpsCompensation));
+            }else{
+                var centerPoint = {x: size[0] / 2, y: size[1] / 2};
+            }
             var orb1 = this.findNewPoint(centerPoint.x, centerPoint.y, this.rotation, 64 + bassAmount / 32);
             var orb2 = this.findNewPoint(centerPoint.x, centerPoint.y, (this.rotation + 180) % 360, 64 + bassAmount / 32);
 
             canvas.fillStyle = '#FFF';
-            if(Math.random() * 255 < trebleAmount * 2 * (1 + avgPitch) * fpsCompensation){
-                canvas.fillRect(Math.random() * size[0] - 1, Math.random() * size[1] - 1, 2, 2);
+            if(this.settings.starsToggle.value){
+                if(this.settings.pitchAffectsStars.value){
+                    if(Math.random() * 255 < trebleAmount * (1 + avgPitch * 2) * fpsCompensation){
+                        canvas.fillRect(Math.random() * size[0] - 1, Math.random() * size[1] - 1, 3, 3);
+                    }
+                }else{
+                    if(Math.random() * 255 < trebleAmount * 2 * fpsCompensation){
+                        canvas.fillRect(Math.random() * size[0] - 1, Math.random() * size[1] - 1, 3, 3);
+                    }
+                }
             }
 
             if(debugForce){
@@ -3459,11 +3970,49 @@ var vis = {
             result.y = /*Math.round*/(Math.sin(angle * Math.PI / 180) * distance + y);
         
             return result;
+        },
+        settings: {
+            cameraVelocity: {
+                type: "toggle",
+                value: 1,
+                default: 1,
+                title: "Camera Velocity",
+                desc: "The camera falls slightly behind when the orbs are moving very fast."
+            },
+            pitchAffectsRotation: {
+                type: "toggle",
+                value: 1,
+                default: 1,
+                title: "Pitch Affects Rotation",
+                desc: "Pitch affects how quickly the orbs rotate around each other."
+            },
+            starsToggle: {
+                type: "toggle",
+                value: 1,
+                default: 1,
+                title: "Stars",
+                desc: "Stars fly past the orbs in space."
+            },
+            pitchAffectsStars: {
+                type: "toggle",
+                value: 1,
+                default: 1,
+                title: "Pitch Affects Stars",
+                desc: "Frequency of stars is affected by pitch."
+            },
+            doubleViewDistance: {
+                type: "toggle",
+                value: 0,
+                default: 0,
+                title: "Double View Distance",
+                desc: "View distance of object trails is double the normal value."
+            }
         }
     },
     orbsArise: {
         name: "Orbs Arise",
         image: "visualizers/orbsArise.png",
+        bestColor: "beta",
         start: function(){
             this.speed = 1;
             this.angle = 90;
@@ -3474,7 +4023,6 @@ var vis = {
             }
         },
         frame: function(){
-            
             var bassAmount = 0;
             var bassAmounts = [];
             var trebleAmount = 0;
@@ -3513,7 +4061,7 @@ var vis = {
                     }
                 }
             }
-            avgPitch = avgPitch[0][0] + avgPitch[1][0] + avgPitch[2][0] + avgPitch[3][0]// + avgPitch[4][0] + avgPitch[5][0] + avgPitch[6][0] + avgPitch[7][0];
+            avgPitch = avgPitch[0][0] + avgPitch[1][0] + avgPitch[2][0] + avgPitch[3][0];
             avgPitch /= 4;
             avgPitch /= 52;
             if(isNaN(avgPitch)){
@@ -3523,7 +4071,11 @@ var vis = {
             this.speed = (1 + totalAmount / 8) * fpsCompensation;
             //this.angle -= trebleAmount / 128;
             this.angle = 90;
-            this.rotation += trebleAmount / 20 * (1 + avgPitch) * fpsCompensation;
+            if(this.settings.pitchAffectsRotation.value){
+                this.rotation += trebleAmount / 20 * (1 + avgPitch) * fpsCompensation;
+            }else{
+                this.rotation += trebleAmount / 20 * (1.25) * fpsCompensation;
+            }
             //if(this.angle < 0){
             //    this.angle += 360;
             //}
@@ -3538,7 +4090,11 @@ var vis = {
             ];
             corner = this.findNewPoint(corner[0], corner[1], this.angle, this.speed);
 
-            canvas.globalAlpha = 0.9 + (1 - fpsCompensation) * 0.1;
+            if(this.settings.doubleViewDistance.value){
+                canvas.globalAlpha = 0.95 + (1 - fpsCompensation) * 0.05;
+            }else{
+                canvas.globalAlpha = 0.9 + (1 - fpsCompensation) * 0.1;
+            }
             canvas.globalCompositeOperation = 'copy';
             canvas.drawImage(
                 canvasElement,
@@ -3553,7 +4109,11 @@ var vis = {
             //canvas.fillRect(0, 0, size[0], size[1]);
 
             if(smokeEnabled){
-                smoke.globalAlpha = 0.9 + (1 - fpsCompensation) * 0.1;
+                if(this.settings.doubleViewDistance.value){
+                    smoke.globalAlpha = 0.95 + (1 - fpsCompensation) * 0.05;
+                }else{
+                    smoke.globalAlpha = 0.9 + (1 - fpsCompensation) * 0.1;
+                }
                 smoke.globalCompositeOperation = 'copy';
                 smoke.drawImage(
                     smokeElement,
@@ -3568,13 +4128,19 @@ var vis = {
                 //smoke.fillRect(0, 0, size[0], size[1]);
             }
 
-            var centerPoint = this.findNewPoint(size[0] / 2, size[1] / 2, this.angle, this.speed * -10 * (1 / fpsCompensation));
+            if(this.settings.cameraVelocity.value){
+                var centerPoint = this.findNewPoint(size[0] / 2, size[1] / 2, this.angle, this.speed * -10 * (1 / fpsCompensation));
+            }else{
+                var centerPoint = {x: size[0] / 2, y: size[1] / 2};
+            }
             var orb1 = this.findNewPoint(centerPoint.x, centerPoint.y, this.rotation, 64 + bassAmount / 32);
             var orb2 = this.findNewPoint(centerPoint.x, centerPoint.y, (this.rotation + 180) % 360, 64 + bassAmount / 32);
             
             canvas.fillStyle = '#FFF';
-            if(Math.random() * 255 < trebleAmount * 2 * (1 + avgPitch) * fpsCompensation){
-                canvas.fillRect(Math.random() * size[0], Math.random() * size[1], 2, 2);
+            if(this.settings.starsToggle.value){
+                if(Math.random() * 255 < trebleAmount * (1 + avgPitch * 2) * fpsCompensation){
+                    canvas.fillRect(Math.random() * size[0] - 1, Math.random() * size[1] - 1, 3, 3);
+                }
             }
 
             if(debugForce){
@@ -3629,11 +4195,49 @@ var vis = {
             result.y = /*Math.round*/(Math.sin(angle * Math.PI / 180) * distance + y);
         
             return result;
+        },
+        settings: {
+            cameraVelocity: {
+                type: "toggle",
+                value: 1,
+                default: 1,
+                title: "Camera Velocity",
+                desc: "The camera falls slightly behind when the orbs are moving very fast."
+            },
+            pitchAffectsRotation: {
+                type: "toggle",
+                value: 1,
+                default: 1,
+                title: "Pitch Affects Rotation",
+                desc: "Pitch affects how quickly the orbs rotate around each other."
+            },
+            starsToggle: {
+                type: "toggle",
+                value: 1,
+                default: 1,
+                title: "Stars",
+                desc: "Stars fly past the orbs in space."
+            },
+            pitchAffectsStars: {
+                type: "toggle",
+                value: 1,
+                default: 1,
+                title: "Pitch Affects Stars",
+                desc: "Frequency of stars is affected by pitch."
+            },
+            doubleViewDistance: {
+                type: "toggle",
+                value: 0,
+                default: 0,
+                title: "Double View Distance",
+                desc: "View distance of object trails is double the normal value."
+            },
         }
     },
     eclipse: {
         name: "Eclipse",
         image: "visualizers/eclipse.png",
+        bestColor: "beta",
         start: function(){
             
         },
@@ -3712,6 +4316,7 @@ var vis = {
     curvedAudioVision: {
         name: "Curved Lines",
         image: "visualizers/curvedLines_av.png",
+        bestColor: "rainbowActive",
         start: function(){
 
         },
@@ -3852,6 +4457,7 @@ var vis = {
     centeredAudioVision: {
         name: "Centered Lines",
         image: "visualizers/centeredLines_av.png",
+        bestColor: "rainbowActive",
         start: function(){
             
         },
@@ -3904,6 +4510,7 @@ var vis = {
     caveAudioVision: {
         name: "Cave Lines",
         image: "visualizers/caveLines_av.png",
+        bestColor: "rainbowActive",
         start: function(){
 
         },
@@ -3960,6 +4567,7 @@ var vis = {
     circleLines: {
         name: "Circle Lines",
         image: "visualizers/circleLines.png",
+        bestColor: "rainbowActive",
         start: function(){
             canvas.lineCap = "round";
             canvas.lineWidth = this.lineWidth - (performanceMode * 0.5 * this.lineWidth);
@@ -4074,6 +4682,7 @@ var vis = {
     edgeBars: {
         name: "Edge Bars",
         image: "visualizers/edgeBars.png",
+        bestColor: "beta",
         start: function(){
             
         },
@@ -4137,6 +4746,7 @@ var vis = {
     bottomBars: {
         name: "Bottom Bars",
         image: "visualizers/bottomBars.png",
+        bestColor: "beta",
         start: function(){
             
         },
@@ -4188,6 +4798,7 @@ var vis = {
     edgeSpectrum: {
         name: "Edge Spectrum",
         image: "visualizers/edgeSpectrum.png",
+        bestColor: "beta",
         start: function(){
             
         },
@@ -4246,6 +4857,7 @@ var vis = {
     bottomSpectrum: {
         name: "Bottom Spectrum",
         image: "visualizers/bottomSpectrum.png",
+        bestColor: "beta",
         start: function(){
             
         },
@@ -4302,6 +4914,7 @@ var vis = {
     bottomBassSpectrum: {
         name: "Bottom Bass Spectrum",
         image: "visualizers/bottomBassSpectrum.png",
+        bestColor: "beta",
         start: function(){
             
         },
@@ -4358,6 +4971,7 @@ var vis = {
     fullEdge: {
         name: "Full Edge",
         image: "visualizers/fullEdge.png",
+        bestColor: "beta",
         start: function(){
             
         },
@@ -4394,6 +5008,7 @@ var vis = {
     fullBassEdge: {
         name: "Full Bass Edge",
         image: "visualizers/fullBassEdge.png",
+        bestColor: "beta",
         start: function(){
             
         },
@@ -4442,6 +5057,7 @@ var vis = {
     spectrum: {
         name: "Spectrum",
         image: "visualizers/spectrum.png",
+        bestColor: "bluegreenred",
         start: function(){
             
         },
@@ -4499,6 +5115,7 @@ var vis = {
     spectrumCentered: {
         name: "Centered Spectrum",
         image: "visualizers/spectrumCentered.png",
+        bestColor: "bluegreenred",
         start: function(){
             
         },
@@ -4562,6 +5179,7 @@ var vis = {
     spectrumBass: {
         name: "Bass Spectrum",
         image: "visualizers/spectrumBass.png",
+        bestColor: "bluegreenred",
         start: function(){
             
         },
@@ -4619,6 +5237,7 @@ var vis = {
     tiles: {
         name: "Tiles",
         image: "visualizers/tiles.png",
+        bestColor: "bluegreenred",
         start: function(){
             canvas.clearRect(0, 0, size[0], size[1]);
             smoke.clearRect(0, 0, size[0], size[1]);
@@ -4697,6 +5316,7 @@ var vis = {
     dynamicTiles: {
         name: "Dynamic Tiles",
         image: "visualizers/dynamicTiles.png",
+        bestColor: "bluegreenred",
         start: function(){
             canvas.clearRect(0, 0, size[0], size[1]);
             smoke.clearRect(0, 0, size[0], size[1]);
@@ -4785,6 +5405,7 @@ var vis = {
     windowRecolor: {
         name: "Window Color",
         image: "visualizers/windowColor.png",
+        bestColor: "beta",
         start: function(){
             
         },
@@ -4819,6 +5440,7 @@ var vis = {
     bassWindowRecolor: {
         name: "Bass Window Color",
         image: "visualizers/bassWindowColor.png",
+        bestColor: "beta",
         start: function(){
             
         },
@@ -4853,6 +5475,7 @@ var vis = {
     solidColor: {
         name: "Solid Color",
         image: "visualizers/solidColor.png",
+        bestColor: "bluegreenred",
         start: function(){
             
         },
@@ -4883,6 +5506,7 @@ var vis = {
     bassSolidColor: {
         name: "Bass Solid Color",
         image: "visualizers/bassSolidColor.png",
+        bestColor: "bluegreenred",
         start: function(){
             
         },
@@ -4925,6 +5549,7 @@ var vis = {
     spectrogramClassic: {
         name: "Spectrogram",
         image: "visualizers/spectrogramClassic.png",
+        bestColor: "bluegreenred",
         start: function(){
             canvas.clearRect(0, 0, size[0], size[1]);
             smoke.clearRect(0, 0, size[0], size[1]);
@@ -4951,6 +5576,7 @@ var vis = {
     spectrogramStretched: {
         name: "Spectrogram Stretched",
         image: "visualizers/spectrogramStretched.png",
+        bestColor: "bluegreenred",
         start: function(){
             canvas.clearRect(0, 0, size[0], size[1]);
             smoke.clearRect(0, 0, size[0], size[1]);
@@ -4977,6 +5603,7 @@ var vis = {
     spectrogram: {
         name: "Full-Range Spectrogram",
         image: "visualizers/spectrogramStretch.png",
+        bestColor: "bluegreenred",
         start: function(){
             canvas.clearRect(0, 0, size[0], size[1]);
             smoke.clearRect(0, 0, size[0], size[1]);
@@ -5015,11 +5642,12 @@ var vis = {
     blast: {
         name: "aOS Blast",
         image: "visualizers/blast.png",
+        bestColor: "beta",
         start: function(){
             this.canvasParent = canvasElement.parentNode;
             this.ships = {};
             this.lasers = {};
-            this.spawnShips(this.settings.player);
+            this.spawnShips(this.blastSettings.player);
             canvas.lineCap = "round";
         },
         randomColor: function(){
@@ -5029,12 +5657,13 @@ var vis = {
                 (Math.floor(Math.random() * 200) + 55) + ')';
         },
         spawnShips: function(spawnPlayer){
+            this.totalShips = 0;
             this.ships = {};
             this.lasers = {};
             if(spawnPlayer){
                 this.createShip(null, null, "Player");
             }
-            for(var i = 0; i < this.settings.shipCount; i++){
+            for(var i = 0; i < this.settings.shipCount.value; i++){
                 this.createShip();
             }
         },
@@ -5043,13 +5672,13 @@ var vis = {
                 shipColor = this.randomColor(); 
             }
             if(!shipSize){
-                shipSize = this.settings.shipSize;
+                shipSize = this.blastSettings.shipSize;
             }
             if(!shipName){
                 shipName = "Ship " + (this.totalShips + 1);
             }
             if(!shipHealth){
-                shipHealth = this.settings.shipHealth;
+                shipHealth = this.blastSettings.shipHealth;
             }
             this.ships[shipName] = {
                 name: shipName,
@@ -5081,10 +5710,10 @@ var vis = {
                 laserOwner = undefined;
             }
             if(!laserColor){
-                laserColor = getColor(255, 255);//this.settings.laserColor;
+                laserColor = getColor(255, 255);//this.blastSettings.laserColor;
             }
             if(!laserSize){
-                laserSize = this.settings.laserSize;
+                laserSize = this.blastSettings.laserSize;
             }
             if(!laserPos || typeof laserPos !== "object"){
                 laserPos = [0, 0];
@@ -5093,7 +5722,7 @@ var vis = {
                 laserAngle = 0;
             }
             if(!laserVel){
-                laserVel = this.settings.laserSpeed;
+                laserVel = this.blastSettings.laserSpeed;
             }
             if(!laserName){
                 laserName = "laser_" + (this.totalLasers + 1) + "_" + (laserOwner || "?")
@@ -5133,7 +5762,7 @@ var vis = {
 
             this.visBassAvgElements.push(this.visBassAvg);
             this.visBassAvgTotal += this.visBassAvg;
-            while(this.visBassAvgElements.length > Math.round(this.settings.soundMemory / 60 * currFPS)){
+            while(this.visBassAvgElements.length > Math.round(this.blastSettings.soundMemory / 60 * currFPS)){
                 this.visBassAvgTotal -= this.visBassAvgElements.shift();
             }
 
@@ -5143,9 +5772,9 @@ var vis = {
                 this.visPastAvgs = [];
             }
 
-            //if(this.visBassAvg < 255 * this.settings.soundSensitivity){
+            //if(this.visBassAvg < 255 * this.blastSettings.soundSensitivity){
             if(
-                this.visBassAvgVolume + this.settings.soundMemoryAdd > this.visBassAvg ||
+                this.visBassAvgVolume + this.blastSettings.soundMemoryAdd > this.visBassAvg ||
                 this.visBassAvgElements[this.visBassAvgElements.length - 1] <= this.visBassAvgElements[this.visBassAvgElements.length - 3]
             ){
                 this.soundShoot = 0;
@@ -5162,19 +5791,19 @@ var vis = {
                 canvas.fillRect(30, size[1] - 10 - this.visBassAvgVolume, 10, this.visBassAvgVolume);
 
                 canvas.fillStyle = "#F00";
-                //canvas.fillRect(10, size[1] - 10 - (255 * this.settings.soundSensitivity), 10, 1);
-                canvas.fillRect(10, size[1] - 10 - (this.visBassAvgVolume + this.settings.soundMemoryAdd), 20, 1);
-                canvas.fillRect(30, size[1] - 10 - (this.visBassAvgVolume + this.settings.soundMemoryAdd), 5, this.settings.soundMemoryAdd);
+                //canvas.fillRect(10, size[1] - 10 - (255 * this.blastSettings.soundSensitivity), 10, 1);
+                canvas.fillRect(10, size[1] - 10 - (this.visBassAvgVolume + this.blastSettings.soundMemoryAdd), 20, 1);
+                canvas.fillRect(30, size[1] - 10 - (this.visBassAvgVolume + this.blastSettings.soundMemoryAdd), 5, this.blastSettings.soundMemoryAdd);
 
                 canvas.strokeStyle = "#FFF";
                 canvas.lineWidth = 1;
                 canvas.strokeRect(10.5, size[1] - 285.5, 10, 10);
                 canvas.strokeRect(10.5, size[1] - 265.5, 10, 255);
-                canvas.strokeRect(30.5, size[1] - 265.5 - this.settings.soundMemoryAdd, 10, 255 + this.settings.soundMemoryAdd);
+                canvas.strokeRect(30.5, size[1] - 265.5 - this.blastSettings.soundMemoryAdd, 10, 255 + this.blastSettings.soundMemoryAdd);
 
-                var adjustedSoundMemory = Math.round(this.settings.soundMemory / 60 * currFPS);
+                var adjustedSoundMemory = Math.round(this.blastSettings.soundMemory / 60 * currFPS);
 
-                this.visPastAvgs.push(this.visBassAvgVolume + this.settings.soundMemoryAdd);
+                this.visPastAvgs.push(this.visBassAvgVolume + this.blastSettings.soundMemoryAdd);
                 while(this.visPastAvgs.length > adjustedSoundMemory){
                     this.visPastAvgs.shift();
                 }
@@ -5185,15 +5814,15 @@ var vis = {
                         canvas.fillStyle = "#070";
                     }
                     if(this.visBassAvgElements[i] > this.visPastAvgs[i]){
-                        canvas.fillRect(50 + (adjustedSoundMemory - i), size[1] - 285 - this.settings.soundMemoryAdd, 1, 10);
+                        canvas.fillRect(50 + (adjustedSoundMemory - i), size[1] - 285 - this.blastSettings.soundMemoryAdd, 1, 10);
                     }
                     canvas.fillRect(50 + (adjustedSoundMemory - i), size[1] - 10 - this.visBassAvgElements[i], 1, this.visBassAvgElements[i]);
                     canvas.fillStyle = "#F00";
                     canvas.fillRect(50 + (adjustedSoundMemory - i), size[1] - 10 - this.visPastAvgs[i], 1, 1);
                 }
                 
-                canvas.strokeRect(50.5, size[1] - 265.5 - this.settings.soundMemoryAdd, adjustedSoundMemory + 1, 255 + this.settings.soundMemoryAdd);
-                canvas.strokeRect(50.5, size[1] - 285.5 - this.settings.soundMemoryAdd, adjustedSoundMemory + 1, 10);
+                canvas.strokeRect(50.5, size[1] - 265.5 - this.blastSettings.soundMemoryAdd, adjustedSoundMemory + 1, 255 + this.blastSettings.soundMemoryAdd);
+                canvas.strokeRect(50.5, size[1] - 285.5 - this.blastSettings.soundMemoryAdd, adjustedSoundMemory + 1, 10);
             }
 
 
@@ -5240,7 +5869,7 @@ var vis = {
                 if(smokeEnabled){
                     smoke.fillStyle = this.lasers[i].color;
                     smoke.beginPath();
-                    smoke.arc(this.lasers[i].pos[0], this.lasers[i].pos[1], this.settings.laserLength * 1.5, 0, this.deg2rad(360));
+                    smoke.arc(this.lasers[i].pos[0], this.lasers[i].pos[1], this.blastSettings.laserLength * 1.5, 0, this.deg2rad(360));
                     smoke.fill();
                 }
 
@@ -5258,29 +5887,29 @@ var vis = {
 
                         // do player movement third
                         if(this.inputs.left){
-                            this.ships[ship].pos[0] -= this.settings.shipChase * fpsCompensation;
+                            this.ships[ship].pos[0] -= this.blastSettings.shipChase * fpsCompensation;
                         }
                         if(this.inputs.right){
-                            this.ships[ship].pos[0] += this.settings.shipChase * fpsCompensation;
+                            this.ships[ship].pos[0] += this.blastSettings.shipChase * fpsCompensation;
                         }
                         if(this.inputs.up){
-                            this.ships[ship].pos[1] -= this.settings.shipChase * fpsCompensation;
+                            this.ships[ship].pos[1] -= this.blastSettings.shipChase * fpsCompensation;
                         }
                         if(this.inputs.down){
-                            this.ships[ship].pos[1] += this.settings.shipChase * fpsCompensation;
+                            this.ships[ship].pos[1] += this.blastSettings.shipChase * fpsCompensation;
                         }
                         // do player firing fourth
                         if(this.inputs.mouse){
                             var ms = Date.now();
-                            if(this.ships[ship].shotsFired >= this.settings.gunAmmo){
-                                if(ms - this.ships[ship].lastReload > this.settings.gunReload){
+                            if(this.ships[ship].shotsFired >= this.blastSettings.gunAmmo){
+                                if(ms - this.ships[ship].lastReload > this.blastSettings.gunReload){
                                     this.ships[ship].shotsFired = 0;
                                     shouldShoot = 1;
                                 }
                             }else{
                                 shouldShoot = 1;
                             }
-                            if(ms - this.ships[ship].lastFire > this.settings.gunDelay){
+                            if(ms - this.ships[ship].lastFire > this.blastSettings.gunDelay){
                                 if(shouldShoot){
                                     var targetAngle = this.angleFromPoints(
                                         this.ships[ship].pos[0],
@@ -5301,12 +5930,12 @@ var vis = {
                                     );
                                     this.ships[ship].shotsFired++;
                                     this.ships[ship].lastFire = ms;
-                                    if(this.ships[ship].shotsFired >= this.settings.gunAmmo){
+                                    if(this.ships[ship].shotsFired >= this.blastSettings.gunAmmo){
                                         this.ships[ship].lastReload = ms;
                                     }
                                 }
                             }
-                        }else if(this.ships[ship].shotsFired >= this.settings.gunAmmo && Date.now() - this.ships[ship].lastReload > this.settings.gunReload){
+                        }else if(this.ships[ship].shotsFired >= this.blastSettings.gunAmmo && Date.now() - this.ships[ship].lastReload > this.blastSettings.gunReload){
                             this.ships[ship].shotsFired = 0;
                         }
                     }else{
@@ -5323,7 +5952,7 @@ var vis = {
                                         Math.pow(this.ships[otherShip].pos[0] - this.ships[ship].pos[0], 2) +
                                         Math.pow(this.ships[otherShip].pos[1] - this.ships[ship].pos[1], 2)
                                     );
-                                    if(otherDistance < this.settings.shipSightRange){
+                                    if(otherDistance < this.blastSettings.shipSightRange){
                                         if(otherDistance < targetDist || targetDist === null){
                                             targetShip = otherShip;
                                             targetDist = otherDistance;
@@ -5348,7 +5977,7 @@ var vis = {
                                     Math.pow(this.lasers[j].pos[0] - this.ships[ship].pos[0], 2) +
                                     Math.pow(this.lasers[j].pos[1] - this.ships[ship].pos[1], 2)
                                 );
-                                if(laserDistance < this.settings.shipDodgeRange){
+                                if(laserDistance < this.blastSettings.shipDodgeRange){
                                     if(laserDistance < closestLaser || closestLaser === null){
                                         dodging = j;
                                         closestLaser = laserDistance;
@@ -5366,18 +5995,18 @@ var vis = {
                             case "fight":
                                 this.ships[ship].dodging = null;
                                 var moveAngle = targetAngle;
-                                if(targetDist < this.settings.shipBattleRange - this.settings.shipBattleComfort){ // target is too close for comfort
+                                if(targetDist < this.blastSettings.shipBattleRange - this.blastSettings.shipBattleComfort){ // target is too close for comfort
                                     moveAngle += 180;
-                                    moveAngle += Math.random() * this.settings.shipWander * 2 - this.settings.shipWander;
+                                    moveAngle += Math.random() * this.blastSettings.shipWander * 2 - this.blastSettings.shipWander;
                                     var moveCoords = this.pointFromAngle(
                                         this.ships[ship].pos[0],
                                         this.ships[ship].pos[1],
                                         moveAngle,
-                                        (this.settings.shipChase * (Math.random() * 0.85 + 0.15)) * fpsCompensation
+                                        (this.blastSettings.shipChase * (Math.random() * 0.85 + 0.15)) * fpsCompensation
                                     );
                                     this.ships[ship].pos[0] = moveCoords[0];
                                     this.ships[ship].pos[1] = moveCoords[1];
-                                }else if(targetDist < this.settings.shipBattleRange + this.settings.shipBattleComfort){ // target is good distance away
+                                }else if(targetDist < this.blastSettings.shipBattleRange + this.blastSettings.shipBattleComfort){ // target is good distance away
                                     if(typeof this.ships[ship].prevActionSide !== "number"){
                                         this.ships[ship].prevActionSide = Math.round(Math.random());
                                     }
@@ -5389,22 +6018,22 @@ var vis = {
                                     }else{
                                         moveAngle -= 90;
                                     }
-                                    moveAngle += Math.random() * this.settings.shipWander * 2 - this.settings.shipWander;
+                                    moveAngle += Math.random() * this.blastSettings.shipWander * 2 - this.blastSettings.shipWander;
                                     var moveCoords = this.pointFromAngle(
                                         this.ships[ship].pos[0],
                                         this.ships[ship].pos[1],
                                         moveAngle,
-                                        (this.settings.shipChase * (Math.random() * 0.85 + 0.15)) * fpsCompensation
+                                        (this.blastSettings.shipChase * (Math.random() * 0.85 + 0.15)) * fpsCompensation
                                     );
                                     this.ships[ship].pos[0] = moveCoords[0];
                                     this.ships[ship].pos[1] = moveCoords[1];
                                 }else{ // target is too far away
-                                    moveAngle += Math.random() * this.settings.shipWander * 2 - this.settings.shipWander;
+                                    moveAngle += Math.random() * this.blastSettings.shipWander * 2 - this.blastSettings.shipWander;
                                     var moveCoords = this.pointFromAngle(
                                         this.ships[ship].pos[0],
                                         this.ships[ship].pos[1],
                                         moveAngle,
-                                        (this.settings.shipChase * (Math.random() * 0.85 + 0.15)) * fpsCompensation
+                                        (this.blastSettings.shipChase * (Math.random() * 0.85 + 0.15)) * fpsCompensation
                                     );
                                     this.ships[ship].pos[0] = moveCoords[0];
                                     this.ships[ship].pos[1] = moveCoords[1];
@@ -5412,27 +6041,27 @@ var vis = {
                                 break;
                             case "dodge":
                                 var ms = Date.now();
-                                if(this.ships[ship].dodging === dodging && ms - this.ships[ship].lastDodge < this.settings.dodgeTime){
-                                    dodgeAngle = this.ships[ship].dodgeAngle + (Math.random() * this.settings.shipWander * 2 - this.settings.shipWander) * fpsCompensation;
+                                if(this.ships[ship].dodging === dodging && ms - this.ships[ship].lastDodge < this.blastSettings.dodgeTime){
+                                    dodgeAngle = this.ships[ship].dodgeAngle + (Math.random() * this.blastSettings.shipWander * 2 - this.blastSettings.shipWander) * fpsCompensation;
                                     this.ships[ship].dodgeAngle = dodgeAngle;
                                 }else{
                                     this.ships[ship].lastDodge = ms;
                                     this.ships[ship].dodging = dodging;
-                                    dodgeAngle = Math.round(Math.random() * 360) + (Math.random() * this.settings.shipWander * 2 - this.settings.shipWander) * fpsCompensation;
+                                    dodgeAngle = Math.round(Math.random() * 360) + (Math.random() * this.blastSettings.shipWander * 2 - this.blastSettings.shipWander) * fpsCompensation;
                                     this.ships[ship].dodgeAngle = dodgeAngle;
                                 }
                                 var newPos = this.pointFromAngle(
                                     this.ships[ship].pos[0],
                                     this.ships[ship].pos[1],
                                     dodgeAngle,
-                                    this.settings.shipChase * fpsCompensation
+                                    this.blastSettings.shipChase * fpsCompensation
                                 );
                                 this.ships[ship].pos[0] = newPos[0];
                                 this.ships[ship].pos[1] = newPos[1];
                                 break;
                             default:
                                 this.ships[ship].dodging = null;
-                                this.ships[ship].wanderDirection += (Math.random() * this.settings.shipWander - (this.settings.shipWander / 2)) * fpsCompensation;
+                                this.ships[ship].wanderDirection += (Math.random() * this.blastSettings.shipWander - (this.blastSettings.shipWander / 2)) * fpsCompensation;
                                 if(this.ships[ship].wanderDirection > 360){
                                     this.ships[ship].wanderDirection -= 360;
                                 }else if(this.ships[ship].wanderDirection < 0){
@@ -5442,17 +6071,17 @@ var vis = {
                                     this.ships[ship].pos[0],
                                     this.ships[ship].pos[1],
                                     this.ships[ship].wanderDirection,
-                                    this.settings.shipIdle * fpsCompensation
+                                    this.blastSettings.shipIdle * fpsCompensation
                                 )
                         }
                     }
                     // do ship firing fourth
                     if(this.ships[ship].targetShip){
                         var shouldShoot = 0;
-                        if(targetDist < this.settings.shipFireRange){
+                        if(targetDist < this.blastSettings.shipFireRange){
                             var ms = Date.now();
-                            if(this.ships[ship].shotsFired >= this.settings.gunAmmo){
-                                if(ms - this.ships[ship].lastReload > this.settings.gunReload){
+                            if(this.ships[ship].shotsFired >= this.blastSettings.gunAmmo){
+                                if(ms - this.ships[ship].lastReload > this.blastSettings.gunReload){
                                     this.ships[ship].shotsFired = 0;
                                     shouldShoot = 1;
                                 }
@@ -5462,7 +6091,7 @@ var vis = {
                             if(!this.soundShoot){
                                 shouldShoot = 0;
                             }
-                            if(ms - this.ships[ship].lastFire > this.settings.gunDelay){
+                            if(ms - this.ships[ship].lastFire > this.blastSettings.gunDelay){
                                 if(shouldShoot){
                                     var laserSpawnPos = this.pointFromAngle(
                                         this.ships[ship].pos[0],
@@ -5473,18 +6102,18 @@ var vis = {
                                     this.createLaser(
                                         ship,
                                         laserSpawnPos,
-                                        targetAngle + Math.random() * this.settings.gunInaccuracy - this.settings.gunInaccuracy * 0.5
+                                        targetAngle + Math.random() * this.blastSettings.gunInaccuracy - this.blastSettings.gunInaccuracy * 0.5
                                     );
                                     this.ships[ship].shotsFired++;
                                     this.ships[ship].lastFire = ms;
-                                    if(this.ships[ship].shotsFired >= this.settings.gunAmmo){
+                                    if(this.ships[ship].shotsFired >= this.blastSettings.gunAmmo){
                                         this.ships[ship].lastReload = ms;
                                     }
                                 }
                             }
                         }
                     }
-                    if(this.ships[ship].shotsFired >= this.settings.gunAmmo && Date.now() - this.ships[ship].lastReload > this.settings.gunReload){
+                    if(this.ships[ship].shotsFired >= this.blastSettings.gunAmmo && Date.now() - this.ships[ship].lastReload > this.blastSettings.gunReload){
                         this.ships[ship].shotsFired = 0;
                     }
                     // do ship velocities, lastPos, and wall collision bumping fifth
@@ -5524,7 +6153,7 @@ var vis = {
 
                     // draw ships
                     canvas.fillStyle = this.ships[ship].color;
-                    var shipDrawColor = this.visBassAvg / (this.visBassAvgVolume + this.settings.soundMemoryAdd) * 255;
+                    var shipDrawColor = this.visBassAvg / (this.visBassAvgVolume + this.blastSettings.soundMemoryAdd) * 255;
                     shipDrawColor = Math.pow(shipDrawColor, 2) / 255
                     if(shipDrawColor > 255){
                         shipDrawColor = 255;
@@ -5566,7 +6195,7 @@ var vis = {
                     }
 
                     // debug drawing
-                    if(this.settings.debug){
+                    if(debugForce){
                         canvas.lineWidth = 1;
                         // green line if wandering
                         if(this.ships[ship].moveMode === "default"){
@@ -5622,7 +6251,7 @@ var vis = {
                             canvas.arc(
                                 targetCoord[0],
                                 targetCoord[1],
-                                this.settings.shipBattleRange - this.settings.shipBattleComfort,
+                                this.blastSettings.shipBattleRange - this.blastSettings.shipBattleComfort,
                                 this.deg2rad(this.ships[ship].targetAngle + 165),
                                 this.deg2rad(this.ships[ship].targetAngle + 195)
                             );
@@ -5631,7 +6260,7 @@ var vis = {
                             canvas.arc(
                                 targetCoord[0],
                                 targetCoord[1],
-                                this.settings.shipBattleRange + this.settings.shipBattleComfort,
+                                this.blastSettings.shipBattleRange + this.blastSettings.shipBattleComfort,
                                 this.deg2rad(this.ships[ship].targetAngle + 165),
                                 this.deg2rad(this.ships[ship].targetAngle + 195)
                             );
@@ -5641,7 +6270,7 @@ var vis = {
                             canvas.arc(
                                 targetCoord[0],
                                 targetCoord[1],
-                                this.settings.shipBattleRange,
+                                this.blastSettings.shipBattleRange,
                                 this.deg2rad(this.ships[ship].targetAngle + 180),
                                 this.deg2rad(this.ships[ship].targetAngle + 180)
                             );
@@ -5661,19 +6290,19 @@ var vis = {
                         }
                     }
                     // health and ammo
-                    if(this.settings.shipLabels){
+                    if(this.blastSettings.shipLabels){
                         canvas.fillStyle = "#FFF";
                         canvas.font = "24px Sans-Serif";
                         canvas.fillText(
-                            this.ships[ship].health + ", " + (this.settings.gunAmmo - this.ships[ship].shotsFired) + "/" + this.settings.gunAmmo,
+                            this.ships[ship].health + ", " + (this.blastSettings.gunAmmo - this.ships[ship].shotsFired) + "/" + this.blastSettings.gunAmmo,
                             this.ships[ship].pos[0] - this.ships[ship].size,
                             this.ships[ship].pos[1] - this.ships[ship].size
                         );
                     }
                 }else{
-                    if(Date.now() - this.ships[ship].lastDeath > this.settings.shipRespawn){
+                    if(Date.now() - this.ships[ship].lastDeath > this.blastSettings.shipRespawn){
                         this.ships[ship].alive = 1;
-                        this.ships[ship].health = this.settings.shipHealth;
+                        this.ships[ship].health = this.blastSettings.shipHealth;
                         this.ships[ship].pos = [
                             Math.floor(Math.random() * size[0]),
                             Math.floor(Math.random() * size[1])
@@ -5685,7 +6314,7 @@ var vis = {
             }
                 
             // scoreboard
-            if(this.settings.scoreboard){
+            if(this.settings.scoreboard.value){
                 canvas.fillStyle = "#FFF";
                 canvas.fillText("Score", 10, 40);
                 var textPos = 40;
@@ -5790,6 +6419,31 @@ var vis = {
             "shipSize"
         ],
         settings: {
+            scoreboard: {
+                type: "toggle",
+                value: 1,
+                default: 1,
+                title: "Scoreboard",
+                desc: "Takes score on how many times each AI scored a hit."
+            },
+            shipCount: {
+                type: "number",
+                value: 2,
+                default: 2,
+                range: [2, 10],
+                step: 1,
+                title: "Number of Ships",
+                desc: "Reset the visualizer to take effect."
+            },
+            respawnShips: {
+                type: "button",
+                content: "Reset Visualizer",
+                func: function(){
+                    vis.blast.spawnShips();
+                }
+            }
+        },
+        blastSettings: {
             // all time-related figures are in ms
 
             // draws AI debug lines
@@ -5899,6 +6553,7 @@ var vis = {
     waveform: {
         name: "Waveform",
         image: "visualizers/waveform.png",
+        bestColor: "beta",
         start: function(){
             this.waveArray = new Uint8Array(analyser.fftSize);
             this.arrsize = analyser.fftSize;
@@ -5941,6 +6596,7 @@ var vis = {
     realseismograph: {
         name: "Seismograph",
         image: "visualizers/realseismograph.png",
+        bestColor: "beta",
         start: function(){
             this.graph = new Array(Math.floor(size[1] / 2));
             this.graph.fill([-1, 0], 0, Math.floor(size[1] / 2));
@@ -5992,6 +6648,7 @@ var vis = {
     avgPitch: {
         name: "Average Pitch",
         image: "visualizers/averagePitch.png",
+        bestColor: "beta",
         start: function(){
 
         },
@@ -6180,6 +6837,67 @@ var vis = {
                     canvas.fillRect(leftEdge + j, bottomEdge - i, 1, 1);
                 }
             }
+        },
+        settings: {
+            headerFunctional: {
+                type: "header",
+                content: "Functional Options"
+            },
+            testNumber: {
+                type: "number",
+                value: 4,
+                default: 4,
+                range: [0, 10],
+                step: 2,
+                title: "Number",
+                desc: "Even number from 0 - 10"
+            },
+            testString: {
+                type: "string",
+                value: "Type Something",
+                default: "Type Something",
+                title: "String",
+                desc: "Text value."
+            },
+            testToggle: {
+                type: "toggle",
+                value: 0,
+                default: 0,
+                title: "Toggle",
+                desc: "Toggles a boolean value (0 / 1)"
+            },
+            testChoice: {
+                type: "choice",
+                value: "choice2",
+                default: "choice2",
+                choices: {choice1: "Apples 1", choice2: "Oranges 2", choice3: "Pears 3"},
+                title: "Choice",
+                desc: "Choose between options."
+            },
+            testButton: {
+                type: "button",
+                content: "Click Me",
+                func: function(){alert("It's working.");},
+                title: "Button",
+                desc: "Runs a function on click.",
+            },
+            testSeparator: {
+                type: "separator"
+            },
+            headerStatic: {
+                type: "header",
+                content: "Information UI"
+            },
+            textStatic: {
+                type: "text",
+                content: "These options don't have functional actions. This is a paragraph btw"
+            },
+            testInfo: {
+                type: "info",
+                title: "Info",
+                desc: "Shows return value from a function.",
+                func: function(){return performance.now();}
+            }
         }
     },
     modTest: {
@@ -6327,9 +7045,10 @@ resizeSmoke();
 
 var featuredVis = {
     reflection: 1,
-    triWave: 1,
-    bassCircle: 1,
     orbsAround: 1,
+    bassCircle: 1,
+    lasers: 1,
+    triWave: 1,
     dynamicTiles: 1,
     spectrogramStretched: 1
 };
@@ -6355,9 +7074,21 @@ function openVisualizerMenu(){
                 namecolor = ' style="outline:2px solid ' + getColor(255) + ';"';
             }
             if(vis[i].image){
-                tempHTML += '<div' + namecolor + ' class="visOption" onclick="overrideVis(\'' + i + '\')"><img src="' + vis[i].image + '">' + vis[i].name + '&nbsp;</div>';
+                tempHTML += '<div' + namecolor + ' class="visOption" onclick="overrideVis(\'' + i + '\')"><img src="' + vis[i].image + '">';
+                if(vis[i].settings){
+                    tempHTML += '<span style="opacity:1;height:initial;margin-right:initial;line-height:initial;" title="Settings Available">&#9881;</span> ';
+                }else{
+                    tempHTML += '<span style="opacity:0.25;height:initial;margin-right:initial;line-height:initial;" title="No Settings">&#9881;</span> ';
+                }
+                tempHTML += vis[i].name + '&nbsp;</div>';
             }else{
-                tempHTML += '<div' + namecolor + ' class="visOption" onclick="overrideVis(\'' + i + '\')"><span></span>' + vis[i].name + '</div>';
+                tempHTML += '<div' + namecolor + ' class="visOption" onclick="overrideVis(\'' + i + '\')"><span></span>';
+                if(vis[i].settings){
+                    tempHTML += '<span style="opacity:1;height:initial;margin-right:initial;line-height:initial;" title="Settings Available">&#9881;</span> ';
+                }else{
+                    tempHTML += '<span style="opacity:0.25;height:initial;margin-right:initial;line-height:initial;" title="No Settings">&#9881;</span> ';
+                }
+                tempHTML += vis[i].name + '</div>';
             }
         }
         for(var i in vis){
@@ -6368,9 +7099,21 @@ function openVisualizerMenu(){
                         namecolor = ' style="outline:2px solid ' + getColor(255) + ';"';
                     }
                     if(vis[i].image){
-                        tempHTML += '<div' + namecolor + ' class="visOption" onclick="overrideVis(\'' + i + '\')"><img src="' + vis[i].image + '">' + vis[i].name + '&nbsp;</div>';
+                        tempHTML += '<div' + namecolor + ' class="visOption" onclick="overrideVis(\'' + i + '\')"><img src="' + vis[i].image + '">';
+                        if(vis[i].settings){
+                            tempHTML += '<span style="opacity:1;height:initial;margin-right:initial;line-height:initial;" title="Settings Available">&#9881;</span> ';
+                        }else{
+                            tempHTML += '<span style="opacity:0.25;height:initial;margin-right:initial;line-height:initial;" title="No Settings">&#9881;</span> ';
+                        }
+                        tempHTML += vis[i].name + '&nbsp;</div>';
                     }else{
-                        tempHTML += '<div' + namecolor + ' class="visOption" onclick="overrideVis(\'' + i + '\')"><span></span>' + vis[i].name + '</div>';
+                        tempHTML += '<div' + namecolor + ' class="visOption" onclick="overrideVis(\'' + i + '\')"><span></span>';
+                        if(vis[i].settings){
+                            tempHTML += '<span style="opacity:1;height:initial;margin-right:initial;line-height:initial;" title="Settings Available">&#9881;</span> ';
+                        }else{
+                            tempHTML += '<span style="opacity:0.25;height:initial;margin-right:initial;line-height:initial;" title="No Settings">&#9881;</span> ';
+                        }
+                        tempHTML += vis[i].name + '</div>';
                     }
                 }
             }else{
@@ -6395,7 +7138,7 @@ function overrideVis(selectedVisualizer){
 function openColorMenu(){
     if(getId("selectOverlay").classList.contains("disabled")){
         getId("selectOverlay").classList.remove("disabled");
-        var tempHTML = '';
+        var tempHTML = '<div style="height:2em;line-height:2em;text-align:center;background:transparent !important;"><button onclick="toggleBestColors()" id="bestColorsButton" style="border-color:' + debugColors[bestColorsMode] + '">Auto-Select When Visualizer Changes</button></div>';
         var firstDiv = 1;
         for(var i in colors){
             if(i.indexOf("SEPARATOR") === -1){
@@ -6474,48 +7217,55 @@ function openSettingsMenu(){
         getId("selectOverlay").classList.remove("disabled");
         var tempHTML = '<div style="font-size:0.5em;background:transparent">';
 
-        tempHTML += "<p style='font-size:2em'>Fast Mode</p>" +
-        '<button onclick="togglePerformance()" id="performanceButton" style="border-color:' + debugColors[performanceMode] + '">Toggle</button>' +
+        tempHTML += '<p style="font-size:3em">AaronOS Music Settings</p>';
+
+        tempHTML += '<span style="font-size:2em">Auto-Select Colors for Visualizer</span><br><br>' +
+            '<button onclick="toggleBestColors()" id="bestColorsButton" style="border-color:' + debugColors[bestColorsMode] + '">Toggle</button>' +
+            '<p>Automatically selects the recommended color pallette when switching visualizers.</p>';
+
+        tempHTML += "<br><br><span style='font-size:2em'>Fast Mode</span><br><br>" +
+            '<button onclick="togglePerformance()" id="performanceButton" style="border-color:' + debugColors[performanceMode] + '">Toggle</button>' +
             "<p>If performance is slow, this option lowers quality to help weaker devices.</p>";
 
-        tempHTML += "<br><br><p style='font-size:2em'>Smoke Glow Brightness</p>" +
+        tempHTML += "<br><br><span style='font-size:2em'>Smoke Glow Brightness</span><br><br>" +
             'Multiplier: <input style="width: 50px" type="number" id="smokeglowinput" min="0.25" max="5" value="' + smokeBrightness + '" step="0.25" onchange="setSmokeBrightness(this.value)"></input>' +
             "<p>Default: 1.5<br>The smoke effect multiplies light by this value to make it more visible. Excessive values may cause color issues.</p>";
 
         if(!webVersion){
             if(!microphoneActive){
-                tempHTML += "<br><br><p style='font-size:2em'>Self-Close</p>" +
+                tempHTML += "<br><br><span style='font-size:2em'>Self-Close</span><br><br>" +
                     'Songs: <input style="width:50px" type="number" id="selfcloseinput" min="1" max="9999" value="' + selfCloseSongs + '" step="1" onchange="selfCloseSongs = this.value;"></input>' +
                     ' <button onclick="toggleSelfClose()" id="selfclosebutton" style="border-color:' + debugColors[selfCloseEnabled] + '">Toggle</button>' +
                     "<p>The music player will close itself after playing a number of songs.</p>";
             }
 
-            tempHTML += '<br><br><p style="font-size:2em">Transparent Mode</p>' +
-            'Current Mode: ' + windowType + '<br>' +
-            '<button onclick="ipcRenderer.send(\'toggle-transparent\', {x: screen.width, y: screen.height})">Toggle</button>';
+            tempHTML += '<br><br><span style="font-size:2em">Transparent Mode</span><br><br>' +
+            '<button onclick="ipcRenderer.send(\'toggle-transparent\', {x: screen.width, y: screen.height})">Toggle</button><br><br>' +
+            'Current Mode: ' + windowType;
         }
 
         if(!microphoneActive){
-            tempHTML += '<br><br><p style="font-size:2em">Song Info</p>' +
-                'Info detected: ' + (['No', 'Yes'])[0 + (fileInfo.hasOwnProperty('_default_colors'))] + '<br>' +
-                '<button onclick="generateSongInfo()">Generate Info</button><br>' +
-                'Select-All + Copy generated info from below, save to "_songInfo.txt" in your music\'s main folder, modify as you see fit.<br>' +
-                '<textarea id="songInfoTemplate" style="height:64px;"></textarea>';
 
-            tempHTML += "<br><br><p style='font-size:2em'>Audio Delay</p>" +
+            tempHTML += "<br><br><br><span style='font-size:2em'>Audio Delay</span><br><br>" +
                 'Seconds: <input style="width: 50px" type="number" id="delayinput" min="0" max="1" value="' + (Math.round(delayNode.delayTime.value * 100) / 100) + '" step="0.01" onchange="setDelay(this.value)"></input>' +
                 "<p>Default: 0.07<br>If the visualizer and the music don't line up, try changing this.<br>Larger numbers delay the audible music more.</p>";
 
-            tempHTML += "<br><br><p style='font-size:2em'>Smoothing Time Constant</p>" +
+            tempHTML += "<br><br><span style='font-size:2em'>Smoothing Time Constant</span><br><br>" +
                 'Constant: <input style="width: 50px" type="number" id="delayinput" min="0" max="0.99" value="' + analyser.smoothingTimeConstant + '" step="0.01" onchange="setSmoothingTimeConstant(this.value)"></input>' +
                 "<p>Default: 0.8<br>This value changes how smooth frequency response over time is. High values are smoother.<br>Values too high will make the visualizers feel lethargic.<br>Values too low will make the visualizers too hyper or unreadable.</p>";
+                
+            tempHTML += '<br><br><span style="font-size:2em">Song Info</span><br><br>' +
+                'Info detected: ' + (['No', 'Yes'])[0 + (fileInfo.hasOwnProperty('_default_colors'))] + '<br><br>' +
+                '<button onclick="generateSongInfo()">Generate Info</button><br><br>' +
+                'Select-All + Copy generated info from below, save to "_songInfo.txt" in your music\'s main folder, modify as you see fit.<br><br>' +
+                '<textarea id="songInfoTemplate" style="height:64px;"></textarea>';
         }
 
-        tempHTML += "<br><br><p style='font-size:2em'>Debug Overlays</p>" +
-        '<button onclick="toggleFPS()" id="debugButton" style="border-color:' + debugColors[debugForce] + '">Toggle</button>' +
+        tempHTML += "<br><br><br><span style='font-size:2em'>Debug Overlays</span><br><br>" +
+            '<button onclick="toggleFPS()" id="debugButton" style="border-color:' + debugColors[debugForce] + '">Toggle</button>' +
             "<p>Intended for developer use. Enables various debug overlays.</p>";
 
-        tempHTML += "<br><br><p style='font-size:2em'>Debug Frequencies</p>" +
+        tempHTML += "<br><br><span style='font-size:2em'>Debug Frequencies</span><br><br>" +
         '<button onclick="toggleFreqs()" id="debugFreqsButton" style="border-color:' + debugColors[debugFreqs] + '">Toggle</button>' +
             "<p>Intended for developer use. Sweeps through all frequencies to test visualizers.</p>";
 
@@ -6530,6 +7280,204 @@ function openSettingsMenu(){
 function closeMenu(){
     getId("selectContent").innerHTML = "";
     getId("selectOverlay").classList.add("disabled");
+}
+
+/*
+    vis.visualizer.settings: {
+        optionNumber: {
+            type: "number",
+            value: 0,
+            default: 0,
+            title: "Option Title",
+            desc: "Option Description",
+            range: [min, max],
+            step: 1
+        },
+        optionChoice: {
+            type: "choice",
+            value: "something",
+            default: "something",
+            title: "Option Title",
+            desc: "Option Description",
+            choices: {something: "Something", other: "Other Thing", else: "Another Thing"}
+        },
+        optionToggle: {
+            type: "toggle",
+            value: 1,
+            default: 1
+            title: "Option Title",
+            desc: "Option Description"
+        },
+        optionButton: {
+            type: "button",
+            content: "",
+            func: function(){},
+            title: "Option Title",
+            desc: "Option Description"
+        },
+        optionString: {
+            type: "string",
+            value: "something",
+            default: "something"
+            title: "Option Title",
+            desc: "Option Description",
+        }
+        optionHeader: {
+            type: "header",
+            content: "Header Text"
+        },
+        optionText: {
+            type: "text",
+            content: "Paragraph Text"
+        },
+        optionInfo: {
+            type: "info",
+            title: "Info Title",
+            desc: "Info Description",
+            func: function(){return "string"}
+        }
+        optionSeperator: {
+            type: "separator"
+        }
+    }
+*/
+
+function openVisSettingsMenu(){
+    if(getId("selectOverlay").classList.contains("disabled")){
+        if(vis[currVis].settings){
+            getId("selectOverlay").classList.remove("disabled");
+            var tempHTML = '';
+            tempHTML += '<div style="font-size:0.5em;padding-left:8px;background:transparent !important">';
+            tempHTML += '<p style="font-size:3em;">' + vis[currVis].name + ' Settings</p>';
+            for(var i in vis[currVis].settings){
+                if(vis[currVis].settings[i].title){
+                    tempHTML += '<span style="font-size:2em;">' + vis[currVis].settings[i].title + '</span><br><br>';
+                }
+                switch(vis[currVis].settings[i].type){
+                    case "header":
+                        tempHTML += '<p style="font-size:2em;">' + vis[currVis].settings[i].content + '</p>';
+                        break;
+                    case "text":
+                        tempHTML += '<p>' + vis[currVis].settings[i].content + '</p>';
+                        break;
+                    case "separator":
+                        tempHTML += '<hr>';
+                        break;
+                    case "info":
+                        tempHTML += '<span style="font-family:monospace;background-color:rgba(127, 127, 127, 0.5);border-radius:3px;">' + vis[currVis].settings[i].func() + '</span>';
+                        tempHTML += '<br><br>';
+                        break;
+                    case "number":
+                        tempHTML += '<span><input type="number" class="visSettingsNumber"';
+                        if(typeof vis[currVis].settings[i].default !== "undefined"){
+                            tempHTML += ' placeholder="' + vis[currVis].settings[i].default + '"';
+                        }
+                        if(typeof vis[currVis].settings[i].value !== "undefined"){
+                            tempHTML += ' value="' + vis[currVis].settings[i].value + '"';
+                        }
+                        if(vis[currVis].settings[i].range){
+                            tempHTML += ' min="' + vis[currVis].settings[i].range[0] +
+                                '" max="' + vis[currVis].settings[i].range[1] + '"';
+                        }
+                        if(vis[currVis].settings[i].step){
+                            tempHTML += ' step="' + vis[currVis].settings[i].step + '"';
+                        }
+                        tempHTML += '> <button onclick="setVisSetting(\'' + currVis + '\', \'' + i + '\', parseFloat(this.parentNode.getElementsByClassName(\'visSettingsNumber\')[0].value))">Set</button></span>';
+                        tempHTML += '<br><br>';
+                        break;
+                    case "string":
+                        tempHTML += '<span><input class="visSettingsString"';
+                        if(typeof vis[currVis].settings[i].default !== "undefined"){
+                            tempHTML += ' placeholder="' + vis[currVis].settings[i].default + '"';
+                        }
+                        if(typeof vis[currVis].settings[i].value !== "undefined"){
+                            tempHTML += ' value="' + vis[currVis].settings[i].value + '"';
+                        }
+                        tempHTML += '> <button onclick="setVisSetting(\'' + currVis + '\', \'' + i + '\', this.parentNode.getElementsByClassName(\'visSettingsString\')[0].value)">Set</button></span>';
+                        tempHTML += '<br><br>';
+                        break;
+                    case "toggle":
+                        tempHTML += '<input type="checkbox"' +
+                            ' onchange="setVisSetting(\'' + currVis + '\', \'' + i + '\', this.checked ? 1 : 0)"'
+                        if(typeof vis[currVis].settings[i].value !== "undefined"){
+                            if(vis[currVis].settings[i].value){
+                                tempHTML += ' checked';
+                            }
+                        }
+                        tempHTML += '> <div style="display:inline-block;width:auto;background:transparent !important;">Toggle';
+                        if(typeof vis[currVis].settings[i].default !== "undefined"){
+                            if(vis[currVis].settings[i].default){
+                                tempHTML += ' <i>(default: Enabled)</i>';
+                            }else{
+                                tempHTML += ' <i>(default: Disabled)</i>';
+                            }
+                        }
+                        tempHTML += '</div><br><br>';
+                        break;
+                    case "choice":
+                        tempHTML += '<select class="visSettingsSelect"' +
+                            ' onchange="setVisSetting(\'' + currVis + '\', \'' + i + '\', this.value)">';
+                        for(var item in vis[currVis].settings[i].choices){
+                            tempHTML += '<option value="' + item + '"';
+                            if(vis[currVis].settings[i].value === item){
+                                tempHTML += ' selected';
+                            }
+                            tempHTML += '>' + vis[currVis].settings[i].choices[item] + '</option>';
+                        }
+                        tempHTML += '</select>';
+                        if(typeof vis[currVis].settings[i].default !== "undefined"){
+                            tempHTML += ' <i>(default: ' + vis[currVis].settings[i].choices[vis[currVis].settings[i].default] + ')</i>';
+                        }
+                        tempHTML += '<br><br>';
+                        break;
+                    case "button":
+                        tempHTML += '<button onclick="vis[\'' + currVis + '\'].settings[\'' + i + '\'].func()">' + vis[currVis].settings[i].content + '</button>';
+                        tempHTML += '<br><br>';
+                        break;
+                    default:
+                        tempHTML += "Invalid setting type " + vis[currVis].settings[i].type + " of " + currVis + ": " + i;
+                        tempHTML += '<br><br>';
+                }
+                if(vis[currVis].settings[i].desc){
+                    tempHTML += vis[currVis].settings[i].desc + '<br><br>';
+                }
+                tempHTML += '<br>';
+            }
+            tempHTML += '</div>';
+            getId("selectContent").innerHTML = tempHTML;
+            getId("selectContent").scrollTop = 0;
+        }
+    }else{
+        closeMenu();
+    }
+}
+
+function setVisSetting(visualizer, option, value, doNotSave){
+    if(typeof vis[visualizer].settings === "object"){
+        if(typeof vis[visualizer].settings[option] !== "undefined"){
+            vis[visualizer].settings[option].value = value;
+            if(vis[visualizer].settingChange){
+                vis[visualizer].settingChange(option, value);
+            }
+            if(!doNotSave){
+                if(typeof visSettingsObj[visualizer] !== "object"){
+                    visSettingsObj[visualizer] = {};
+                }
+                visSettingsObj[visualizer][option] = value;
+                localStorage.setItem("AaronOSMusic_VisualizerSettings", JSON.stringify(visSettingsObj));
+            }
+        }
+    }
+};
+
+var visSettingsObj = {};
+if(localStorage.getItem("AaronOSMusic_VisualizerSettings")){
+    visSettingsObj = JSON.parse(localStorage.getItem("AaronOSMusic_VisualizerSettings"));
+    for(var i in visSettingsObj){
+        for(var j in visSettingsObj[i]){
+            setVisSetting(i, j, visSettingsObj[i][j], 1);
+        }
+    }
 }
 
 var selfCloseEnabled = 0;

@@ -192,6 +192,7 @@ div{
 }
 #selectContent{
     height:100%;
+    max-width:80%;
     overflow-y:scroll;
     position:relative;
     text-align:left;
