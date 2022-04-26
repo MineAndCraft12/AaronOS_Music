@@ -224,6 +224,7 @@ function listSongs(){
     songList.innerHTML = str;
 }
 
+/*
 function generateSongInfo(){
     var tempFileInfo = {
         _color_tutorial: {
@@ -270,6 +271,7 @@ function generateSongInfo(){
     }
     getId("songInfoTemplate").value = JSON.stringify(tempFileInfo, null, '\t');
 }
+*/
 
 var fileInfoError = 0;
 function readFileInfo(event){
@@ -281,8 +283,187 @@ function readFileInfo(event){
     }
 }
 
+/*
+var customColors = {};
+if(localStorage.getItem("AaronOSMusic_customColors")){
+    customColors = JSON.parse(localStorage.getItem("AaronOSMusic_customColors"));
+}
+*/
+
+function openCustomColorMenu(){
+    closeMenu();
+    getId("selectOverlay").classList.remove("disabled");
+    var tempHTML = '<div style="font-size:0.5em;background:transparent">';
+
+    tempHTML += '<p style="font-size:3em">Custom Color Settings</p>';
+
+    if(fileNames.length > 0 && folderName.length > 0){
+        tempHTML += '<p>This menu allows you to customize color gradients individually for each of your songs.<br>Come back here when you\'re done to save changes.</p>';
+        tempHTML += '<button onclick="saveCustomColors()">Save Changes</button> <i>Instructions below!</i>';
+        tempHTML += '<p style="margin-left:8px;padding-left:8px;border-left:1px solid #FFF;border-radius:6px;">Navigate to your music folder "' + folderName + '".<br>Save the file as "zzz_aOSmusic_colorInfo.json" alongside your music.</p>';
+
+        var filesSeen = [];
+        for(var i in fileNames){
+            tempHTML += '<div style="background:transparent;height:19px;overflow:hidden;margin-bottom:16px;padding-left:16px;">';
+            tempHTML += '<button style="margin-left:-16px;" onclick="if(this.parentNode.style.height === \'\'){this.parentNode.style.height = \'19px\'}else{this.parentNode.style.height = \'\'};">v</button> ';
+            if(fileInfo[fileNames[i][4]]){
+                tempHTML += '<span class="customColorPreview" style="background:linear-gradient(90deg';
+                for(var j in fileInfo[fileNames[i][4]]){
+                    tempHTML += ', ' + csscolor('rgba',
+                        fileInfo[fileNames[i][4]][j].r,
+                        fileInfo[fileNames[i][4]][j].g,
+                        fileInfo[fileNames[i][4]][j].b,
+                        fileInfo[fileNames[i][4]][j].a,
+                    ) + ' ' + fileInfo[fileNames[i][4]][j].x + '%';
+                }
+                tempHTML += '); margin-right:0.5px;">&nbsp; &nbsp; &nbsp;</span> ';
+            }else{
+                tempHTML += '<span class="customColorPreview" style="background:#000;">&nbsp; &nbsp; &nbsp;</span> ';
+            }
+            tempHTML += fileNames[i][1] + ": " + fileNames[i][3] + fileNames[i][0] + '<br><br>';
+            tempHTML += '<span class="customColorInput" data-songpath="' + fileNames[i][4] + '"><span class="customColorStops">';
+
+            if(fileInfo[fileNames[i][4]]){
+                for(var j in fileInfo[fileNames[i][4]]){
+                    tempHTML += '<span class="customColorStop" style="margin-left:0.5px;">' +
+                        'At <input value="' + fileInfo[fileNames[i][4]][j].x + '" type="number" placeholder="0-100" min="0" max="100" step="1" style="width:50px"> % | ' +
+                        'R: <input value="' + fileInfo[fileNames[i][4]][j].r + '" type="number" placeholder="0-255" min="0" max="255" step="1" style="width:50px"> ' +
+                        'G: <input value="' + fileInfo[fileNames[i][4]][j].g + '" type="number" placeholder="0-255" min="0" max="255" step="1" style="width:50px"> ' +
+                        'B: <input value="' + fileInfo[fileNames[i][4]][j].b + '" type="number" placeholder="0-255" min="0" max="255" step="1" style="width:50px"> ' +
+                        'A: <input value="' + fileInfo[fileNames[i][4]][j].a + '" type="number" placeholder="0-1" min="0" max="1" step="0.01" value="1" style="width:50px"> ' +
+                        '&nbsp; - &nbsp; <button onclick="this.parentNode.parentNode.removeChild(this.parentNode)"><i>Remove</i></button> &nbsp;<br><br></span>';
+                }
+            }
+
+            tempHTML += '<span></span></span>';
+            tempHTML += '<button onclick="addNewColorStop(this.parentNode)">Add New Color Stop</button><br><br>';
+            tempHTML += '<button onclick="updateCustomColor(this.parentNode)">Set</button> <i>Remember to save when you\'re done!</i>';
+
+            tempHTML += '</span></div>';
+            
+            filesSeen.push(fileNames[i][4]);
+        }
+
+        for(var i in fileInfo){
+            if(filesSeen.indexOf(i) === -1){
+                tempHTML += '<div style="background:transparent;height:19px;overflow:hidden;margin-bottom:16px;padding-left:16px;">';
+
+                tempHTML += '<button style="margin-left:-16px;" onclick="if(this.parentNode.style.height === \'\'){this.parentNode.style.height = \'19px\'}else{this.parentNode.style.height = \'\'};">v</button> <span style="opacity:0.5">' + i + '</span><br><br>';
+
+                tempHTML += '<span class="customColorInput" data-songpath="' + i + '"><span class="customColorStopList">';
+
+                tempHTML += '<span></span>'
+
+                tempHTML += '</span>';
+                tempHTML += '<button onclick="addNewColorStop(this.parentNode)">Add New Color Stop</button><br><br>';
+                tempHTML += '<button onclick="updateCustomColor(this.parentNode)">Set</button> <i>Remember to save when you\'re done!</i>';
+
+                tempHTML += '</span></div>';
+            }
+        }
+    }else{
+        tempHTML += 'You have not loaded any songs. This does not work for System Audio or Microphone.';
+    }
+
+    tempHTML += "</div>";
+    getId("selectContent").innerHTML = tempHTML;
+    getId("selectContent").scrollTop = 0;
+}
+
+function addNewColorStop(elem){
+    var tempElem = document.createElement("span");
+    tempElem.classList.add("customColorStop");
+
+    // without this, all text in the entire menu outside this element is blurry
+    tempElem.style.marginLeft = "0.5px";
+
+    tempElem.innerHTML += 'At <input type="number" placeholder="0-100" min="0" max="100" step="1" style="width:50px"> % | ' +
+        'R: <input type="number" placeholder="0-255" min="0" max="255" step="1" style="width:50px"> ' +
+        'G: <input type="number" placeholder="0-255" min="0" max="255" step="1" style="width:50px"> ' +
+        'B: <input type="number" placeholder="0-255" min="0" max="255" step="1" style="width:50px"> ' +
+        'A: <input type="number" placeholder="0-1" min="0" max="1" step="0.01" value="1" style="width:50px"> ' +
+        '&nbsp; - &nbsp; <button onclick="this.parentNode.parentNode.removeChild(this.parentNode)"><i>Remove</i></button> &nbsp;<br><br>';
+    elem.childNodes[0].appendChild(tempElem);
+}
+
+function updateCustomColor(elem){
+    var elemsToHandle = [];
+    if(elem){
+        elemsToHandle = [elem];
+    }else{
+        elemsToHandle = document.getElementsByClassName("customColorInput");
+    }
+
+    for(var i = 0; i < elemsToHandle.length; i++){
+        var colorStopElems = elemsToHandle[i].getElementsByClassName("customColorStop");
+
+        var songPath = elemsToHandle[i].getAttribute("data-songpath");
+        var colorStops = [];
+
+        for(var j = 0; j < colorStopElems.length; j++){
+            var inputBoxes = colorStopElems[j].getElementsByTagName("input");
+            var x, r, g, b, a = 0;
+
+            x = (inputBoxes[0].value.length > 0) ? parseInt(inputBoxes[0].value) : 0;
+            x = (x < 0) ? 0 : ((x > 100) ? 100 : x);
+
+            r = (inputBoxes[1].value.length > 0) ? parseInt(inputBoxes[1].value) : 0;
+            r = (r < 0) ? 0 : ((r > 255) ? 255 : r);
+
+            g = (inputBoxes[2].value.length > 0) ? parseInt(inputBoxes[2].value) : 0;
+            g = (g < 0) ? 0 : ((g > 255) ? 255 : g);
+
+            b = (inputBoxes[3].value.length > 0) ? parseInt(inputBoxes[3].value) : 0;
+            b = (b < 0) ? 0 : ((b > 255) ? 255 : b);
+
+            a = (inputBoxes[4].value.length > 0) ? parseFloat(inputBoxes[4].value) : 0;
+            a = (a < 0) ? 0 : ((a > 1) ? 1 : a);
+
+            colorStops.push({x: x, r: r, g: g, b: b, a: a});
+        }
+
+        colorStops.sort((a, b) => a.x - b.x);
+
+        fileInfo[songPath] = colorStops;
+
+        var tempCSS = 'linear-gradient(90deg';
+        for(var j in colorStops){
+            tempCSS += ', ' + csscolor('rgba',
+                colorStops[j].r,
+                colorStops[j].g,
+                colorStops[j].b,
+                colorStops[j].a,
+            ) + ' ' + colorStops[j].x + '%';
+        }
+        tempCSS += ')';
+
+        elemsToHandle[i].parentNode.getElementsByClassName("customColorPreview")[0].style.background = tempCSS;
+    }
+}
+
+// from Kanchu on StackOverflow
+function downloadTextFile(data, filename, type) {
+    var file = new Blob([data], {type: type});
+    var a = document.createElement("a"),
+        url = URL.createObjectURL(file);
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function() {
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);  
+    }, 0);
+}
+
+function saveCustomColors(){
+    updateCustomColor();
+    downloadTextFile(JSON.stringify(fileInfo, null, '\t'), "zzz_aOSmusic_colorInfo.json", "application/json");
+}
+
+var folderName = "";
+
 function loadFolder(event){
-    automaticColorCtx = getId('autoColorCanvas').getContext('2d');
     audio.pause();
     currentSong = -1;
     files = folderInput.files;
@@ -309,9 +490,12 @@ function loadFolder(event){
                 if(supportedFormats.indexOf(fileName[fileName.length - 1]) > -1){
                     fileName.pop();
                 }
-                fileNames.push([fileName.join('.'), i, URL.createObjectURL(files[i]), filePath]);
+                var fullPath = files[i].webkitRelativePath.split("/");
+                folderName = fullPath.shift();
+                fullPath = fullPath.join("/");
+                fileNames.push([fileName.join('.'), i, URL.createObjectURL(files[i]), filePath, fullPath]);
             }
-        }else if(files[i].webkitRelativePath.split('/').length === 2 && files[i].webkitRelativePath.split('/').pop() === "_songInfo.txt"){
+        }else if(files[i].webkitRelativePath.split('/').length === 2 && files[i].webkitRelativePath.split('/').pop() === "zzz_aOSmusic_colorInfo.json"){
             var reader = new FileReader();
             reader.onload = readFileInfo;
             reader.readAsText(files[i]);
@@ -407,7 +591,10 @@ function loadFiles(event){
                 if(supportedFormats.indexOf(fileName[fileName.length - 1]) > -1){
                     fileName.pop();
                 }
-                fileNames.push([fileName.join('.'), i, URL.createObjectURL(files[i]), filePath]);
+                var fullPath = files[i].webkitRelativePath.split("/");
+                folderName = fullPath.shift();
+                fullPath = fullPath.join("/");
+                fileNames.push([fileName.join('.'), i, URL.createObjectURL(files[i]), filePath, fullPath]);
             }
         }
     }
@@ -498,7 +685,10 @@ function loadWeirdFiles(event){
         if(supportedFormats.indexOf(fileName[fileName.length - 1]) > -1){
             fileName.pop();
         }
-        fileNames.push([fileName.join('.'), i, URL.createObjectURL(files[i]), filePath]);
+        var fullPath = files[i].webkitRelativePath.split("/");
+        folderName = fullPath.shift();
+        fullPath = fullPath.join("/");
+        fileNames.push([fileName.join('.'), i, URL.createObjectURL(files[i]), filePath, fullPath]);
     }
     listSongs();
     var disabledElements = document.getElementsByClassName('disabled');
@@ -738,7 +928,6 @@ function loadSystemAudio(event){
                             }
                         }
                     });
-                    console.log(1);
 
                     systemVideo.getVideoTracks()[0].enabled = false;
 
@@ -805,91 +994,6 @@ function selectSong(id){
         // no song is selected
     }
     getId("song" + id).classList.add("selected");
-
-    if(automaticColorCtx){
-        var autoColorPassed = 0;
-        if(fileInfo[fileNames[id][0]]){
-            automaticColor = {
-                colorType: fileInfo[fileNames[id][0]].colorType,
-                colorArr: fileInfo[fileNames[id][0]].colors
-            };
-            autoColorPassed = 1;
-        }else if(fileInfo['_default_colors']){
-            automaticColor = {
-                colorType: fileInfo['_default_colors'].colorType,
-                colorArr: fileInfo['_default_colors'].colors
-            }
-            autoColorPassed = 1;
-        }else{
-            automaticColor = {
-                colorType: 'gradient',
-                colorArr: [
-                    [0, 64, 0],
-                    [0, 255, 0]
-                ]
-            };
-            autoColorPassed = 1;
-        }
-        if(automaticColor.colorArr.length === 0){
-            if(fileInfo['_default_colors']){
-                automaticColor = {
-                    colorType: fileInfo['_default_colors'].colorType,
-                    colorArr: fileInfo['_default_colors'].colors
-                }
-                autoColorPassed = 1;
-            }else{
-                automaticColor = {
-                    colorType: 'gradient',
-                    colorArr: [
-                        [0, 64, 0],
-                        [0, 255, 0]
-                    ]
-                };
-                autoColorPassed = 1;
-            }
-        }
-        if(autoColorPassed){
-            if(automaticColor.colorArr.length === 1){
-                automaticColorCtx.fillColor = 'rgba(' + automaticColor.colorArr[0][0] + ',' + automaticColor.colorArr[0][1] + ',' + automaticColor.colorArr[0][2] + (automaticColor.colorArr[0][3] || 1) + ')';
-                automaticColorCtx.fillRect(0, 0, 512, 0);
-            }else{
-                var newGradient = automaticColorCtx.createLinearGradient(0, 0, 512, 0);
-                if(automaticColor.colorType === "gradient"){
-                    for(var i = 0; i < automaticColor.colorArr.length; i++){
-                        newGradient.addColorStop(
-                            i / (automaticColor.colorArr.length - 1),
-                            'rgba(' + automaticColor.colorArr[i][0] + ',' + automaticColor.colorArr[i][1] + ',' + automaticColor.colorArr[i][2] + ',' + (automaticColor.colorArr[i][3] || 1) + ')'
-                        );
-                    }
-                }else if(automaticColor.colorType === "peak"){
-                    if(automaticColor.colorArr.length === 2){
-                        newGradient.addColorStop(
-                            0.85,
-                            'rgba(' + automaticColor.colorArr[i][0] + ',' + automaticColor.colorArr[i][1] + ',' + automaticColor.colorArr[i][2] + ',' + (automaticColor.colorArr[i][3] || 1) + ')'
-                        );
-                    }else{
-                        for(var i = 0; i < automaticColor.colorArr.length - 1; i++){
-                            newGradient.addColorStop(
-                                (i / (automaticColor.colorArr.length - 2)) * 0.85,
-                                'rgba(' + automaticColor.colorArr[i][0] + ',' + automaticColor.colorArr[i][1] + ',' + automaticColor.colorArr[i][2] + ',' + (automaticColor.colorArr[i][3] || 1) + ')'
-                            );
-                        }
-                    }
-                    newGradient.addColorStop(
-                        1,
-                        'rgba(' + automaticColor.colorArr[i][0] + ',' + automaticColor.colorArr[i][1] + ',' + automaticColor.colorArr[i][2] + ',' + (automaticColor.colorArr[i][3] || 1) + ')'
-                    );
-                }
-                automaticColorCtx.fillStyle = newGradient;
-                automaticColorCtx.fillRect(0, 0, 512, 1);
-            }
-            automaticColor.resultList = [];
-            for(var i = 0; i < 512; i++){
-                var rgbaResult = automaticColorCtx.getImageData(i, 0, 1, 1).data;
-                automaticColor.resultList.push('rgba(' + rgbaResult[0] + ',' + rgbaResult[1] + ',' + rgbaResult[2] + ',' + rgbaResult[3] + ')');
-            }
-        }
-    }
 }
 
 function play(){
@@ -1441,13 +1545,6 @@ function selectMod(newMod){
     }
 }
 
-var automaticColorCtx = null;
-var automaticColor = {
-    colorType: 'peak',
-    colorArr: ['#005500', '#00FF00', '#FF0000'],
-    resultList: new Array(512)
-}
-
 /*
     // a gradient is a set of points from 0 to 255
     // each point has a value (0 - 1, 0 - 255, 0 - 360, etc)
@@ -1492,6 +1589,50 @@ var colors = {
         category: "AaronOS",
         func: function(){
             return '#000';
+        }
+    },
+    autoFileInfo: {
+        name: "Custom Colors",
+        image: "colors/triColor.png",
+        func: function(amount){
+            if(currentSong === -1){
+                return colors.bluegreenred.func(amount);
+            }else{
+                var infoObj = fileNames[currentSong][4];
+                if(fileInfo[infoObj]){
+                    if(fileInfo[infoObj].length > 0){
+                        for(var i in fileInfo[infoObj]){
+                            if(fileInfo[infoObj][i].x * 2.55 >= amount){
+                                if(i < 1){
+                                    return csscolor("rgba",
+                                        fileInfo[infoObj][0].r,
+                                        fileInfo[infoObj][0].g,
+                                        fileInfo[infoObj][0].b,
+                                        fileInfo[infoObj][0].a,
+                                    );
+                                }else{
+                                    return csscolor("rgba",
+                                        gcalc([[fileInfo[infoObj][i - 1].x * 2.55, fileInfo[infoObj][i - 1].r], [fileInfo[infoObj][i].x * 2.55, fileInfo[infoObj][i].r]], amount),
+                                        gcalc([[fileInfo[infoObj][i - 1].x * 2.55, fileInfo[infoObj][i - 1].g], [fileInfo[infoObj][i].x * 2.55, fileInfo[infoObj][i].g]], amount),
+                                        gcalc([[fileInfo[infoObj][i - 1].x * 2.55, fileInfo[infoObj][i - 1].b], [fileInfo[infoObj][i].x * 2.55, fileInfo[infoObj][i].b]], amount),
+                                        gcalc([[fileInfo[infoObj][i - 1].x * 2.55, fileInfo[infoObj][i - 1].a], [fileInfo[infoObj][i].x * 2.55, fileInfo[infoObj][i].a]], amount),
+                                    );
+                                }
+                            }
+                        }
+                        return csscolor("rgba",
+                            fileInfo[infoObj][fileInfo[infoObj].length - 1].r,
+                            fileInfo[infoObj][fileInfo[infoObj].length - 1].g,
+                            fileInfo[infoObj][fileInfo[infoObj].length - 1].b,
+                            fileInfo[infoObj][fileInfo[infoObj].length - 1].a,
+                        );
+                    }else{
+                        return colors.bluegreenred.func(amount);
+                    }
+                }else{
+                    return colors.bluegreenred.func(amount);
+                }
+            }
         }
     },
     bluegreenred: {
@@ -1570,13 +1711,6 @@ var colors = {
                 (typeof position === "number") ? position : amount,
                 gcalc(this.grad.b, (typeof position === "number") ? position : amount)
             );
-        }
-    },
-    autoFileInfo: {
-        name: "File Info",
-        image: "colors/triColor.png",
-        func: function(amount){
-            return automaticColor.resultList[Math.round(amount * 2)];
         }
     },
     capri: {
@@ -2107,7 +2241,7 @@ function setVis(newvis){
         getId("visSettingsButton").style.opacity = "0.25";
         getId("visSettingsButton").style.pointerEvents = "none";
     }
-    if(bestColorsMode && vis[currVis].bestColor){
+    if(bestColorsMode && vis[currVis].bestColor && currColor !== "autoFileInfo"){
         getId('colorfield').value = vis[currVis].bestColor;
         setColor(vis[currVis].bestColor);
     }
@@ -7138,7 +7272,8 @@ function overrideVis(selectedVisualizer){
 function openColorMenu(){
     if(getId("selectOverlay").classList.contains("disabled")){
         getId("selectOverlay").classList.remove("disabled");
-        var tempHTML = '<div style="height:2em;line-height:2em;text-align:center;background:transparent !important;"><button onclick="toggleBestColors()" id="bestColorsButton" style="border-color:' + debugColors[bestColorsMode] + '">Auto-Select When Visualizer Changes</button></div>';
+        var tempHTML = '<div style="margin-top:8px;margin-bottom:8px;text-align:center;background:transparent !important;"><button onclick="toggleBestColors()" id="bestColorsButton" style="border-color:' + debugColors[bestColorsMode] + '">Auto-Select When Visualizer Changes</button></div>';
+        tempHTML += '<div style="margin-bottom:12px;text-align:center;background:transparent !important;"><button onclick="overrideColor(\'autoFileInfo\');openCustomColorMenu();">Edit Custom Colors</button></div>';
         var firstDiv = 1;
         for(var i in colors){
             if(i.indexOf("SEPARATOR") === -1){
