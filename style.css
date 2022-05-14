@@ -242,12 +242,14 @@ div{
 #selectContent .visOption img{
     transition:0.3s;
     height:48px;
+    width:85.5px;
     margin-left:143px;
     margin-right:16px;
     margin-bottom:-16px;
 }
 #selectContent .visOption:hover img{
     height:128px;
+    width:228px;
     margin-left:0px;
     margin-right:16px;
     margin-bottom:-52px;
@@ -266,13 +268,13 @@ div{
     margin-right:246px;
 }
 #selectContent .visOption:hover img{
-    filter:contrast(0.9) brightness(2);
+    filter:brightness(0.5) contrast(0.9) brightness(2.05);
 }
 #selectContent .modOption:hover img{
     filter:contrast(0.8);
 }
 #selectContent .visOption:active img{
-    filter:contrast(0.9) brightness(5);
+    filter:brightness(0.2) contrast(0.9) brightness(5);
 }
 #selectContent .colorOption{
     text-align:left;

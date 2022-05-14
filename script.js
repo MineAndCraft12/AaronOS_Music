@@ -1782,6 +1782,42 @@ var colors = {
             );
         }
     },
+    refraction: {
+        name: "Refraction (White)",
+        image: "colors/refraction.png",
+        grad: {
+            l: [            [127, 100],
+                            [127, 100]            ],
+            a: [[  0,   1], [127,   0], [255,   1]]
+        },
+        func: function(amount, position){
+            return csscolor("hsla",
+                0,
+                "0%",
+                "100%", //gcalc(this.grad.l, amount) + "%",
+                gcalc(this.grad.a, amount)
+            );
+        }
+    },
+    refractionrgb: {
+        name: "Refraction (RGB)",
+        image: "colors/refractionrgb.png",
+        grad: {
+            s: [            [127,   0],
+                            [127, 100]            ],
+            l: [            [127, 100],
+                            [127,  50]            ],
+            a: [[  0,   1], [127,   0], [255,   1]]
+        },
+        func: function(amount, position){
+            return csscolor("hsla",
+                (amount >= 127) ? (255 - position) * (300 / 255) : (position) * (300 / 255),
+                "100%", //gcalc(this.grad.s, amount) + "%",
+                "50%", //gcalc(this.grad.l, amount) + "%",
+                gcalc(this.grad.a, amount)
+            );
+        }
+    },
     'SEPARATOR_RAINBOW" disabled="': {
         name: "Rainbow",
         category: "Rainbow",
@@ -3183,6 +3219,162 @@ var vis = {
                 smoke.fillStyle = fillColor;
                 smoke.fillRect(x, (255 - h)  * fact, 1, size[1] - (255 - h) * fact);
             }
+        }
+    },
+    refraction: {
+        name: "Refraction",
+        image: 'visualizers/refraction.png',
+        bestColor: "refractionrgb",
+        start: function(){
+
+        },
+        frame: function(){
+            canvas.clearRect(0, 0, size[0], size[1]);
+            var center = [Math.floor(size[0] / 2), Math.floor(size[1] / 2)];
+            var points = new Array(Math.floor(size[1] / 128) * 64);
+            var samples = this.settings.samples.value;
+            points.fill(0);
+            if(debugForce){
+                var debugPoints = new Array(samples);
+                for(var i = 0; i < debugPoints.length; i++){
+                    debugPoints[i] = new Array(points.length);
+                    debugPoints[i].fill(0);
+                }
+            }
+            for(var i = 0; i < samples; i++){
+                var frequency = i + 1;
+                var step = points.length / frequency * 2;
+                var j = this.settings.reverseSampleOrder.value ? points.length - 1 : 0;
+                while(
+                    (this.settings.reverseSampleOrder.value && j >= 0) ||
+                    (!this.settings.reverseSampleOrder.value && j < points.length)
+                ){
+                    var pointPos = j % step / step;
+                    var pointValue = gcalc([[0, -0.5 * visData[i]], [0.5, 0.5 * visData[i]], [1, -0.5 * visData[i]]], pointPos);
+
+                    points[j] = points[j] + pointValue;
+
+                    switch(this.settings.overflowMethod.value){
+                        case "limit":
+                            if(points[j] > 127.5){
+                                points[j] = 127.5;
+                            }
+                            if(points[j] < -127.5){
+                                points[j] = -127.5;
+                            }
+                            break;
+                        case "overflow":
+                            break;
+                        case "bounce":
+                            if(points[j] > 127.5){
+                                points[j] = 127.5 - (127.5 - j);
+                            }
+                            if(points[j] < -127.5){
+                                points[j] = -127.5 + (127.5 - (j * -1));
+                            }
+                            break;
+                        case "wrap":
+                            if(points[j] > 127.5){
+                                points[j] = -127.5 + (127.5 - j);
+                            }
+                            if(points[j] < -127.5){
+                                points[j] = 127.5 - (127.5 - (j * -1));
+                            }
+                            break;
+                        default:
+
+                    }
+                    
+                    if(debugForce){
+                        debugPoints[i][j] = pointValue;
+                    }
+
+                    j += this.settings.reverseSampleOrder.value * -2 + 1;
+                }
+            }
+            for(var i = 0; i < points.length; i++){
+                // why can't i draw Arcs while this visualizer is selected????
+                // no seriously, can someone figure out what's going on?
+                // i will be eternally grateful
+
+                //canvas.fillStyle = "#000";
+                //this.degArc2(center[0], center[1], points.length - i, 0, 360);
+                canvas.fillStyle = getColor(points[i] + 127.5, i / points.length * 255);
+                //this.degArc2(center[0], center[1], points.length - i, 0, 360);
+
+                // x+
+                canvas.fillRect(center[0] + i, center[1] - i, 1, i * 2);
+                // x-
+                canvas.fillRect(center[0] - i - 1, center[1] - i, 1, i * 2);
+                // y+
+                canvas.fillRect(center[0] - i, center[1] + i - 1, i * 2, 1);
+                // y-
+                canvas.fillRect(center[0] - i, center[1] - i, i * 2, 1);
+            }
+
+            if(debugForce){
+                for(var j = 0; j < debugPoints.length; j++){
+                    for(var k = 0; k < debugPoints[j].length; k++){
+                        canvas.fillStyle = getColor(debugPoints[j][k] + 127.5, k / points.length * 255);
+                        canvas.fillRect(center[0] - points.length - 4 - (j * 4), center[1] + k - 1, 2, 1);
+                    }
+                }
+            }
+        },
+        stop: function(){
+
+        },
+        settings: {
+            samples: {
+                type: "number",
+                value: 16,
+                default: 16,
+                range: [1, 64],
+                step: 1,
+                title: "Frequency Sample Count",
+                desc: "How many frequencies are considered in the waves?<br><br>High samples may be too chaotic. Low samples may be too unresponsive.<br><br>" +
+                    '<i>12</i> | Normal bass frequencies used by other visualizers.<br><br>' +
+                    '<i>16</i> | Extended bass frequencies used by default in this visualizer.'
+            },
+            overflowMethod: {
+                type: "choice",
+                value: "limit",
+                default: "limit",
+                title: "Overflow Method",
+                choices: {
+                    limit: "Hard Limit",
+                    overflow: "Allow Overflow",
+                    bounce: "Bounce Back",
+                    wrap: "Wrap Around"
+                },
+                desc: "When waves overlap, how do we handle overflow past maximum intensity?<br><br>" +
+                    '<i>125% =&gt; 100% </i>|<i> -25% =&gt; &nbsp; 0%</i> | Hard Limit: Values will be capped to the maximum limit.<br><br>' +
+                    '<i>125% =&gt; 125% </i>|<i> -25% =&gt; -25%</i> | Allow Overflow: Values will go beyond the maximum limit.<br><br>' +
+                    '<i>125% =&gt; &nbsp;75% </i>|<i> -25% =&gt; &nbsp;25%</i> | Bounce Back: Values will bounce back off the maximum limit.<br><br>' +
+                    '<i>125% =&gt; &nbsp;25% </i>|<i> -25% =&gt; &nbsp;75%</i> | Wrap Around: Values will wrap around to the opposite limit.',
+            },
+            reverseSampleOrder: {
+                type: "toggle",
+                value: 0,
+                default: 0,
+                title: "Reverse Sample Order",
+                desc: "Add samples together counting down from high frequencies, rather than counting up from low frequencies.<br><br>" +
+                    'This can make low bass frequencies (wide bands) more prominent, at the cost of snuffing out high frequencies (narrow bands).<br><br>' +
+                    'This effect is not noticeable in most songs.'
+            }
+        },
+        findNewPoint: function(x, y, angle, distance) { // from codershop on Stack Overflow
+            var result = {};
+        
+            result.x = /*Math.round*/(Math.cos(angle * Math.PI / 180) * distance + x);
+            result.y = /*Math.round*/(Math.sin(angle * Math.PI / 180) * distance + y);
+        
+            return result;
+        },
+        degArc2: function(x, y, r, a, b){
+            canvas.beginPath();
+            canvas.arc(x, y, r, (a / 360) * this.TAU, (b / 360) * this.TAU);
+            canvas.fill();
         }
     },
     pitchmograph: {
@@ -7183,6 +7375,7 @@ var featuredVis = {
     bassCircle: 1,
     lasers: 1,
     triWave: 1,
+    refraction: 1,
     dynamicTiles: 1,
     spectrogramStretched: 1
 };
@@ -7196,7 +7389,7 @@ function openVisualizerMenu(){
             namecolor = ' style="outline:2px solid ' + getColor(255) + ';"';
         }
         if(vis.none.image){
-            tempHTML += '<div' + namecolor + ' class="visOption visNone" onclick="overrideVis(\'' + i + '\')"><img src="' + vis.none.image + '">' + vis.none.name + '</div>';
+            tempHTML += '<div' + namecolor + ' class="visOption visNone" onclick="overrideVis(\'' + i + '\')"><img src="' + vis.none.image + '" onerror="this.style.opacity=\'0\';this.style.height=\'50%\';this.style.transition=\'0s\'">' + vis.none.name + '</div>';
         }else{
             tempHTML += '<div' + namecolor + ' class="visOption visNone" onclick="overrideVis(\'' + i + '\')"><span></span>' + vis.none.name + '</div>';
         }
@@ -7208,7 +7401,7 @@ function openVisualizerMenu(){
                 namecolor = ' style="outline:2px solid ' + getColor(255) + ';"';
             }
             if(vis[i].image){
-                tempHTML += '<div' + namecolor + ' class="visOption" onclick="overrideVis(\'' + i + '\')"><img src="' + vis[i].image + '">';
+                tempHTML += '<div' + namecolor + ' class="visOption" onclick="overrideVis(\'' + i + '\')"><img src="' + vis[i].image + '" onerror="this.style.opacity=\'0\';this.style.height=\'50%\';this.style.transition=\'0s\'">';
                 if(vis[i].settings){
                     tempHTML += '<span style="opacity:1;height:initial;margin-right:initial;line-height:initial;" title="Settings Available">&#9881;</span> ';
                 }else{
@@ -7233,7 +7426,7 @@ function openVisualizerMenu(){
                         namecolor = ' style="outline:2px solid ' + getColor(255) + ';"';
                     }
                     if(vis[i].image){
-                        tempHTML += '<div' + namecolor + ' class="visOption" onclick="overrideVis(\'' + i + '\')"><img src="' + vis[i].image + '">';
+                        tempHTML += '<div' + namecolor + ' class="visOption" onclick="overrideVis(\'' + i + '\')"><img src="' + vis[i].image + '" onerror="this.style.opacity=\'0\';this.style.height=\'50%\';this.style.transition=\'0s\'">';
                         if(vis[i].settings){
                             tempHTML += '<span style="opacity:1;height:initial;margin-right:initial;line-height:initial;" title="Settings Available">&#9881;</span> ';
                         }else{
@@ -7518,7 +7711,7 @@ function openVisSettingsMenu(){
                             tempHTML += ' step="' + vis[currVis].settings[i].step + '"';
                         }
                         tempHTML += '> <button onclick="setVisSetting(\'' + currVis + '\', \'' + i + '\', parseFloat(this.parentNode.getElementsByClassName(\'visSettingsNumber\')[0].value))">Set</button></span>';
-                        tempHTML += '<br><br>';
+                        tempHTML += ' <i>Default: ' + vis[currVis].settings[i].default + '</i><br><br>';
                         break;
                     case "string":
                         tempHTML += '<span><input class="visSettingsString"';
