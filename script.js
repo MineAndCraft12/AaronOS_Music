@@ -111,17 +111,15 @@ if(webVersion){
     }else{
         getId("systemAudioIcon").style.display = "none";
     }
-    // hide system audio on mac
+    // change icons on Mac
     if(navigatorPlatform.indexOf("Mac") === 0){
-        getId("systemAudioIcon").style.display = "none";
         getId("filesIcon").src = "icons/mac_files.png";
         getId("folderIcon").src = "icons/mac_folder.png";
         getId("microphoneIcon").src = "icons/mac_microphone.png";
     }
-    // hide system audio on linux because it's broken on most systems
-    if(navigatorPlatform.indexOf("Linux") === 0){
-        getId("systemAudioIcon").style.opacity = "0.25";
-        getId("systemAudioIcon").title = "System Audio does not work on most Linux systems. Feel free to try it anyway.";
+    // change system audio title on Linux and Mac, they can only use browser tabs
+    if(navigatorPlatform.indexOf("Linux") === 0 || navigatorPlatform.indexOf("Mac") === 0){
+        getId("systemAudioSpanText").innerHTML = "Browser Tab";
     }
 
     // web version can't be transparent
@@ -1004,8 +1002,14 @@ function loadSystemAudio(event){
         });
     }else if(systemAudioStreamType === 'navigator'){
         if(!localStorage.getItem("AaronOSMusic_systemaudioprompt")){
-            if(!confirm("A screen selection window will appear.\n\nSelect your screen in the \"Entire Screen\" tab.\nSelect \"Share system audio\" at the bottom.\n\nPress Cancel to stop showing this help message.")){
-                localStorage.setItem("AaronOSMusic_systemaudioprompt", "1");
+            if(navigatorPlatform.indexOf("Linux") === 0 || navigatorPlatform.indexOf("Mac") === 0){
+                if(!confirm("A screen selection window will appear.\n\nSelect the desired tab in the \"Browser Tab\" category.\nSelect \"Share audio\" at the bottom.\n\nPress Cancel to stop showing this message in the future.")){
+                    localStorage.setItem("AaronOSMusic_systemaudioprompt", "1");
+                }
+            }else{
+                if(!confirm("A screen selection window will appear.\n\nSelect your Entire Screen or a specific Browser Tab.\nSelect \"Share audio\" at the bottom.\n\nPress Cancel to stop showing this message in the future.")){
+                    localStorage.setItem("AaronOSMusic_systemaudioprompt", "1");
+                }
             }
         }
         try{
