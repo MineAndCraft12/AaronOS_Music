@@ -100,6 +100,21 @@ if(webVersion){
             getId("systemAudioIcon").title = "System Audio does not work on most mobile devices. Feel free to try it anyway.";
         }
     }
+    // firefox cannot use system audio
+    if(navigator.userAgentData){
+        for(var i in navigator.userAgentData.brands){
+            if(navigator.userAgentData.brands[i].brand.indexOf("Firefox") !== -1){
+                getId("systemAudioIcon").style.opacity = "0.25";
+                getId("systemAudioIcon").title = "System Audio does not work on Firefox. Feel free to try it anyway.";
+                break;
+            }
+        }
+    }else{
+        if(navigator.userAgent.indexOf("Firefox") !== -1){
+            getId("systemAudioIcon").style.opacity = "0.25";
+            getId("systemAudioIcon").title = "System Audio does not work on Firefox. Feel free to try it anyway.";
+        }
+    }
 
     // detect incompatible browsers for system audio
     if(typeof navigator.mediaDevices === "object"){
