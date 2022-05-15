@@ -1017,43 +1017,39 @@ function loadSystemAudio(event){
                 audio: true,
                 video: true
             }).then((systemVideo) => {
-                if(err){
-                    alert(err);
-                }else{
-                    systemVideo.getVideoTracks()[0].enabled = false;
-        
-                    //systemAudio = new MediaStream(systemVideo.getAudioTracks());
-                    systemAudio = audioContext.createMediaStreamSource(systemVideo);
-        
-                    systemAudio.connect(analyser);
-                    
-                    microphoneActive = 1;
-                    
-                    var disabledElements = document.getElementsByClassName('disabled');
-                    while(disabledElements.length > 0){
-                        disabledElements[0].classList.remove('disabled');
-                    }
-                    getId("introduction").classList.add('disabled');
-                    getId("visualizer").classList.add('disabled');
-                    getId("selectOverlay").classList.add('disabled');
-                    if(!smokeEnabled){
-                        smokeElement.classList.add("disabled");
-                        smokeScreen1.classList.add("disabled");
-                        smokeScreen2.classList.add("disabled");
-                    }
-                    getId("nonLiveControls").classList.add("unclickable");
-                    getId("ambienceButton").classList.add("unclickable");
-                    getId("ambienceSpacing").classList.add("unclickable");
-                    getId("currentlyPlaying").innerHTML = "System Audio";
-                    
-                    requestAnimationFrame(globalFrame);
-                    requestAnimationFrame(function(){
-                        overrideVis("monstercat");
-                        overrideMod("sinusoid");
-                        overrideColor("beta");
-                    });
-                    blockSleep();
+                systemVideo.getVideoTracks()[0].enabled = false;
+    
+                //systemAudio = new MediaStream(systemVideo.getAudioTracks());
+                systemAudio = audioContext.createMediaStreamSource(systemVideo);
+    
+                systemAudio.connect(analyser);
+                
+                microphoneActive = 1;
+                
+                var disabledElements = document.getElementsByClassName('disabled');
+                while(disabledElements.length > 0){
+                    disabledElements[0].classList.remove('disabled');
                 }
+                getId("introduction").classList.add('disabled');
+                getId("visualizer").classList.add('disabled');
+                getId("selectOverlay").classList.add('disabled');
+                if(!smokeEnabled){
+                    smokeElement.classList.add("disabled");
+                    smokeScreen1.classList.add("disabled");
+                    smokeScreen2.classList.add("disabled");
+                }
+                getId("nonLiveControls").classList.add("unclickable");
+                getId("ambienceButton").classList.add("unclickable");
+                getId("ambienceSpacing").classList.add("unclickable");
+                getId("currentlyPlaying").innerHTML = "System Audio";
+                
+                requestAnimationFrame(globalFrame);
+                requestAnimationFrame(function(){
+                    overrideVis("monstercat");
+                    overrideMod("sinusoid");
+                    overrideColor("beta");
+                });
+                blockSleep();
             }).catch((err) => {
                 alert("Refresh the page to start over.\n\n" + err);
             });
