@@ -91,10 +91,42 @@ if(navigator.userAgentData){
     navigatorPlatform = navigator.platform;
 }
 
+var systemAudioStreamType = 'electron';
 if(webVersion){
-    // web version can't be transparent or use system audio
-    getId("systemAudioIcon").style.display = "none";
+    // mobile devices cannot use system audio
+    if(window.matchMedia){
+        if(!window.matchMedia("(pointer: fine)").matches){
+            getId("systemAudioIcon").style.opacity = "0.25";
+            getId("systemAudioIcon").title = "System Audio does not work on most mobile devices. Feel free to try it anyway.";
+        }
+    }
+
+    // detect incompatible browsers for system audio
+    if(typeof navigator.mediaDevices === "object"){
+        if(typeof navigator.mediaDevices.getDisplayMedia === "function"){
+            systemAudioStreamType = 'navigator';
+        }else{
+            getId("systemAudioIcon").style.display = "none";
+        }
+    }else{
+        getId("systemAudioIcon").style.display = "none";
+    }
+    // hide system audio on mac
+    if(navigatorPlatform.indexOf("Mac") === 0){
+        getId("systemAudioIcon").style.display = "none";
+        getId("filesIcon").src = "icons/mac_files.png";
+        getId("folderIcon").src = "icons/mac_folder.png";
+        getId("microphoneIcon").src = "icons/mac_microphone.png";
+    }
+    // hide system audio on linux because it's broken on most systems
+    if(navigatorPlatform.indexOf("Linux") === 0){
+        getId("systemAudioIcon").style.opacity = "0.25";
+        getId("systemAudioIcon").title = "System Audio does not work on most Linux systems. Feel free to try it anyway.";
+    }
+
+    // web version can't be transparent
     getId("transparentModeIcons").style.display = "none";
+    // web version can't resize itself
     getId("tskbrModeRange").style.display = "none";
 }else{
     // remove page title since the page needs more room to display disclaimer
@@ -911,29 +943,84 @@ function loadSystemAudio(event){
     getId("visCanvas").width = size[0];
     getId("visCanvas").height = size[1];
 
-    remote.desktopCapturer.getSources({types: ['screen']}).then(async sources => {
-        for(const source of sources){
-            console.log(source);
-            if(source.name === "Entire Screen" || source.name === "Screen 1"){
-                try{
-                    systemVideo = await navigator.mediaDevices.getUserMedia({
-                        audio: {
-                            mandatory: {
-                                chromeMediaSource: "desktop"
+    if(systemAudioStreamType === 'electron'){
+        remote.desktopCapturer.getSources({types: ['screen']}).then(async sources => {
+            for(const source of sources){
+                console.log(source);
+                if(source.name === "Entire Screen" || source.name === "Screen 1"){
+                    try{
+                        systemVideo = await navigator.mediaDevices.getUserMedia({
+                            audio: {
+                                mandatory: {
+                                    chromeMediaSource: "desktop"
+                                }
+                            },
+                            video: {
+                                mandatory: {
+                                    chromeMediaSource: "desktop"
+                                }
                             }
-                        },
-                        video: {
-                            mandatory: {
-                                chromeMediaSource: "desktop"
-                            }
+                        });
+
+                        systemVideo.getVideoTracks()[0].enabled = false;
+
+                        //systemAudio = new MediaStream(systemVideo.getAudioTracks());
+                        systemAudio = audioContext.createMediaStreamSource(systemVideo);
+
+                        systemAudio.connect(analyser);
+                        
+                        microphoneActive = 1;
+                        
+                        var disabledElements = document.getElementsByClassName('disabled');
+                        while(disabledElements.length > 0){
+                            disabledElements[0].classList.remove('disabled');
                         }
-                    });
-
+                        getId("introduction").classList.add('disabled');
+                        getId("visualizer").classList.add('disabled');
+                        getId("selectOverlay").classList.add('disabled');
+                        if(!smokeEnabled){
+                            smokeElement.classList.add("disabled");
+                            smokeScreen1.classList.add("disabled");
+                            smokeScreen2.classList.add("disabled");
+                        }
+                        getId("nonLiveControls").classList.add("unclickable");
+                        getId("ambienceButton").classList.add("unclickable");
+                        getId("ambienceSpacing").classList.add("unclickable");
+                        getId("currentlyPlaying").innerHTML = "System Audio";
+                        
+                        requestAnimationFrame(globalFrame);
+                        requestAnimationFrame(function(){
+                            overrideVis("monstercat");
+                            overrideMod("sinusoid");
+                            overrideColor("beta");
+                        });
+                        blockSleep();
+                    }catch(e){
+                        alert("Error loading system audio.\n" + e);
+                    }
+                    return;
+                }
+            }
+        });
+    }else if(systemAudioStreamType === 'navigator'){
+        if(!localStorage.getItem("AaronOSMusic_systemaudioprompt")){
+            if(!confirm("A screen selection window will appear.\n\nSelect your screen in the \"Entire Screen\" tab.\nSelect \"Share system audio\" at the bottom.\n\nPress Cancel to stop showing this help message.")){
+                localStorage.setItem("AaronOSMusic_systemaudioprompt", "1");
+            }
+        }
+        try{
+            navigator.mediaDevices.getDisplayMedia({
+                audio: true,
+                video: true
+            }).then((systemVideo) => {
+                if(err){
+                    alert(err);
+                }else{
                     systemVideo.getVideoTracks()[0].enabled = false;
-
+        
                     //systemAudio = new MediaStream(systemVideo.getAudioTracks());
                     systemAudio = audioContext.createMediaStreamSource(systemVideo);
-
+        
                     systemAudio.connect(analyser);
                     
                     microphoneActive = 1;
@@ -962,13 +1049,16 @@ function loadSystemAudio(event){
                         overrideColor("beta");
                     });
                     blockSleep();
-                }catch(e){
-                    alert("Error loading system audio.\n" + e);
                 }
-                return;
-            }
+            }).catch((err) => {
+                alert("Refresh the page to start over.\n\n" + err);
+            });
+        }catch(e){
+            alert("Refresh the page to start over.\n\n" + e);
         }
-    });
+    }else{
+        alert("Unknown error");
+    }
 }
 
 var currentSong = -1;
