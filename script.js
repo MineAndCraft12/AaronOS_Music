@@ -3049,24 +3049,56 @@ var vis = {
                     trebleAmount = Math.max(trebleAmount, visData[i]);
                 }
 
+                if(this.settings.middleType.value === "pitch"){
+                    var trebleAvg = this.weightedAverage(visData.slice(12, 64), 0.7) / 52;
+                    if(isNaN(trebleAvg)){
+                        trebleAvg = 0.5;
+                    }
+                    var moveCap = 0.05 * fpsCompensation;
+                    if(trebleAvg > this.centerLasers + moveCap){
+                        trebleAvg = this.centerLasers + moveCap;
+                    }else if(trebleAvg < this.centerLasers - moveCap){
+                        trebleAvg = this.centerLasers - moveCap;
+                    }
+                    this.centerLasers = trebleAvg;
+                }
+
                 for(var j = -1; j < 2; j += 2){
                     canvas.globalCompositeOperation = 'screen';
 
                     var laserPos = size[0] / 2 + j * spaceBetweenFixtures / 2;
                     if(this.settings.dataFilter.value){
-                        var laserColor = getColor(mods.pow2.test(trebleAmount), mods.pow2.test(trebleAmount));
-                        if(j === 1){
-                            var laserAngle = (255 - mods.pow2.test(trebleAmount)) / 3 - 132;
+                        if(this.settings.middleType.value === "pitch"){
+                            var laserColor = getColor(trebleAmount, trebleAvg * 255);
+                            if(j === 1){
+                                var laserAngle = (255 - trebleAvg * 255) / 3 - 132;
+                            }else{
+                                var laserAngle = trebleAvg * 255 / 3 - 132;
+                            }
                         }else{
-                            var laserAngle = mods.pow2.test(trebleAmount) / 3 - 132;
+                            var laserColor = getColor(mods.pow2.test(trebleAmount), mods.pow2.test(trebleAmount));
+                            if(j === 1){
+                                var laserAngle = (255 - mods.pow2.test(trebleAmount)) / 3 - 132;
+                            }else{
+                                var laserAngle = mods.pow2.test(trebleAmount) / 3 - 132;
+                            }
                         }
                         var laserWidth = mods.pow2.test(trebleAmount) / 32 + 0.03125;
                     }else{
-                        var laserColor = getColor(trebleAmount, i * (255 / 12));
-                        if(j == 1){
-                            var laserAngle = (255 - trebleAmount) / 3 - 132;
+                        if(this.settings.middleType.value === "pitch"){
+                            var laserColor = getColor(trebleAmount, trebleAvg * 255);
+                            if(j === 1){
+                                var laserAngle = (255 - trebleAvg * 255) / 3 - 132;
+                            }else{
+                                var laserAngle = trebleAvg * 255 / 3 - 132;
+                            }
                         }else{
-                            var laserAngle = trebleAmount / 3 - 132;
+                            var laserColor = getColor(trebleAmount, trebleAmount);
+                            if(j === 1){
+                                var laserAngle = (255 - trebleAmount) / 3 - 132;
+                            }else{
+                                var laserAngle = trebleAmount / 3 - 132;
+                            }
                         }
                         var laserWidth = trebleAmount / 32 + 0.03125;
                     }
@@ -3131,6 +3163,17 @@ var vis = {
         stop: function(){
 
         },
+        centerLasers: 0.5,
+        weightedAverage: function(arr, minPcnt){
+            var weight = 0;
+            var total = 0;
+            var minValue = Math.max(...arr) * minPcnt;
+            for(var i in arr){
+                weight += ((arr[i] >= (minValue || 0)) ? arr[i] : 0);
+                total += i * ((arr[i] >= (minValue || 0)) ? arr[i] : 0);
+            }
+            return total / weight;
+        },
         TAU: Math.PI * 2,
         degArc: function(x, y, r, a, b){
             canvas.arc(x, y, r, (a / 360) * this.TAU, (b / 360) * this.TAU);
@@ -3163,6 +3206,14 @@ var vis = {
                 default: 0,
                 title: "Treble Lasers",
                 desc: "Lasers in the center which are affected by the treble."
+            },
+            middleType: {
+                type: "choice",
+                value: "pitch",
+                default: "pitch",
+                title: "Treble Laser Mode",
+                desc: "Select what the Treble lasers react to.",
+                choices: {pitch: "Pitch", volume: "Volume"}
             },
             separation: {
                 type: "toggle",
@@ -3199,6 +3250,226 @@ var vis = {
                 title: "Data Filter",
                 desc: "Filters data to lower the impact of quiet noises. Makes the light show less chaotic."
             }
+        }
+    },
+    lasers2: {
+        name: "Light Show 2",
+        image: "visualizers/lasers2.png",
+        bestColor: "rainbowActive",
+        start: function(){
+
+        },
+        frame: function(){
+            var spaceBetweenFixtures = size[0] * 0.05859375;
+            var fixtureHeight = 30;
+            if(this.settings.halfFixtureSize.value){
+                spaceBetweenFixtures /= 2;
+                fixtureHeight /= 2;
+            }
+
+            // if(this.settings.separation.value){
+            //     var separationDistance = size[0] / 2 - spaceBetweenFixtures;
+            // }else{
+                var separationDistance = 0;
+            // }
+            
+            canvas.clearRect(0, 0, size[0], size[1]);
+            if(smokeEnabled){
+                smoke.clearRect(0, 0, size[0], size[1]);
+            }
+
+            var bassAmounts = visData.slice(0, 12);
+            bassAmounts.sort((a, b) => a - b);
+            var bassAmount = 0;
+            for(var i = 0; i < 4; i++){
+                bassAmount += bassAmounts[11 - i];
+            }
+            bassAmount /= 4;
+
+            var trebleAmounts = visData.slice(12, 64);
+            trebleAmounts.sort((a, b) => a - b);
+            var trebleAmount = 0;
+            for(var i = 0; i < 4; i++){
+               trebleAmount += trebleAmounts[51 - i];
+            }
+            trebleAmount /= 4;
+            //var trebleAmount = 0;
+            //for(var i = 12; i < 64; i++){
+            //    trebleAmount = Math.max(trebleAmount, visData[i]);
+            //}
+
+            var bassAvg = this.weightedAverage(visData.slice(0, 12), 0.3) / 12;
+            var trebleAvg = this.weightedAverage(visData.slice(12, 64), 0.7) / 52;
+            if(isNaN(bassAvg)){
+                bassAvg = 0.5;
+            }
+            if(isNaN(trebleAvg)){
+                trebleAvg = 0.5;
+            }
+
+            var moveCap = 0.05 * fpsCompensation;
+            if(bassAvg > this.laserAngles[0] + moveCap){
+                bassAvg = this.laserAngles[0] + moveCap;
+            }else if(bassAvg < this.laserAngles[0] - moveCap){
+                bassAvg = this.laserAngles[0] - moveCap;
+            }
+            if(trebleAvg > this.laserAngles[1] + moveCap){
+                trebleAvg = this.laserAngles[1] + moveCap;
+            }else if(trebleAvg < this.laserAngles[1] - moveCap){
+                trebleAvg = this.laserAngles[1] - moveCap;
+            }
+
+            this.laserAngles = [bassAvg, trebleAvg];
+
+            var laserValues = [[bassAvg, bassAmount], [trebleAvg, trebleAmount]];
+
+            // LASERS
+            for(var i = 0; i < 2; i++){
+                canvas.globalCompositeOperation = 'screen';
+
+                var laserPos = size[0] / 2;
+                // if(this.settings.separation.value){
+                //     if(i){
+                //         laserPos += separationDistance;
+                //     }else{
+                //         laserPos -= separationDistance;
+                //     }
+                // }else{
+                    if(i){
+                        laserPos += spaceBetweenFixtures;
+                    }else{
+                        laserPos -= spaceBetweenFixtures;
+                    }
+                // }
+
+                var laserColor = getColor(laserValues[i][1], laserValues[i][0] * 255);
+                var laserAngle = laserValues[i][0] * 135 - 157.5;
+                var laserWidth = laserValues[i][1] / 32 + 0.03125;
+                if(this.settings.fixedLaserWidth.value){
+                    laserWidth = 8;
+                }
+                if(this.settings.halfFixtureSize.value){
+                    laserWidth /= 2;
+                }
+
+                canvas.strokeStyle = laserColor;
+                canvas.lineWidth = laserWidth;
+                canvas.beginPath();
+                canvas.moveTo(laserPos, size[1] - fixtureHeight);
+                var newPoint = this.findNewPoint(
+                    laserPos,
+                    size[1] - fixtureHeight,
+                    laserAngle,
+                    size[0] + size[1]
+                );
+                canvas.lineTo(newPoint.x, newPoint.y);
+                canvas.stroke();
+
+                var fixture1 = this.findNewPoint(
+                    laserPos, 
+                    size[1] - fixtureHeight,
+                    laserAngle,
+                    10 / (this.settings.halfFixtureSize.value + 1)
+                );
+                var fixture2 = this.findNewPoint(
+                    laserPos, 
+                    size[1] - fixtureHeight,
+                    laserAngle,
+                    -10 / (this.settings.halfFixtureSize.value + 1)
+                );
+
+                if(smokeEnabled){
+                    smoke.strokeStyle = laserColor;
+                    smoke.lineWidth = laserWidth * 2.5;
+                    smoke.beginPath();
+                    smoke.moveTo(fixture1.x, size[1] - fixtureHeight);
+                    smoke.lineTo(newPoint.x, newPoint.y);
+                    smoke.stroke();
+                }
+
+                canvas.globalCompositeOperation = 'source-over';
+                canvas.strokeStyle = "#222";
+                canvas.lineWidth = 4 / (this.settings.halfFixtureSize.value + 1);
+                canvas.beginPath();
+                canvas.moveTo(laserPos, size[1] - fixtureHeight);
+                canvas.lineTo(laserPos, size[1]);
+                canvas.stroke();
+                canvas.strokeStyle = "#333";
+                canvas.lineWidth = 10 / (this.settings.halfFixtureSize.value + 1);
+                canvas.beginPath();
+                canvas.moveTo(fixture1.x, fixture1.y);
+                canvas.lineTo(fixture2.x, fixture2.y);
+                canvas.stroke();
+            }
+        },
+        stop: function(){
+
+        },
+        laserAngles: [0.5, 0.5],
+        weightedAverage: function(arr, minPcnt){
+            var weight = 0;
+            var total = 0;
+            var minValue = Math.max(...arr) * minPcnt;
+            for(var i in arr){
+                weight += ((arr[i] >= (minValue || 0)) ? arr[i] : 0);
+                total += i * ((arr[i] >= (minValue || 0)) ? arr[i] : 0);
+            }
+            return total / weight;
+        },
+        TAU: Math.PI * 2,
+        degArc: function(x, y, r, a, b){
+            canvas.arc(x, y, r, (a / 360) * this.TAU, (b / 360) * this.TAU);
+        },
+        degArc2: function(x, y, r, a, b){
+            canvas.beginPath();
+            canvas.arc(x, y, r, (a / 360) * this.TAU, (b / 360) * this.TAU);
+            canvas.fill();
+        },
+        degArcSmoke: function(x, y, r, a, b){
+            smoke.arc(x, y, r, (a / 360) * this.TAU, (b / 360) * this.TAU);
+        },
+        degArc2smoke: function(x, y, r, a, b){
+            smoke.beginPath();
+            smoke.arc(x, y, r, (a / 360) * this.TAU, (b / 360) * this.TAU);
+            smoke.fill();
+        },
+        findNewPoint: function(x, y, angle, distance) { // from codershop on Stack Overflow
+            var result = {};
+        
+            result.x = /*Math.round*/(Math.cos(angle * Math.PI / 180) * distance + x);
+            result.y = /*Math.round*/(Math.sin(angle * Math.PI / 180) * distance + y);
+        
+            return result;
+        },
+        settings: {
+            halfFixtureSize: {
+                type: "toggle",
+                value: 0,
+                default: 0,
+                title: "Half Fixture Size",
+                desc: "Halves size of the laser fixtures. Laser beams will be thinner too."
+            },
+            // separation: {
+            //     type: "toggle",
+            //     value: 0,
+            //     default: 0,
+            //     title: "Fixture Separation",
+            //     desc: "Splits laser fixtures into two groups at either edge of the screen."
+            // },
+            fixedLaserWidth: {
+                type: "toggle",
+                value: 0,
+                default: 0,
+                title: "Fixed Laser Width",
+                desc: "Lasers are always full-width, even with weak frequency amplitudes."
+            },
+            // doubleAngleBias: {
+            //     type: "toggle",
+            //     value: 0,
+            //     default: 0,
+            //     title: "Double Angle Bias",
+            //     desc: "Doubles the angle bias if fixtures are separated, causing laser fixtures to point more sharply towards the center."
+            // },
         }
     },
     spikes1to1: {
@@ -3492,19 +3763,23 @@ var vis = {
         },
         frame: function(){
             // PITCH LOGIC FROM AVG PITCH
-            var avgPitch = 0;
-            var avgPitchMult = 0;
             var avgVolume = 0;
             for(var i = 0; i < 12; i++){
                 avgVolume += Math.sqrt(visData[i]) * this.sqrt255;
                 //avgVolume += visData[i];
             }
-            for(var i = 0; i < 64; i++){
-                avgPitch += i * visData[i];
-                avgPitchMult += visData[i];
-            }
             avgVolume /= 12;
-            avgPitch /= avgPitchMult;
+            if(this.settings.oldPitch.value){
+                var avgPitch = 0;
+                var avgPitchMult = 0;
+                for(var i = 0; i < 64; i++){
+                    avgPitch += i * visData[i];
+                    avgPitchMult += visData[i];
+                }
+                avgPitch /= avgPitchMult;
+            }else{
+                var avgPitch = this.weightedAverage(visData.slice(0, 64));
+            }
 
             canvas.clearRect(0, 0, size[0], size[1]);
             smoke.clearRect(0, 0, size[0], size[1]);
@@ -3537,7 +3812,26 @@ var vis = {
             this.graph = [];
         },
         graph: [],
-        sqrt255: Math.sqrt(255)
+        sqrt255: Math.sqrt(255),
+        weightedAverage: function(arr, minPcnt){
+            var weight = 0;
+            var total = 0;
+            var minValue = Math.max(...arr) * minPcnt;
+            for(var i in arr){
+                weight += ((arr[i] >= (minValue || 0)) ? arr[i] : 0);
+                total += i * ((arr[i] >= (minValue || 0)) ? arr[i] : 0);
+            }
+            return total / weight;
+        },
+        settings: {
+            oldPitch: {
+                type: "toggle",
+                value: 0,
+                default: 0,
+                title: "Use Old Pitch Algorithm",
+                desc: "The old pitch algorithm is squirrelly and does not consider the \"whole picture\"."
+            },
+        }
     },
     seismograph: {
         name: "Beatmograph 1",
@@ -4209,6 +4503,170 @@ var vis = {
             }
         }
     },
+    dancer: {
+        name: "Dancing Orb",
+        image: "visualizers/dancer.png",
+        bestColor: "rainbowActive",
+        start: function(){
+
+        },
+        frame: function(){
+            canvas.clearRect(0, 0, size[0], size[1]);
+            smoke.clearRect(0, 0, size[0], size[1]);
+
+            var bassAvg = this.weightedAverage(visData.slice(0, 16), 0.6) / 16;
+            var trebleAvg = this.weightedAverage(visData.slice(16, 64), 0.75) / 48;
+            if(isNaN(bassAvg)){
+                bassAvg = 0.5;
+            }
+            if(isNaN(trebleAvg)){
+                trebleAvg = 0.5;
+            }
+
+            var bassAmounts = visData.slice(0, 12);
+            bassAmounts.sort((a, b) => a - b);
+            var bassAmount = 0;
+            for(var i = 0; i < 10; i++){
+                bassAmount += bassAmounts[11 - i];
+            }
+            bassAmount /= 10;
+
+            var trebleAmount = Math.max(...(visData.slice(12, 64)));
+            
+            var scale = Math.min(size[0], size[1]) / 512;
+            var circleSize = 16 * scale;
+            var space = [size[0] * 0.8, size[1] * 0.8];
+            var bounds = [size[0] * 0.1, size[1] * 0.1];
+
+            var capMultiplier = {
+                quarter: 0.25,
+                half: 0.5,
+                normal: 1,
+                double: 2,
+                triple: 3,
+                max: 0
+            }[this.settings.jitter.value];
+
+            coord = [trebleAvg || 0.5, 1 - (bassAmount || 0) / 255];
+            if(debugForce){
+                var target = [coord[0], coord[1]];
+            }
+            if(capMultiplier > 0){
+                var moveCap1 = 0.03 * capMultiplier * fpsCompensation;
+                var moveCap2 = 0.1 * capMultiplier * fpsCompensation;
+                if(coord[0] > this.pos[0] + moveCap1){
+                    coord[0] = this.pos[0] + moveCap1;
+                }else if(coord[0] < this.pos[0] - moveCap1){
+                    coord[0] = this.pos[0] - moveCap1;
+                }
+                if(coord[1] > this.pos[1] + moveCap2){
+                    coord[1] = this.pos[1] + moveCap2;
+                }else if(coord[1] < this.pos[1] - moveCap2){
+                    coord[1] = this.pos[1] - moveCap2;
+                }
+            }
+            this.pos = [coord[0], coord[1]];
+
+            canvas.fillStyle = getColor(trebleAmount, bassAvg * 255);
+            circleSize *= trebleAmount / 255 * 2 + 1;
+
+            this.degArc2(
+                coord[0] * space[0] + bounds[0],
+                coord[1] * space[1] + bounds[1],
+                circleSize,
+                0, 360
+            );
+            if(smokeEnabled){
+                smoke.fillStyle = getColor(trebleAmount, bassAvg * 255);
+                this.degArc2smoke(
+                    coord[0] * space[0] + bounds[0],
+                    coord[1] * space[1] + bounds[1],
+                    circleSize,// + 6 * scale,
+                    0, 360
+                );
+            }
+
+            if(debugForce){
+                for(var i = 0; i < 16; i++){
+                    canvas.fillStyle = getColor(visData[i], i / 16 * 255);
+                    canvas.fillRect(
+                        10 + (255 / 16) * i,
+                        40 - (visData[i] / 25.5),
+                        255 / 16,
+                        visData[i] / 25.5
+                    );
+                }
+                for(var i = 0; i < 48; i++){
+                    canvas.fillStyle = getColor(visData[i + 16], i / 48 * 255);
+                    canvas.fillRect(
+                        10 + (255 / 48) * i,
+                        90 - (visData[i + 16] / 25.5),
+                        255 / 48,
+                        visData[i + 16] / 25.5
+                    );
+                }
+                canvas.fillStyle = "#FFF";
+                canvas.fillRect(
+                    target[0] * space[0] + bounds[0] - 5,
+                    target[1] * space[1] + bounds[1] - 5,
+                    10, 10
+                );
+                canvas.fillRect(10, 10, bassAmount, 10);
+                canvas.fillRect(bassAvg * 255 + 9 + 255 / 12 / 2, 30, 2, 10);
+                canvas.fillRect(10, 60, trebleAmount, 10);
+                canvas.fillRect(trebleAvg * 255 + 9 + 255 / 48 / 2, 80, 2, 10);
+            }
+        },
+        pos: [0.5, 1],
+        stop: function(){
+
+        },
+        settings: {
+            jitter: {
+                type: "choice",
+                value: "normal",
+                default: "normal",
+                choices: {quarter: "Quarter", half: "Half", normal: "Normal", double: "Double", triple: "Triple", max: "Teleport"},
+                title: "Jitter",
+                desc: "How jittery is the dancer's movement?<br><br>High values make him go very fast.<br><br>Low values calm him down."
+            },
+        },
+        TAU: Math.PI * 2,
+        degArc: function(x, y, r, a, b){
+            canvas.arc(x, y, r, (a / 360) * this.TAU, (b / 360) * this.TAU);
+        },
+        degArc2: function(x, y, r, a, b){
+            canvas.beginPath();
+            canvas.arc(x, y, r, (a / 360) * this.TAU, (b / 360) * this.TAU);
+            canvas.fill();
+        },
+        degArcSmoke: function(x, y, r, a, b){
+            smoke.arc(x, y, r, (a / 360) * this.TAU, (b / 360) * this.TAU);
+        },
+        degArc2smoke: function(x, y, r, a, b){
+            smoke.beginPath();
+            smoke.arc(x, y, r, (a / 360) * this.TAU, (b / 360) * this.TAU);
+            smoke.fill();
+        },
+        findNewPoint: function(x, y, angle, distance) { // from codershop on Stack Overflow
+            var result = {};
+        
+            result.x = /*Math.round*/(Math.cos(angle * Math.PI / 180) * distance + x);
+            result.y = /*Math.round*/(Math.sin(angle * Math.PI / 180) * distance + y);
+        
+            return result;
+        },
+        weightedAverage: function(arr, minPcnt){
+            var weight = 0;
+            var total = 0;
+            var minValue = Math.max(...arr) * minPcnt;
+            for(var i in arr){
+                weight += ((arr[i] >= (minValue || 0)) ? arr[i] : 0);
+                total += i * ((arr[i] >= (minValue || 0)) ? arr[i] : 0);
+            }
+            return total / weight;
+        },
+    },
     orbsAround: {
         name: "Orbs Around",
         image: "visualizers/orbsAround.png",
@@ -4235,7 +4693,9 @@ var vis = {
                     bassAmounts.push(visData[i]);
                 }else{
                     trebleAmount += visData[i];
-                    avgPitch.push([i - 12, visData[i]]);
+                    if(this.settings.oldPitch.value){
+                        avgPitch.push([i - 12, visData[i]]);
+                    }
                 }
             }
             bassAmount /= 12;
@@ -4250,19 +4710,23 @@ var vis = {
             }
             bassMax /= bassAmounts.length;
 
-            avgPitch.sort((a, b) => a[1] - b[1]);
-            avgPitch = avgPitch.slice(-4);
-            if(avgPitch[3][1] === 0){
-                avgPitch = [[0, 0], [0, 0], [0, 0], [0, 0]];
-            }else{
-                for(var i = 0; i < 3; i++){
-                    if(avgPitch[i][1] === 0){
-                        avgPitch[i][0] = avgPitch[3][0];
+            if(this.settings.oldPitch.value){
+                avgPitch.sort((a, b) => a[1] - b[1]);
+                avgPitch = avgPitch.slice(-4);
+                if(avgPitch[3][1] === 0){
+                    avgPitch = [[0, 0], [0, 0], [0, 0], [0, 0]];
+                }else{
+                    for(var i = 0; i < 3; i++){
+                        if(avgPitch[i][1] === 0){
+                            avgPitch[i][0] = avgPitch[3][0];
+                        }
                     }
                 }
+                avgPitch = avgPitch[0][0] + avgPitch[1][0] + avgPitch[2][0] + avgPitch[3][0];
+                avgPitch /= 4;
+            }else{
+                avgPitch = this.weightedAverage(visData.slice(12, 64), 0.7);
             }
-            avgPitch = avgPitch[0][0] + avgPitch[1][0] + avgPitch[2][0] + avgPitch[3][0];
-            avgPitch /= 4;
             avgPitch /= 52;
             if(isNaN(avgPitch)){
                 avgPitch = 0;
@@ -4402,6 +4866,16 @@ var vis = {
         
             return result;
         },
+        weightedAverage: function(arr, minPcnt){
+            var weight = 0;
+            var total = 0;
+            var minValue = Math.max(...arr) * minPcnt;
+            for(var i in arr){
+                weight += ((arr[i] >= (minValue || 0)) ? arr[i] : 0);
+                total += i * ((arr[i] >= (minValue || 0)) ? arr[i] : 0);
+            }
+            return total / weight;
+        },
         settings: {
             cameraVelocity: {
                 type: "toggle",
@@ -4409,6 +4883,13 @@ var vis = {
                 default: 1,
                 title: "Camera Velocity",
                 desc: "The camera falls slightly behind when the orbs are moving very fast."
+            },
+            oldPitch: {
+                type: "toggle",
+                value: 0,
+                default: 0,
+                title: "Use Old Pitch Algorithm",
+                desc: "The old pitch algorithm is squirrelly and does not consider the \"whole picture\"."
             },
             pitchAffectsRotation: {
                 type: "toggle",
@@ -4466,7 +4947,9 @@ var vis = {
                     bassAmounts.push(visData[i]);
                 }else{
                     trebleAmount += visData[i];
-                    avgPitch.push([i - 12, visData[i]]);
+                    if(this.settings.oldPitch.value){
+                        avgPitch.push([i - 12, visData[i]]);
+                    }
                 }
             }
             bassAmount /= 12;
@@ -4481,19 +4964,23 @@ var vis = {
             }
             bassMax /= bassAmounts.length;
 
-            avgPitch.sort((a, b) => a[1] - b[1]);
-            avgPitch = avgPitch.slice(-4);
-            if(avgPitch[3][1] === 0){
-                avgPitch = [[0, 0], [0, 0], [0, 0], [0, 0]];
-            }else{
-                for(var i = 0; i < 3; i++){
-                    if(avgPitch[i][1] === 0){
-                        avgPitch[i][0] = avgPitch[3][0];
+            if(this.settings.oldPitch.value){
+                avgPitch.sort((a, b) => a[1] - b[1]);
+                avgPitch = avgPitch.slice(-4);
+                if(avgPitch[3][1] === 0){
+                    avgPitch = [[0, 0], [0, 0], [0, 0], [0, 0]];
+                }else{
+                    for(var i = 0; i < 3; i++){
+                        if(avgPitch[i][1] === 0){
+                            avgPitch[i][0] = avgPitch[3][0];
+                        }
                     }
                 }
+                avgPitch = avgPitch[0][0] + avgPitch[1][0] + avgPitch[2][0] + avgPitch[3][0];
+                avgPitch /= 4;
+            }else{
+                avgPitch = this.weightedAverage(visData.slice(12, 64), 0.7);
             }
-            avgPitch = avgPitch[0][0] + avgPitch[1][0] + avgPitch[2][0] + avgPitch[3][0];
-            avgPitch /= 4;
             avgPitch /= 52;
             if(isNaN(avgPitch)){
                 avgPitch = 0;
@@ -4627,6 +5114,16 @@ var vis = {
         
             return result;
         },
+        weightedAverage: function(arr, minPcnt){
+            var weight = 0;
+            var total = 0;
+            var minValue = Math.max(...arr) * minPcnt;
+            for(var i in arr){
+                weight += ((arr[i] >= (minValue || 0)) ? arr[i] : 0);
+                total += i * ((arr[i] >= (minValue || 0)) ? arr[i] : 0);
+            }
+            return total / weight;
+        },
         settings: {
             cameraVelocity: {
                 type: "toggle",
@@ -4634,6 +5131,13 @@ var vis = {
                 default: 1,
                 title: "Camera Velocity",
                 desc: "The camera falls slightly behind when the orbs are moving very fast."
+            },
+            oldPitch: {
+                type: "toggle",
+                value: 0,
+                default: 0,
+                title: "Use Old Pitch Algorithm",
+                desc: "The old pitch algorithm is squirrelly and does not consider the \"whole picture\"."
             },
             pitchAffectsRotation: {
                 type: "toggle",
@@ -7079,7 +7583,7 @@ var vis = {
     avgPitch: {
         name: "Average Pitch",
         image: "visualizers/averagePitch.png",
-        bestColor: "beta",
+        bestColor: "bluegreenred",
         start: function(){
 
         },
@@ -7102,19 +7606,23 @@ var vis = {
                     smoke.fillRect(this.history[i - 1][0], 0, this.history[i][0] - this.history[i - 1][0], size[1]);
                 }
             }
-            var avgPitch = 0;
-            var avgPitchMult = 0;
             var avgVolume = 0;
             for(var i = 0; i < 12; i++){
                 avgVolume += Math.sqrt(visData[i]) * this.sqrt255;
                 //avgVolume += visData[i];
             }
-            for(var i = 0; i < 64; i++){
-                avgPitch += i * visData[i];
-                avgPitchMult += visData[i];
-            }
             avgVolume /= 12;
-            avgPitch /= avgPitchMult;
+            if(this.settings.oldPitch.value){
+                var avgPitch = 0;
+                var avgPitchMult = 0;
+                for(var i = 0; i < 64; i++){
+                    avgPitch += i * visData[i];
+                    avgPitchMult += visData[i];
+                }
+                avgPitch /= avgPitchMult;
+            }else{
+                var avgPitch = this.weightedAverage(visData.slice(0, 64), 0.5);
+            }
             canvas.globalAlpha = 1;
             canvas.fillStyle = getColor(avgVolume, avgPitch * 4);
             canvas.fillRect(this.history[9][0], 0, Math.round(avgPitch * mult) - this.history[9][0], size[1]);
@@ -7125,6 +7633,25 @@ var vis = {
             }
             this.history.shift();
             this.history[9] = [Math.round(avgPitch * mult), avgVolume, avgPitch];
+        },
+        weightedAverage: function(arr, minPcnt){
+            var weight = 0;
+            var total = 0;
+            var minValue = Math.max(...arr) * minPcnt;
+            for(var i in arr){
+                weight += ((arr[i] >= (minValue || 0)) ? arr[i] : 0);
+                total += i * ((arr[i] >= (minValue || 0)) ? arr[i] : 0);
+            }
+            return total / weight;
+        },
+        settings: {
+            oldPitch: {
+                type: "toggle",
+                value: 0,
+                default: 0,
+                title: "Use Old Pitch Algorithm",
+                desc: "The old pitch algorithm is squirrelly and does not consider the \"whole picture\"."
+            },
         },
         stop: function(){
             this.history = [
@@ -7167,21 +7694,41 @@ var vis = {
         }
     },
     bassSplit: {
-        name: "Bass Split (&lt; 12)",
+        name: "Method Testing",
         image: "visualizers/bassSplit.png",
         start: function(){
             
         },
         frame: function(){
             canvas.clearRect(0, 0, size[0], size[1]);
-            canvas.fillStyle = "#000";
-            canvas.fillRect(0, size[1] / 2 + 127, size[0], size[1] / 2 - 127);
             smoke.clearRect(0, 0, size[0], size[1]);
-            var left = size[0] / 2 - 64;
-            var top = size[1] / 2 - 128;
+            var top = 10;
+            var left = size[0] / 2;
             for(var i = 0; i < 64; i++){
-                this.drawLine(i, visData[i], left + (i >= 12) * 90 - (i < 12) * 90, top);
+                this.drawLine(i, visData[i], left - (i < 12) * 2 - 23, top);
             }
+            canvas.fillStyle = "#0F0";
+            var bassAvg = this.weightedAverage(visData.slice(0, 12), 0.3) * 2;
+            var trebleAvg = this.weightedAverage(visData.slice(12, 64), 0.7) * 2;
+            canvas.fillRect(left - 25 + bassAvg, top + 255, 2, 2);
+            canvas.fillRect(left + 1 + trebleAvg, top + 255, 2, 2);
+
+            canvas.fillStyle = "#FFF";
+            canvas.fillRect(left - 66, top + 257, 132, 1);
+            canvas.fillRect(left - 1, top + 255, 2, 2);
+            canvas.fillText("Bass Split", left - 300, top + 128);
+
+            top += 260;
+            for(var i = 0; i < 64; i++){
+                this.drawLine(i, visData[i], left - 64, top);
+            }
+            canvas.fillStyle = "#0F0";
+            var allAvg = this.weightedAverage(visData.slice(0, 64), 0.6) * 2;
+            canvas.fillRect(left - 64 + allAvg, top + 255, 2, 2);
+
+            canvas.fillStyle = "#FFF";
+            canvas.fillRect(left - 66, top + 257, 132, 1);
+            canvas.fillText("Full Graph", left - 300, top + 128);
             //updateSmoke();
         },
         stop: function(){
@@ -7195,6 +7742,16 @@ var vis = {
                 smoke.fillStyle = fillColor;
                 smoke.fillRect(l + x * 2, t + (255 - h), 2, h * 2);
             }
+        },
+        weightedAverage: function(arr, minPcnt){
+            var weight = 0;
+            var total = 0;
+            var minValue = Math.max(...arr) * minPcnt;
+            for(var i in arr){
+                weight += ((arr[i] >= (minValue || 0)) ? arr[i] : 0);
+                total += i * ((arr[i] >= (minValue || 0)) ? arr[i] : 0);
+            }
+            return total / weight;
         }
     },
     colorTest: {
@@ -7479,8 +8036,9 @@ var featuredVis = {
     orbsAround: 1,
     bassCircle: 1,
     lasers: 1,
-    triWave: 1,
     refraction: 1,
+    dancer: 1,
+    triWave: 1,
     dynamicTiles: 1,
     spectrogramStretched: 1
 };
@@ -7886,20 +8444,25 @@ function openVisSettingsMenu(){
 }
 
 function setVisSetting(visualizer, option, value, doNotSave){
-    if(typeof vis[visualizer].settings === "object"){
-        if(typeof vis[visualizer].settings[option] !== "undefined"){
-            vis[visualizer].settings[option].value = value;
-            if(vis[visualizer].settingChange){
-                vis[visualizer].settingChange(option, value);
-            }
-            if(!doNotSave){
-                if(typeof visSettingsObj[visualizer] !== "object"){
-                    visSettingsObj[visualizer] = {};
+    try{
+        if(typeof vis[visualizer].settings === "object"){
+            if(typeof vis[visualizer].settings[option] !== "undefined"){
+                vis[visualizer].settings[option].value = value;
+                if(vis[visualizer].settingChange){
+                    vis[visualizer].settingChange(option, value);
                 }
-                visSettingsObj[visualizer][option] = value;
-                localStorage.setItem("AaronOSMusic_VisualizerSettings", JSON.stringify(visSettingsObj));
+                if(!doNotSave){
+                    if(typeof visSettingsObj[visualizer] !== "object"){
+                        visSettingsObj[visualizer] = {};
+                    }
+                    visSettingsObj[visualizer][option] = value;
+                    localStorage.setItem("AaronOSMusic_VisualizerSettings", JSON.stringify(visSettingsObj));
+                }
             }
         }
+    }catch(err){
+        console.log("Error setting " + option + " to " + value + " in " + visualizer + ":");
+        console.log(err);
     }
 };
 
