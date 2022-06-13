@@ -1823,8 +1823,8 @@ var colors = {
         image: "colors/capri.png",
         grad: {
             r: [[  0,  52], [220,  20], [255, 255]],
-            g: [[  0,   0], [220, 194], [255,   0]],
-            b: [[  0, 104], [220, 220], [255,   0]],
+            g: [[  0,   0], [220, 194], [255, 201]],
+            b: [[  0, 104], [220, 220], [255, 223]],
             a: [[  0,   0], [220,   1]            ]
         },
         func: function(amount){
@@ -1841,8 +1841,8 @@ var colors = {
         image: "colors/capriSolid.png",
         grad: {
             r: [[  0,  52], [220,  20], [255, 255]],
-            g: [[  0,   0], [220, 194], [255,   0]],
-            b: [[  0, 104], [220, 220], [255,   0]]
+            g: [[  0,   0], [220, 194], [255, 201]],
+            b: [[  0, 104], [220, 220], [255, 223]]
         },
         func: function(amount){
             return csscolor('rgb',
@@ -2655,6 +2655,207 @@ var vis = {
             
         },
         sqrt255: Math.sqrt(255)
+    },
+    fubar: {
+        name: "FUBAR",
+        image: "visualizers/fubar.png",
+        bestColor: "beta",
+        start: function(){
+            this.bobbers = new Array(this.settings.bars.value).fill(new Array(2).fill(0));
+        },
+        settingChange: function(setting, value){
+            if(setting === 'bars'){
+                this.bobbers = new Array(value).fill(new Array(2).fill(0));
+            }
+        },
+        frame: function(){
+            canvas.clearRect(0, 0, size[0], size[1]);
+            smoke.clearRect(0, 0, size[0], size[1]);
+            if(this.settings.scaling.value){
+                var scale = [Math.round(size[0] / 1024) || 1, Math.round(size[1] / 512) || 1];
+            }else{
+                var scale = [1, 1];
+            }
+            if(this.settings.baseline.value || this.settings.reflections.value){
+                var baseline = Math.round(size[1] * 0.5);
+                var maxHeight = Math.round(size[1] * 0.4);
+            }else{
+                var baseline = size[1] - scale[1];
+                maxHeight = Math.round(size[1] * 0.8);
+            }
+            if(this.settings.padding.value){
+                var left = Math.round(size[0] * 0.1);
+                var barWidth = Math.round(size[0] * 0.8 / this.settings.bars.value);
+            }else{
+                var left = 0;
+                barWidth = Math.round(size[0] / this.settings.bars.value);
+            }
+            var bobberDelay = this.settings.bobberDelay.value;
+            var bobberSpeed = this.settings.bobberSpeed.value;
+            for(var i = 0; i < this.settings.bars.value; i++){
+                canvas.fillStyle = getColor(visData[i], i / this.settings.bars.value * 255);
+                canvas.fillRect(
+                    left + i * barWidth,
+                    baseline - visData[i] / 255 * maxHeight,
+                    barWidth - 1 * scale[0],
+                    visData[i] / 255 * maxHeight
+                );
+                if(this.settings.reflections.value){
+                    canvas.fillRect(
+                        left + i * barWidth,
+                        baseline,
+                        barWidth - 1 * scale[0],
+                        visData[i] / 255 * maxHeight
+                    );
+                }
+                if(smokeEnabled){
+                    smoke.fillStyle = getColor(visData[i], i / this.settings.bars.value * 255);
+                    smoke.fillRect(
+                        left + i * barWidth,
+                        baseline - visData[i] / 255 * maxHeight,
+                        barWidth - 1 * scale[0],
+                        visData[i] / 255 * maxHeight
+                    );
+                    if(this.settings.reflections.value){
+                        smoke.fillRect(
+                            left + i * barWidth,
+                            baseline,
+                            barWidth - 1 * scale[0],
+                            visData[i] / 255 * maxHeight
+                        );
+                    }
+                }
+                if(this.settings.bobbers.value){
+                    if(visData[i] > this.bobbers[i][0]){
+                        this.bobbers[i] = [visData[i], Date.now()];
+                    }else if(this.bobbers[i][0] > 0 && Date.now() - this.bobbers[i][1] > bobberDelay){
+                        this.bobbers[i][0] -= bobberSpeed * fpsCompensation;
+                        if(this.bobbers[i][0] < 0){
+                            this.bobbers[i][0] = 0;
+                        }
+                    }
+                    canvas.fillStyle = getColor(this.bobbers[i][0], i / this.settings.bars.value * 255);
+                    canvas.fillRect(
+                        left + i * barWidth,
+                        baseline - Math.round(this.bobbers[i][0] / 255 * maxHeight),
+                        barWidth - 1 * scale[0],
+                        scale[1]
+                    );
+                    if(this.settings.reflections.value){
+                        canvas.fillRect(
+                            left + i * barWidth,
+                            baseline + Math.round(this.bobbers[i][0] / 255 * maxHeight),
+                            barWidth - 1 * scale[0],
+                            scale[1]
+                        );
+                    }
+                    if(smokeEnabled){
+                        smoke.fillStyle = getColor(this.bobbers[i][0], i / this.settings.bars.value * 255);
+                        smoke.fillRect(
+                            left + i * barWidth,
+                            baseline - Math.round(this.bobbers[i][0] / 255 * maxHeight) - scale[1] * 3,
+                            barWidth - 1 * scale[0],
+                            scale[1] * 6
+                        );
+                        if(this.settings.reflections.value){
+                            smoke.fillRect(
+                                left + i * barWidth,
+                                baseline + Math.round(this.bobbers[i][0] / 255 * maxHeight) - scale[1] * 3,
+                                barWidth - 1 * scale[0],
+                                scale[1] * 6
+                            );
+                        }
+                    }
+                }
+            }
+            var gradient = canvas.createLinearGradient(
+                0,
+                baseline + scale[1],
+                0,
+                size[1]
+            );
+            gradient.addColorStop(0, 'rgba(0, 0, 0, 0.8)');
+            gradient.addColorStop(0.5, 'rgba(0, 0, 0, 1)');
+            canvas.fillStyle = gradient;
+            canvas.fillRect(0, baseline + scale[1], size[0], size[1]);
+        },
+        stop: function(){
+
+        },
+        settings: {
+            // bars amount
+            bars: {
+                type: "number",
+                value: 64,
+                default: 64,
+                range: [12, 1024],
+                step: 1,
+                title: "Bars Count (experimental)",
+                desc: "How many bars do we show? Left is always lowest bass, more bars are added to the right for higher numbers.",
+
+            },
+            // scaling toggle
+            scaling: {
+                type: "toggle",
+                value: 1,
+                default: 1,
+                title: "Scaling",
+                desc: "The bobbers and spaces get wider if you're viewing at high resolutions."
+            },
+            // padding toggle
+            padding: {
+                type: "toggle",
+                value: 1,
+                default: 1,
+                title: "Padding",
+                desc: "Gives you some extra space at the edges of the screen."
+            },
+            // reflection toggle
+            reflections: {
+                type: "toggle",
+                value: 1,
+                default: 1,
+                title: "Reflections",
+                desc: "A reflection of the bars is present below them. <i>Forces Baseline to Enabled.</i>"
+            },
+            // baseline toggle
+            baseline: {
+                type: "toggle",
+                value: 1,
+                default: 1,
+                title: "Baseline",
+                desc: "Raises the baseline to halfway up the screen. Full screen is used if disabled."
+            },
+            // bobbers toggle
+            bobbers: {
+                type: "toggle",
+                value: 1,
+                default: 1,
+                title: "Bobbers",
+                desc: "The bobbers will linger after the bars push them up, before slowly falling down."
+            },
+            // bobber delay milliseconds
+            bobberDelay: {
+                type: "number",
+                value: 250,
+                default: 250,
+                range: [0, 10000],
+                step: 50,
+                title: "Bobber Fall Delay",
+                desc: "How many milliseconds until the bobbers start to fall?"
+            },
+            // bobber speed multiplier
+            bobberSpeed: {
+                type: "number",
+                value: 2,
+                default: 2,
+                range: [0, 20],
+                step: 0.1,
+                title: "Bobber Falling Speed",
+                desc: "How quickly do the bobbers fall?"
+            }
+        },
+        bobbers: []
     },
     central: {
         name: "Central",
@@ -4547,7 +4748,19 @@ var vis = {
                 max: 0
             }[this.settings.jitter.value];
 
-            coord = [trebleAvg || 0.5, 1 - (bassAmount || 0) / 255];
+            if(this.settings.wanderFreq.value === "treble"){
+                if(this.settings.riseFreq.value === "bass"){
+                    coord = [trebleAvg || 0.5, 1 - (bassAmount || 0) / 255];
+                }else{ // treble
+                    coord = [trebleAvg || 0.5, 1 - (trebleAmount || 0) / 255];
+                }
+            }else{ // bass
+                if(this.settings.riseFreq.value === "bass"){
+                    coord = [bassAvg || 0.5, 1 - (bassAmount || 0) / 255];
+                }else{ // treble
+                    coord = [bassAvg || 0.5, 1 - (trebleAmount || 0) / 255];
+                }
+            }
             if(debugForce){
                 var target = [coord[0], coord[1]];
             }
@@ -4568,7 +4781,11 @@ var vis = {
             this.pos = [coord[0], coord[1]];
 
             canvas.fillStyle = getColor(trebleAmount, bassAvg * 255);
-            circleSize *= trebleAmount / 255 * 2 + 1;
+            if(this.settings.growFreq.value === "treble"){
+                circleSize *= trebleAmount / 255 * 2 + 1;
+            }else{ // bass
+                circleSize *= bassAmount / 255 * 2 + 1;
+            }
 
             this.degArc2(
                 coord[0] * space[0] + bounds[0],
@@ -4628,7 +4845,31 @@ var vis = {
                 default: "normal",
                 choices: {quarter: "Quarter", half: "Half", normal: "Normal", double: "Double", triple: "Triple", max: "Teleport"},
                 title: "Jitter",
-                desc: "How jittery is the dancer's movement?<br><br>High values make him go very fast.<br><br>Low values calm him down."
+                desc: "How jittery is the dancer's movement?<br><br>High values make him go very fast. Low values calm him down."
+            },
+            growFreq: {
+                type: "choice",
+                value: "treble",
+                default: "treble",
+                choices: {bass: "Bass Volume", treble: "Treble Volume"},
+                title: "Grow Type",
+                desc: "What makes the dancer grow larger? Bass volume or Treble volume?"
+            },
+            riseFreq: {
+                type: "choice",
+                value: "bass",
+                default: "bass",
+                choices: {bass: "Bass Volume", treble: "Treble Volume"},
+                title: "Rise Type",
+                desc: "What makes the dancer rise into the air? Bass volume or Treble volume?"
+            },
+            wanderFreq: {
+                type: "choice",
+                value: "treble",
+                default: "treble",
+                choices: {bass: "Bass Frequency", treble: "Treble Frequency"},
+                title: "Wander Type",
+                desc: "What makes the dancer wander horizontally about the stage? Bass frequency or Treble frequency?"
             },
         },
         TAU: Math.PI * 2,
@@ -5515,9 +5756,9 @@ var vis = {
                 smoke.clearRect(0, 0, size[0], size[1]);
             }
             var ringHeight = Math.round(Math.min(size[0], size[1]) * 0.6);
-            var ringMaxRadius = ringHeight * 0.35;
-            var ringMinRadius = ringHeight * 0.25;
-            var ringMaxExpand = (ringMaxRadius - ringMinRadius) / 4;
+            var ringMaxRadius = ringHeight * 0.15;
+            var ringMinRadius = ringHeight * 0.15;
+            var ringMaxExpand = ringHeight * 0.0225;
             var drumStrength = 0;
             var ringPools = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
             for(var i = 0; i < 64; i++){
@@ -5546,7 +5787,7 @@ var vis = {
                     size[0] / 2,
                     size[1] / 2,
                     i * lineDist + 90,
-                    ringMinRadius + strength / 255 * ringMinRadius + drumStrength / 255 * ringMaxRadius + drumStrength / 255 * ringMaxExpand,
+                    ringMinRadius + strength / 255 * ringMinRadius * 3 + drumStrength / 255 * ringMaxRadius + drumStrength / 255 * ringMaxExpand,
                 )
                 canvas.strokeStyle = getColor(strength, i * colorDist);
                 canvas.beginPath();
@@ -8032,14 +8273,13 @@ function smokeFrame(){
 resizeSmoke();
 
 var featuredVis = {
+    fubar: 1,
     reflection: 1,
     orbsAround: 1,
     bassCircle: 1,
-    lasers: 1,
     refraction: 1,
     dancer: 1,
     triWave: 1,
-    dynamicTiles: 1,
     spectrogramStretched: 1
 };
 
