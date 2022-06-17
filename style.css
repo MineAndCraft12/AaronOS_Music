@@ -156,11 +156,14 @@ div{
         cursor: pointer;
     }
     .nestedTableParentCell{
-        border-left:1px solid #FFF;
+        border-left:1px solid #000;
         padding-right:0 !important;
     }
+    .darkMode .nestedTableParentCell{
+        border-left-color:#FFF;
+    }
     .nestedTableParentCell.collapsedNestedTable{
-        border-left-color:transparent;
+        border-left-color:transparent !important;
     }
     .tableheader{
         cursor: default;
