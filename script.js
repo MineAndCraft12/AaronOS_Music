@@ -506,305 +506,7 @@ function saveCustomColors(){
     downloadTextFile(JSON.stringify(fileInfo, null, '\t'), "zzz_aOSmusic_colorInfo.json", "application/json");
 }
 
-var folderName = "";
-
-function loadFolder(event){
-    audio.pause();
-    currentSong = -1;
-    files = folderInput.files;
-    filesAmount = files.length;
-    filesLength = 0;
-    fileNames = [];
-    for(var i = 0; i < filesAmount; i++){
-        if(files[i].type.indexOf("audio/") === 0){
-            var fileName = files[i].name.split('.');
-            if(fileName[fileName.length - 1] !== 'mid' && fileName[fileName.length - 1] !== 'midi'){
-                var filePath = '';
-                if(files[i].webkitRelativePath){
-                    filePath = files[i].webkitRelativePath.split('/');
-                    filePath.pop();
-                    filePath.shift();
-                    if(filePath.length > 0){
-                        filePath = filePath.join(" / ");
-                        filePath += ' / ';
-                    }else{
-                        filePath = '';
-                    }
-                }
-                filesLength++;
-                if(supportedFormats.indexOf(fileName[fileName.length - 1]) > -1){
-                    fileName.pop();
-                }
-                var fullPath = files[i].webkitRelativePath.split("/");
-                folderName = fullPath.shift();
-                fullPath = fullPath.join("/");
-                fileNames.push([fileName.join('.'), i, URL.createObjectURL(files[i]), filePath, fullPath]);
-            }
-        }else if(files[i].webkitRelativePath.split('/').length === 2 && files[i].webkitRelativePath.split('/').pop() === "zzz_aOSmusic_colorInfo.json"){
-            var reader = new FileReader();
-            reader.onload = readFileInfo;
-            reader.readAsText(files[i]);
-            setTimeout(function(){getId('colorfield').value="autoFileInfo";setColor('autoFileInfo');}, 100);
-        }
-    }
-    listSongs();
-    var disabledElements = document.getElementsByClassName('disabled');
-    while(disabledElements.length > 0){
-        disabledElements[0].classList.remove('disabled');
-    }
-    if(!smokeEnabled){
-        smokeElement.classList.add("disabled");
-        smokeScreen1.classList.add("disabled");
-        smokeScreen2.classList.add("disabled");
-    }
-    //getId("liveControls").classList.add("disabled");
-
-    if(localStorage.getItem("AaronOSMusic_SmokeBrightness")){
-        smokeBrightness = parseFloat(localStorage.getItem("AaronOSMusic_SmokeBrightness"));
-    }
-    
-    audioContext = new AudioContext();
-    mediaSource = audioContext.createMediaElementSource(audio);
-    
-    delayNode = audioContext.createDelay();
-    if(localStorage.getItem("AaronOSMusic_Delay")){
-        delayNode.delayTime.value = parseFloat(localStorage.getItem("AaronOSMusic_Delay"));
-        getId("currentlyPlaying").innerHTML += " | Delay is custom";
-    }else{
-        delayNode.delayTime.value = 0.07;
-    }
-    delayNode.connect(audioContext.destination);
-    
-    analyser = audioContext.createAnalyser();
-    //analyser.fftSize = 32768;
-    analyser.fftSize = 2048;
-    latencyReduction = 1;
-    analyser.maxDecibels = -20;
-    analyser.minDecibels = -60;
-    if(localStorage.getItem("AaronOSMusic_SmoothingTimeConstant")){
-        analyser.smoothingTimeConstant = parseFloat(localStorage.getItem("AaronOSMusic_SmoothingTimeConstant"));
-        getId("currentlyPlaying").innerHTML += " | SmoothingTimeConstant is custom";
-    }else{
-        analyser.smoothingTimeConstant = 0.8;
-    }
-    mediaSource.connect(analyser);
-    analyser.connect(delayNode);
-    
-    visData = new Uint8Array(analyser.frequencyBinCount);
-    
-    getId("introduction").classList.add('disabled');
-    getId("visualizer").classList.add('disabled');
-    getId("selectOverlay").classList.add('disabled');
-    setVis("none");
-    
-    winsize = [window.innerWidth, window.innerHeight];
-    if(fullscreen){
-        size = [window.innerWidth, window.innerHeight];
-    }else{
-        size = [window.innerWidth - 8, window.innerHeight - 81];
-    }
-    getId("visCanvas").width = size[0];
-    getId("visCanvas").height = size[1];
-    
-    requestAnimationFrame(globalFrame);
-    requestAnimationFrame(function(){
-        overrideMod("sinusoid");
-        overrideColor("beta");
-    });
-}
-
-function loadFiles(event){
-    audio.pause();
-    currentSong = -1;
-    files = fileInput.files;
-    filesAmount = files.length;
-    filesLength = 0;
-    fileNames = [];
-    for(var i = 0; i < filesAmount; i++){
-        if(files[i].type.indexOf("audio/") === 0){
-            var fileName = files[i].name.split('.');
-            if(fileName[fileName.length - 1] !== 'mid' && fileName[fileName.length - 1] !== 'midi'){
-                var filePath = '';
-                if(files[i].webkitRelativePath){
-                    filePath = files[i].webkitRelativePath.split('/');
-                    filePath.pop();
-                    filePath.shift();
-                    filePath.join(" / ");
-                    filePath += ' / ';
-                }
-                filesLength++;
-                if(supportedFormats.indexOf(fileName[fileName.length - 1]) > -1){
-                    fileName.pop();
-                }
-                var fullPath = files[i].webkitRelativePath.split("/");
-                folderName = fullPath.shift();
-                fullPath = fullPath.join("/");
-                fileNames.push([fileName.join('.'), i, URL.createObjectURL(files[i]), filePath, fullPath]);
-            }
-        }
-    }
-    listSongs();
-    var disabledElements = document.getElementsByClassName('disabled');
-    while(disabledElements.length > 0){
-        disabledElements[0].classList.remove('disabled');
-    }
-    if(!smokeEnabled){
-        smokeElement.classList.add("disabled");
-        smokeScreen1.classList.add("disabled");
-        smokeScreen2.classList.add("disabled");
-    }
-    //getId("liveControls").classList.add("disabled");
-
-    if(localStorage.getItem("AaronOSMusic_SmokeBrightness")){
-        smokeBrightness = parseFloat(localStorage.getItem("AaronOSMusic_SmokeBrightness"));
-    }
-    
-    audioContext = new AudioContext();
-    mediaSource = audioContext.createMediaElementSource(audio);
-    
-    delayNode = audioContext.createDelay();
-    if(localStorage.getItem("AaronOSMusic_Delay")){
-        delayNode.delayTime.value = parseFloat(localStorage.getItem("AaronOSMusic_Delay"));
-        getId("currentlyPlaying").innerHTML += " | Delay is custom";
-    }else{
-        delayNode.delayTime.value = 0.07;
-    }
-    delayNode.connect(audioContext.destination);
-    
-    analyser = audioContext.createAnalyser();
-    //analyser.fftSize = 32768;
-    analyser.fftSize = 2048;
-    latencyReduction = 1;
-    analyser.maxDecibels = -20;
-    analyser.minDecibels = -60;
-    if(localStorage.getItem("AaronOSMusic_SmoothingTimeConstant")){
-        analyser.smoothingTimeConstant = parseFloat(localStorage.getItem("AaronOSMusic_SmoothingTimeConstant"));
-        getId("currentlyPlaying").innerHTML += " | SmoothingTimeConstant is custom";
-    }else{
-        analyser.smoothingTimeConstant = 0.8;
-    }
-    mediaSource.connect(analyser);
-    analyser.connect(delayNode);
-    
-    visData = new Uint8Array(analyser.frequencyBinCount);
-    
-    getId("introduction").classList.add('disabled');
-    getId("visualizer").classList.add('disabled');
-    getId("selectOverlay").classList.add('disabled');
-    setVis("none");
-    
-    winsize = [window.innerWidth, window.innerHeight];
-    if(fullscreen){
-        size = [window.innerWidth, window.innerHeight];
-    }else{
-        size = [window.innerWidth - 8, window.innerHeight - 81];
-    }
-    getId("visCanvas").width = size[0];
-    getId("visCanvas").height = size[1];
-    
-    requestAnimationFrame(globalFrame);
-    requestAnimationFrame(function(){
-        overrideMod("sinusoid");
-        overrideColor("beta");
-    });
-}
-
-function loadWeirdFiles(event){
-    audio.pause();
-    currentSong = -1;
-    files = fileWeirdInput.files;
-    filesAmount = files.length;
-    filesLength = 0;
-    fileNames = [];
-    for(var i = 0; i < filesAmount; i++){
-        var fileName = files[i].name.split('.');
-        var filePath = '';
-        if(files[i].webkitRelativePath){
-            filePath = files[i].webkitRelativePath.split('/');
-            filePath.pop();
-            filePath.shift();
-            filePath.join(" / ");
-            filePath += ' / ';
-        }
-        filesLength++;
-        if(supportedFormats.indexOf(fileName[fileName.length - 1]) > -1){
-            fileName.pop();
-        }
-        var fullPath = files[i].webkitRelativePath.split("/");
-        folderName = fullPath.shift();
-        fullPath = fullPath.join("/");
-        fileNames.push([fileName.join('.'), i, URL.createObjectURL(files[i]), filePath, fullPath]);
-    }
-    listSongs();
-    var disabledElements = document.getElementsByClassName('disabled');
-    while(disabledElements.length > 0){
-        disabledElements[0].classList.remove('disabled');
-    }
-    if(!smokeEnabled){
-        smokeElement.classList.add("disabled");
-        smokeScreen1.classList.add("disabled");
-        smokeScreen2.classList.add("disabled");
-    }
-    //getId("liveControls").classList.add("disabled");
-
-    if(localStorage.getItem("AaronOSMusic_SmokeBrightness")){
-        smokeBrightness = parseFloat(localStorage.getItem("AaronOSMusic_SmokeBrightness"));
-    }
-    
-    audioContext = new AudioContext();
-    mediaSource = audioContext.createMediaElementSource(audio);
-    
-    delayNode = audioContext.createDelay();
-    if(localStorage.getItem("AaronOSMusic_Delay")){
-        delayNode.delayTime.value = parseFloat(localStorage.getItem("AaronOSMusic_Delay"));
-        getId("currentlyPlaying").innerHTML += " | Delay is custom";
-    }else{
-        delayNode.delayTime.value = 0.07;
-    }
-    delayNode.connect(audioContext.destination);
-    
-    analyser = audioContext.createAnalyser();
-    //analyser.fftSize = 32768;
-    analyser.fftSize = 2048;
-    latencyReduction = 1;
-    analyser.maxDecibels = -20;
-    analyser.minDecibels = -60;
-    if(localStorage.getItem("AaronOSMusic_SmoothingTimeConstant")){
-        analyser.smoothingTimeConstant = parseFloat(localStorage.getItem("AaronOSMusic_SmoothingTimeConstant"));
-        getId("currentlyPlaying").innerHTML += " | SmoothingTimeConstant is custom";
-    }else{
-        analyser.smoothingTimeConstant = 0.8;
-    }
-    mediaSource.connect(analyser);
-    analyser.connect(delayNode);
-    
-    visData = new Uint8Array(analyser.frequencyBinCount);
-    
-    getId("introduction").classList.add('disabled');
-    getId("visualizer").classList.add('disabled');
-    getId("selectOverlay").classList.add('disabled');
-    setVis("none");
-    
-    winsize = [window.innerWidth, window.innerHeight];
-    if(fullscreen){
-        size = [window.innerWidth, window.innerHeight];
-    }else{
-        size = [window.innerWidth - 8, window.innerHeight - 81];
-    }
-    getId("visCanvas").width = size[0];
-    getId("visCanvas").height = size[1];
-    
-    requestAnimationFrame(globalFrame);
-    requestAnimationFrame(function(){
-        overrideMod("sinusoid");
-        overrideColor("beta");
-    });
-}
-
-var microphoneActive = 0;
-var systemAudioActive = 0;
 var latencyReduction = 0;
-
 function setLatency(newLatency){
     switch(newLatency){
         case 0: // full fftsize
@@ -846,10 +548,65 @@ function setLatency(newLatency){
     }
 }
 
-function loadMicrophone(event){
+var folderName = "";
+
+// helper func for loading
+function setupFiles(fileInput){
     audio.pause();
     currentSong = -1;
-
+    if(fileInput){
+        files = fileInput;
+        filesAmount = files.length;
+        filesLength = 0;
+        fileNames = [];
+    }
+}
+// helper func for loading
+function setupTracks(loadType){
+    for(var i = 0; i < filesAmount; i++){
+        if(files[i].type.indexOf("audio/") === 0 || loadType === "weirdFiles"){
+            var fileName = files[i].name.split('.');
+            if((fileName[fileName.length - 1] !== 'mid' && fileName[fileName.length - 1] !== 'midi') || loadType === "weirdFiles"){
+                var filePath = '';
+                if(files[i].webkitRelativePath){
+                    filePath = files[i].webkitRelativePath.split('/');
+                    filePath.pop();
+                    filePath.shift();
+                    if(loadType === "folder"){
+                        if(filePath.length > 0){
+                            filePath = filePath.join(" / ");
+                            filePath += ' / ';
+                        }else{
+                            filePath = '';
+                        }
+                    }else if(loadType === "files" || loadType === "weirdFiles"){
+                        filePath.join(" / ");
+                        filePath += ' / ';
+                        break;
+                    }
+                }
+                filesLength++;
+                if(supportedFormats.indexOf(fileName[fileName.length - 1]) > -1){
+                    fileName.pop();
+                }
+                var fullPath = files[i].webkitRelativePath.split("/");
+                folderName = fullPath.shift();
+                fullPath = fullPath.join("/");
+                fileNames.push([fileName.join('.'), i, URL.createObjectURL(files[i]), filePath, fullPath]);
+            }
+        }else if(loadType === "folder"){
+            if(files[i].webkitRelativePath.split('/').length === 2 && files[i].webkitRelativePath.split('/').pop() === "zzz_aOSmusic_colorInfo.json"){
+                var reader = new FileReader();
+                reader.onload = readFileInfo;
+                reader.readAsText(files[i]);
+                setTimeout(function(){getId('colorfield').value="autoFileInfo";setColor('autoFileInfo');}, 100);
+            }
+        }
+    }
+    listSongs();
+}
+// helper func for loading
+function setupShowElements(loadType){
     var disabledElements = document.getElementsByClassName('disabled');
     while(disabledElements.length > 0){
         disabledElements[0].classList.remove('disabled');
@@ -859,32 +616,73 @@ function loadMicrophone(event){
         smokeScreen1.classList.add("disabled");
         smokeScreen2.classList.add("disabled");
     }
-    getId("nonLiveControls").classList.add("unclickable");
-    getId("ambienceButton").classList.add("unclickable");
-    getId("ambienceSpacing").classList.add("unclickable");
-    getId("currentlyPlaying").innerHTML = "Microphone";
+    
+    if(loadType === "microphone" || loadType === "systemAudio"){
+        getId("nonLiveControls").classList.add("unclickable");
+        getId("ambienceButton").classList.add("unclickable");
+        getId("ambienceSpacing").classList.add("unclickable");
+        if(loadType === "microphone"){
+            getId("currentlyPlaying").innerHTML = "Microphone";
+        }else if(loadType === "systemAudio"){
+            getId("currentlyPlaying").innerHTML = "System Audio";
+        }
+    }
 
     if(localStorage.getItem("AaronOSMusic_SmokeBrightness")){
         smokeBrightness = parseFloat(localStorage.getItem("AaronOSMusic_SmokeBrightness"));
     }
-    
+}
+// helper func for loading
+function setupAudio(loadType){
     audioContext = new AudioContext();
+    if(loadType !== "microphone" && loadType !== "systemAudio"){
+        mediaSource = audioContext.createMediaElementSource(audio);
+        
+        delayNode = audioContext.createDelay();
+        if(localStorage.getItem("AaronOSMusic_Delay")){
+            delayNode.delayTime.value = parseFloat(localStorage.getItem("AaronOSMusic_Delay"));
+            getId("currentlyPlaying").innerHTML += " | Delay is custom";
+        }else{
+            delayNode.delayTime.value = 0.07;
+        }
+        delayNode.connect(audioContext.destination);
+    }
     
     analyser = audioContext.createAnalyser();
     //analyser.fftSize = 32768;
     analyser.fftSize = 2048;
     latencyReduction = 1;
-    analyser.maxDecibels = -20;
-    analyser.minDecibels = -60;
+    if(loadType === "systemAudio"){
+        // system audio seems to be quieter than regular audio files for some reason?
+        // Tested with Deezer set to 200% and with YouTube set to 100%. Same issue between both. Hmm...
+        analyser.maxDecibels = -30;
+        analyser.minDecibels = -70;
+    }else{
+        analyser.maxDecibels = -20;
+        analyser.minDecibels = -60;
+    }
     if(localStorage.getItem("AaronOSMusic_SmoothingTimeConstant")){
         analyser.smoothingTimeConstant = parseFloat(localStorage.getItem("AaronOSMusic_SmoothingTimeConstant"));
         getId("currentlyPlaying").innerHTML += " | SmoothingTimeConstant is custom";
     }else{
         analyser.smoothingTimeConstant = 0.8;
     }
+
+    if(loadType === "microphone"){
+        navigator.webkitGetUserMedia({audio:true}, function(stream){
+            microphone = audioContext.createMediaStreamSource(stream);
+            microphone.connect(analyser);
+        }, function(){alert('error');});
+        microphoneActive = 1;
+    }else if(loadType !== "systemAudio"){
+        mediaSource.connect(analyser);
+        analyser.connect(delayNode);
+    }
     
     visData = new Uint8Array(analyser.frequencyBinCount);
-    
+}
+// helper func for loading
+function setupCanvas(){
     getId("introduction").classList.add('disabled');
     getId("visualizer").classList.add('disabled');
     getId("selectOverlay").classList.add('disabled');
@@ -898,17 +696,61 @@ function loadMicrophone(event){
     }
     getId("visCanvas").width = size[0];
     getId("visCanvas").height = size[1];
-
-    navigator.webkitGetUserMedia({audio:true}, function(stream){
-        microphone = audioContext.createMediaStreamSource(stream);
-        microphone.connect(analyser);
-    }, function(){alert('error');});
-    
-    microphoneActive = 1;
     
     requestAnimationFrame(globalFrame);
+}
+
+function loadFolder(event){
+    setupFiles(folderInput.files);
+    setupTracks("folder");
+    setupShowElements("folder");
+    setupAudio("folder");
+    setupCanvas();
+
     requestAnimationFrame(function(){
-        overrideVis("monstercat");
+        overrideMod("sinusoid");
+        overrideColor("beta");
+    });
+}
+
+function loadFiles(event){
+    setupFiles(fileInput.files);
+    setupTracks("files");
+    setupShowElements("files");
+    setupAudio("files");
+    setupCanvas();
+
+    requestAnimationFrame(function(){
+        overrideMod("sinusoid");
+        overrideColor("beta");
+    });
+}
+
+function loadWeirdFiles(event){// fileWeirdInput.files
+    setupFiles(fileInput.files);
+    setupTracks("weirdFiles");
+    setupShowElements("weirdFiles");
+    setupAudio("weirdFiles");
+    setupCanvas();
+
+    requestAnimationFrame(function(){
+        overrideMod("sinusoid");
+        overrideColor("beta");
+    });
+}
+
+var microphoneActive = 0;
+var systemAudioActive = 0;
+
+function loadMicrophone(event){
+    setupFiles();
+    setupTracks("microphone");
+    setupShowElements("microphone");
+    setupAudio("microphone");
+    setupCanvas();
+
+    requestAnimationFrame(function(){
+        overrideVis("fubar");
         overrideMod("sinusoid");
         overrideColor("beta");
     });
@@ -916,45 +758,10 @@ function loadMicrophone(event){
 }
 
 function loadSystemAudio(event){
-    audio.pause();
-    currentSong = -1;
-
-    if(localStorage.getItem("AaronOSMusic_SmokeBrightness")){
-        smokeBrightness = parseFloat(localStorage.getItem("AaronOSMusic_SmokeBrightness"));
-    }
-    
-    audioContext = new AudioContext();
-    
-    analyser = audioContext.createAnalyser();
-    //analyser.fftSize = 32768;
-    analyser.fftSize = 2048;
-    latencyReduction = 1;
-    // system audio seems to be quieter than regular audio files for some reason?
-    // Tested with Deezer set to 200% and with YouTube set to 100%. Same issue between both. Hmm...
-    analyser.maxDecibels = -30;
-    analyser.minDecibels = -70;
-    if(localStorage.getItem("AaronOSMusic_SmoothingTimeConstant")){
-        analyser.smoothingTimeConstant = parseFloat(localStorage.getItem("AaronOSMusic_SmoothingTimeConstant"));
-        getId("currentlyPlaying").innerHTML += " | SmoothingTimeConstant is custom";
-    }else{
-        analyser.smoothingTimeConstant = 0.8;
-    }
-    
-    visData = new Uint8Array(analyser.frequencyBinCount);
-    
-    getId("introduction").classList.add('disabled');
-    getId("visualizer").classList.add('disabled');
-    getId("selectOverlay").classList.add('disabled');
-    setVis("none");
-    
-    winsize = [window.innerWidth, window.innerHeight];
-    if(fullscreen){
-        size = [window.innerWidth, window.innerHeight];
-    }else{
-        size = [window.innerWidth - 8, window.innerHeight - 81];
-    }
-    getId("visCanvas").width = size[0];
-    getId("visCanvas").height = size[1];
+    setupFiles();
+    setupTracks("systemAudio");
+    setupShowElements("systemAudio");
+    setupAudio("systemAudio");
 
     if(systemAudioStreamType === 'electron'){
         remote.desktopCapturer.getSources({types: ['screen']}).then(async sources => {
@@ -984,26 +791,10 @@ function loadSystemAudio(event){
                         
                         microphoneActive = 1;
                         
-                        var disabledElements = document.getElementsByClassName('disabled');
-                        while(disabledElements.length > 0){
-                            disabledElements[0].classList.remove('disabled');
-                        }
-                        getId("introduction").classList.add('disabled');
-                        getId("visualizer").classList.add('disabled');
-                        getId("selectOverlay").classList.add('disabled');
-                        if(!smokeEnabled){
-                            smokeElement.classList.add("disabled");
-                            smokeScreen1.classList.add("disabled");
-                            smokeScreen2.classList.add("disabled");
-                        }
-                        getId("nonLiveControls").classList.add("unclickable");
-                        getId("ambienceButton").classList.add("unclickable");
-                        getId("ambienceSpacing").classList.add("unclickable");
-                        getId("currentlyPlaying").innerHTML = "System Audio";
+                        setupCanvas();
                         
-                        requestAnimationFrame(globalFrame);
                         requestAnimationFrame(function(){
-                            overrideVis("monstercat");
+                            overrideVis("fubar");
                             overrideMod("sinusoid");
                             overrideColor("beta");
                         });
@@ -1041,26 +832,10 @@ function loadSystemAudio(event){
                 
                 microphoneActive = 1;
                 
-                var disabledElements = document.getElementsByClassName('disabled');
-                while(disabledElements.length > 0){
-                    disabledElements[0].classList.remove('disabled');
-                }
-                getId("introduction").classList.add('disabled');
-                getId("visualizer").classList.add('disabled');
-                getId("selectOverlay").classList.add('disabled');
-                if(!smokeEnabled){
-                    smokeElement.classList.add("disabled");
-                    smokeScreen1.classList.add("disabled");
-                    smokeScreen2.classList.add("disabled");
-                }
-                getId("nonLiveControls").classList.add("unclickable");
-                getId("ambienceButton").classList.add("unclickable");
-                getId("ambienceSpacing").classList.add("unclickable");
-                getId("currentlyPlaying").innerHTML = "System Audio";
-                
-                requestAnimationFrame(globalFrame);
+                setupCanvas();
+
                 requestAnimationFrame(function(){
-                    overrideVis("monstercat");
+                    overrideVis("fubar");
                     overrideMod("sinusoid");
                     overrideColor("beta");
                 });
