@@ -253,70 +253,54 @@ var currentlyPlaying = getId("currentlyPlaying");
 
 var files = [];
 var filesAmount = 0;
-var fileNames = [];
 var fileInfo = {};
 var filesLength = 0;
+
+var tracks = {};
 
 var supportedFormats = ['aac', 'aiff', 'wav', 'm4a', 'mp3', 'amr', 'au', 'weba', 'oga', 'wma', 'flac', 'ogg', 'opus', 'webm'];
 
 var URL;
 
+function printDirToTable(dir){
+    var dirstr = '';
+    for(var i in dir){
+        if(i !== '__isDirectory'){
+            if(dir[i]['__isDirectory']){
+                dirstr += '<tr class="hasNestedTable"><td colspan="3" class="nestedTableParentCell collapsedNestedTable">' +
+                    '<div class="nestedTableToggle" onclick="this.parentNode.classList.toggle(\'collapsedNestedTable\')"><span class="expandTriangle"></span> ' + i + '</div>' +
+                    '<table><thead><tr class="tableheader"><th>no.</th><th>Format</th><th width="100%">Title</th></tr></thead><tbody>';
+                dirstr += printDirToTable(dir[i]);
+                dirstr += '</tbody></table></td></tr>';
+            }else{
+                dirstr += '<tr id="song' + dir[i].trackID + '" onclick="selectSong(' + dir[i].trackID + ')"><td style="text-align:right">' +
+                    dir[i].trackID + '</td><td>' +
+                    dir[i].format + '</td><td style="width:100%;">' +
+                    dir[i].title + '</td></tr>';
+            }
+        }
+    }
+    return dirstr;
+}
 function listSongs(){
     var str = "";
-    for(var i in fileNames){
-        str += '<div id="song' + i + '" onclick="selectSong(' + i + ')">' + fileNames[i][1] + ": " + fileNames[i][3] + fileNames[i][0] + '</div>';
+    str += '<table id="trackTable">';
+    if(shuffleMode){
+        str += '<thead><tr class="tableheader"><th style="text-align:right;">Folder</th><th>no.</th><th>Format</th><th width="100%">Title</th></tr></thead><tbody>';
+        for(var i = 0; i < shuffledTracklist.length; i++){
+            str += '<tr id="song' + shuffledTracklist[i] + '" onclick="selectSong(' + shuffledTracklist[i] + ');shufflePosition = ' + i + '"><td style="text-align:right;">' +
+                trackListFlat[shuffledTracklist[i]].dirPath.join(' / ') + '</td><td style="text-align:right;">' +
+                trackListFlat[shuffledTracklist[i]].trackID + '</td><td>' +
+                trackListFlat[shuffledTracklist[i]].format + '</td><td style="width:100%;">' +
+                trackListFlat[shuffledTracklist[i]].title + '</td></tr>';
+        }
+    }else{
+        str += '<thead><tr class="tableheader"><th>no.</th><th>Format</th><th width="100%">Title</th></tr></thead><tbody>';
+        str += printDirToTable(tracks);
     }
+    str += '</tbody></table>';
     songList.innerHTML = str;
 }
-
-/*
-function generateSongInfo(){
-    var tempFileInfo = {
-        _color_tutorial: {
-            colorTypes: ['gradient', 'peak', 'solid'],
-            colorTypesExplanations: {
-                gradient: 'All colors are evenly distributed.',
-                peak: 'Same as gradient, but the last color is used as a peak of sorts, at very high volumes.',
-                solid: 'Solid color, no gradient'
-            },
-            colorFormat: [
-                "Each file requires a colorType and list of colors.",
-                "The _default_colors are selected when a specific song has no colors.",
-                [
-                    'Red Channel',
-                    'Green Channel',
-                    'Blue Channel',
-                    'Alpha Channel'
-                ],
-                [
-                    127,
-                    255,
-                    204,
-                    0.8
-                ]
-            ]
-        },
-        _default_colors: {
-            colorType: 'peak',
-            colors: [
-                [0, 0, 255, 1],
-                [0, 255, 0, 1],
-                [255, 0, 0, 1]
-            ]
-        }
-    };
-    for(var i in fileNames){
-        tempFileInfo[fileNames[i][0]] = {
-            colorType: '',
-            colors: []
-        };
-    }
-    for(var i in fileInfo){
-        tempFileInfo[i] = fileInfo[i];
-    }
-    getId("songInfoTemplate").value = JSON.stringify(tempFileInfo, null, '\t');
-}
-*/
 
 var fileInfoError = 0;
 function readFileInfo(event){
@@ -342,40 +326,40 @@ function openCustomColorMenu(){
 
     tempHTML += '<p style="font-size:3em">Custom Color Settings</p>';
 
-    if(fileNames.length > 0 && folderName.length > 0){
+    if(trackListFlat.length > 0 && folderName.length > 0){
         tempHTML += '<p>This menu allows you to customize color gradients individually for each of your songs.<br>Come back here when you\'re done to save changes.</p>';
         tempHTML += '<button onclick="saveCustomColors()">Save Changes</button> <i>Instructions below!</i>';
         tempHTML += '<p style="margin-left:8px;padding-left:8px;border-left:1px solid #FFF;border-radius:6px;">Navigate to your music folder "' + folderName + '".<br>Save the file as "zzz_aOSmusic_colorInfo.json" alongside your music.</p>';
 
         var filesSeen = [];
-        for(var i in fileNames){
+        for(var i in trackListFlat){
             tempHTML += '<div style="background:transparent;height:19px;overflow:hidden;margin-bottom:16px;padding-left:16px;">';
             tempHTML += '<button style="margin-left:-16px;" onclick="if(this.parentNode.style.height === \'\'){this.parentNode.style.height = \'19px\'}else{this.parentNode.style.height = \'\'};">v</button> ';
-            if(fileInfo[fileNames[i][4]]){
+            if(fileInfo[trackListFlat[i].fullPath]){
                 tempHTML += '<span class="customColorPreview" style="background:linear-gradient(90deg';
-                for(var j in fileInfo[fileNames[i][4]]){
+                for(var j in fileInfo[trackListFlat[i].fullPath]){
                     tempHTML += ', ' + csscolor('rgba',
-                        fileInfo[fileNames[i][4]][j].r,
-                        fileInfo[fileNames[i][4]][j].g,
-                        fileInfo[fileNames[i][4]][j].b,
-                        fileInfo[fileNames[i][4]][j].a,
-                    ) + ' ' + fileInfo[fileNames[i][4]][j].x + '%';
+                        fileInfo[trackListFlat[i].fullPath][j].r,
+                        fileInfo[trackListFlat[i].fullPath][j].g,
+                        fileInfo[trackListFlat[i].fullPath][j].b,
+                        fileInfo[trackListFlat[i].fullPath][j].a,
+                    ) + ' ' + fileInfo[trackListFlat[i].fullPath][j].x + '%';
                 }
                 tempHTML += '); margin-right:0.5px;">&nbsp; &nbsp; &nbsp;</span> ';
             }else{
                 tempHTML += '<span class="customColorPreview" style="background:#000;">&nbsp; &nbsp; &nbsp;</span> ';
             }
-            tempHTML += fileNames[i][1] + ": " + fileNames[i][3] + fileNames[i][0] + '<br><br>';
-            tempHTML += '<span class="customColorInput" data-songpath="' + fileNames[i][4] + '"><span class="customColorStops">';
+            tempHTML += trackListFlat[i].trackID + ": " + trackListFlat[i].dirPath.join(' / ') + (trackListFlat[i].dirPath.length > 0 ? ' / ' : '') + trackListFlat[i].title + '.' + trackListFlat[i].format + '<br><br>';
+            tempHTML += '<span class="customColorInput" data-songpath="' + trackListFlat[i].fullPath + '"><span class="customColorStops">';
 
-            if(fileInfo[fileNames[i][4]]){
-                for(var j in fileInfo[fileNames[i][4]]){
+            if(fileInfo[trackListFlat[i].fullPath]){
+                for(var j in fileInfo[trackListFlat[i].fullPath]){
                     tempHTML += '<span class="customColorStop" style="margin-left:0.5px;">' +
-                        'At <input value="' + fileInfo[fileNames[i][4]][j].x + '" type="number" placeholder="0-100" min="0" max="100" step="1" style="width:50px"> % | ' +
-                        'R: <input value="' + fileInfo[fileNames[i][4]][j].r + '" type="number" placeholder="0-255" min="0" max="255" step="1" style="width:50px"> ' +
-                        'G: <input value="' + fileInfo[fileNames[i][4]][j].g + '" type="number" placeholder="0-255" min="0" max="255" step="1" style="width:50px"> ' +
-                        'B: <input value="' + fileInfo[fileNames[i][4]][j].b + '" type="number" placeholder="0-255" min="0" max="255" step="1" style="width:50px"> ' +
-                        'A: <input value="' + fileInfo[fileNames[i][4]][j].a + '" type="number" placeholder="0-1" min="0" max="1" step="0.01" value="1" style="width:50px"> ' +
+                        'At <input value="' + fileInfo[trackListFlat[i].fullPath][j].x + '" type="number" placeholder="0-100" min="0" max="100" step="1" style="width:50px"> % | ' +
+                        'R: <input value="' + fileInfo[trackListFlat[i].fullPath][j].r + '" type="number" placeholder="0-255" min="0" max="255" step="1" style="width:50px"> ' +
+                        'G: <input value="' + fileInfo[trackListFlat[i].fullPath][j].g + '" type="number" placeholder="0-255" min="0" max="255" step="1" style="width:50px"> ' +
+                        'B: <input value="' + fileInfo[trackListFlat[i].fullPath][j].b + '" type="number" placeholder="0-255" min="0" max="255" step="1" style="width:50px"> ' +
+                        'A: <input value="' + fileInfo[trackListFlat[i].fullPath][j].a + '" type="number" placeholder="0-1" min="0" max="1" step="0.01" value="1" style="width:50px"> ' +
                         '&nbsp; - &nbsp; <button onclick="this.parentNode.parentNode.removeChild(this.parentNode)"><i>Remove</i></button> &nbsp;<br><br></span>';
                 }
             }
@@ -386,7 +370,7 @@ function openCustomColorMenu(){
 
             tempHTML += '</span></div>';
             
-            filesSeen.push(fileNames[i][4]);
+            filesSeen.push(trackListFlat[i].fullPath);
         }
 
         for(var i in fileInfo){
@@ -549,6 +533,7 @@ function setLatency(newLatency){
 }
 
 var folderName = "";
+var fileSort = [];
 
 // helper func for loading
 function setupFiles(fileInput){
@@ -556,20 +541,33 @@ function setupFiles(fileInput){
     currentSong = -1;
     if(fileInput){
         files = fileInput;
+
+        fileSort = [];
+        for(var i in files){
+            fileSort.push([i, files[i].path]);
+        }
+        fileSort.sort((a, b) => ('' + a[1]).localeCompare('' + b[1]));
+
         filesAmount = files.length;
         filesLength = 0;
-        fileNames = [];
+
+        tracks = {};
+        trackListFlat = [];
     }
 }
 // helper func for loading
 function setupTracks(loadType){
     for(var i = 0; i < filesAmount; i++){
-        if(files[i].type.indexOf("audio/") === 0 || loadType === "weirdFiles"){
-            var fileName = files[i].name.split('.');
+        if(files[fileSort[i][0]].type.indexOf("audio/") === 0 || loadType === "weirdFiles"){
+            var fileName = files[fileSort[i][0]].name.split('.');
             if((fileName[fileName.length - 1] !== 'mid' && fileName[fileName.length - 1] !== 'midi') || loadType === "weirdFiles"){
                 var filePath = '';
-                if(files[i].webkitRelativePath){
-                    filePath = files[i].webkitRelativePath.split('/');
+                if(files[fileSort[i][0]].webkitRelativePath){
+                    var trackDir = files[fileSort[i][0]].webkitRelativePath.split('/');
+                    trackDir.pop();
+                    trackDir.shift();
+
+                    filePath = files[fileSort[i][0]].webkitRelativePath.split('/');
                     filePath.pop();
                     filePath.shift();
                     if(loadType === "folder"){
@@ -580,25 +578,45 @@ function setupTracks(loadType){
                             filePath = '';
                         }
                     }else if(loadType === "files" || loadType === "weirdFiles"){
-                        filePath.join(" / ");
-                        filePath += ' / ';
-                        break;
+                        // what did this even do? whot?
+                        //filePath.join(" / ");
+                        //filePath += ' / ';
+                        //break;
                     }
                 }
-                filesLength++;
+                var trackFormat = '';
                 if(supportedFormats.indexOf(fileName[fileName.length - 1]) > -1){
-                    fileName.pop();
+                    trackFormat = fileName.pop();
                 }
-                var fullPath = files[i].webkitRelativePath.split("/");
+                var fullPath = files[fileSort[i][0]].webkitRelativePath.split("/");
                 folderName = fullPath.shift();
                 fullPath = fullPath.join("/");
-                fileNames.push([fileName.join('.'), i, URL.createObjectURL(files[i]), filePath, fullPath]);
+
+                var currTrackPointer = tracks;
+                for(var dir in trackDir){
+                    if(!currTrackPointer[trackDir[dir]]){
+                        currTrackPointer[trackDir[dir]] = {};
+                        currTrackPointer[trackDir[dir]]['__isDirectory'] = true;
+                    }
+                    currTrackPointer = currTrackPointer[trackDir[dir]];
+                }
+                currTrackPointer[fileName.join('.') + '.' + trackFormat] = {
+                    title: fileName.join('.'),
+                    trackID: filesLength,
+                    blob: URL.createObjectURL(files[fileSort[i][0]]),
+                    dirPath: trackDir,
+                    fullPath: fullPath,
+                    format: trackFormat,
+                    '__isDirectory': false
+                };
+                trackListFlat[filesLength] = currTrackPointer[fileName.join('.') + '.' + trackFormat];
+                filesLength++;
             }
         }else if(loadType === "folder"){
-            if(files[i].webkitRelativePath.split('/').length === 2 && files[i].webkitRelativePath.split('/').pop() === "zzz_aOSmusic_colorInfo.json"){
+            if(files[fileSort[i][0]].webkitRelativePath.split('/').length === 2 && files[fileSort[i][0]].webkitRelativePath.split('/').pop() === "zzz_aOSmusic_colorInfo.json"){
                 var reader = new FileReader();
                 reader.onload = readFileInfo;
-                reader.readAsText(files[i]);
+                reader.readAsText(files[fileSort[i][0]]);
                 setTimeout(function(){getId('colorfield').value="autoFileInfo";setColor('autoFileInfo');}, 100);
             }
         }
@@ -857,14 +875,14 @@ function selectSong(id){
     currentSong = id;
     audio.pause();
     audio.currentTime = 0;
-    audio.src = fileNames[id][2];
+    audio.src = trackListFlat[currentSong].blob;
     blockSleep();
-    getId("currentlyPlaying").innerHTML = fileNames[id][1] + ": " + fileNames[id][0];
-    document.title = fileNames[id][0] + " - AaronOS Music Player";
+    getId("currentlyPlaying").innerHTML = trackListFlat[currentSong].trackID + ": " + trackListFlat[currentSong].title;
+    document.title = trackListFlat[currentSong].title + " - AaronOS Music Player";
     if(webVersion && aosToolsConnected){
         aosTools.sendRequest({
             action: "appwindow:set_caption",
-            content: "Music Player - " + fileNames[id][0],
+            content: "Music Player - " + trackListFlat[currentsong].title,
             conversation: "set_caption"
         });
     }
@@ -887,7 +905,7 @@ function play(){
         if(ambienceWaiting){
             ambienceWaiting = 0;
             clearTimeout(ambienceTimeout);
-            getId("currentlyPlaying").innerHTML = fileNames[currentSong][1] + ": " + fileNames[currentSong][0];
+            getId("currentlyPlaying").innerHTML = trackListFlat[0].trackID + ": " + trackListFlat[0].title;
         }
         getId("playbutton").innerHTML = "<b>&nbsp;||&nbsp;</b>";
     }
@@ -918,7 +936,7 @@ function setProgress(e){
         if(ambienceWaiting){
             ambienceWaiting = 0;
             clearTimeout(ambienceTimeout);
-            getId("currentlyPlaying").innerHTML = fileNames[currentSong][1] + ": " + fileNames[currentSong][0];
+            getId("currentlyPlaying").innerHTML = trackListFlat[currentSong].trackID + ": " + trackListFlat[currentSong].title;
         }
     }
 }
@@ -926,9 +944,17 @@ function setProgress(e){
 function back(){
     if(!microphoneActive){
         if(audio.currentTime < 3){
-            currentSong--;
-            if(currentSong < 0){
-                currentSong = fileNames.length - 1;
+            if(shuffleMode){
+                shufflePosition--;
+                if(shufflePosition < 0){
+                    shufflePosition = shufflePosition.length - 1;
+                }
+                currentSong = shuffledTracklist[shufflePosition];
+            }else{
+                currentSong--;
+                if(currentSong < 0){
+                    currentSong = trackListFlat.length - 1;
+                }
             }
             selectSong(currentSong);
         }else{
@@ -936,7 +962,7 @@ function back(){
             if(ambienceWaiting){
                 ambienceWaiting = 0;
                 clearTimeout(ambienceTimeout);
-                getId("currentlyPlaying").innerHTML = fileNames[currentSong][1] + ": " + fileNames[currentSong][0];
+                getId("currentlyPlaying").innerHTML = trackListFlat[currentSong].trackID + ": " + trackListFlat[currentSong].title;
             }
         }
     }
@@ -952,16 +978,22 @@ function next(){
                 ambienceWaiting = 0;
                 clearTimeout(ambienceTimeout);
             }
-            var nextAmbienceSong = Math.floor(Math.random() * fileNames.length);
-            if(fileNames.length !== 1){
+            var nextAmbienceSong = Math.floor(Math.random() * trackListFlat.length);
+            if(trackListFlat.length !== 1){
                 while(nextAmbienceSong === currentSong){
-                    nextAmbienceSong = Math.floor(Math.random() * fileNames.length);
+                    nextAmbienceSong = Math.floor(Math.random() * trackListFlat.length);
                 }
             }
             currentSong = nextAmbienceSong;
+        }else if(shuffleMode){
+            shufflePosition++;
+            if(shufflePosition > shuffledTracklist.length - 1){
+                shufflePosition = 0;
+            }
+            currentSong = shuffledTracklist[shufflePosition];
         }else{
             currentSong++;
-            if(currentSong > fileNames.length - 1){
+            if(currentSong > trackListFlat.length - 1){
                 currentSong = 0;
             }
         }
@@ -975,10 +1007,10 @@ function ambienceNext(){
             ambienceWaiting = 0;
             clearTimeout(ambienceTimeout);
         }
-        var nextAmbienceSong = Math.floor(Math.random() * fileNames.length);
-        if(fileNames.length !== 1){
+        var nextAmbienceSong = Math.floor(Math.random() * trackListFlat.length);
+        if(trackListFlat.length !== 1){
             while(nextAmbienceSong === currentSong){
-                nextAmbienceSong = Math.floor(Math.random() * fileNames.length);
+                nextAmbienceSong = Math.floor(Math.random() * trackListFlat.length);
             }
         }
         currentSong = nextAmbienceSong;
@@ -1016,14 +1048,32 @@ function shuffleArray(array){
     }
 }
 
+var shuffleMode = 0;
+var shufflePosition = 0;
+var shuffledTracklist = [];
 function shuffle(){
     if(!microphoneActive){
-        audio.pause();
-        audio.currentTime = 0;
-        currentSong = 0;
-        shuffleArray(fileNames);
+        shuffleMode = Math.abs(shuffleMode - 1);
+        if(getId("shuffleButton")){
+            getId("shuffleButton").style.borderColor = debugColors[shuffleMode];
+        }
+        shuffledPosition = 0;
+        shuffledTracklist = [];
+        if(shuffleMode){
+            audio.pause();
+            audio.currentTime = 0;
+            for(var i = 0; i < trackListFlat.length; i++){
+                shuffledTracklist.push(i);
+            }
+            shuffleArray(shuffledTracklist);
+        }
         listSongs();
-        selectSong(0);
+        if(shuffleMode){
+            currentSong = shuffledTracklist[0];
+            selectSong(currentSong);
+        }else{
+            getId("song" + currentSong).classList.add('selected');
+        }
     }
 }
 
@@ -1478,7 +1528,7 @@ var colors = {
             if(currentSong === -1){
                 return colors.bluegreenred.func(amount);
             }else{
-                var infoObj = fileNames[currentSong][4];
+                var infoObj = trackListFlat[currentSong].fullPath;
                 if(fileInfo[infoObj]){
                     if(fileInfo[infoObj].length > 0){
                         for(var i in fileInfo[infoObj]){
@@ -2340,7 +2390,7 @@ var vis = {
                 canvas.fillStyle = '#FFF';
                 canvas.font = (size[1] * 0.25) + 'px aosProFont, sans-serif';
                 if(!microphoneActive){
-                    canvas.fillText((fileNames[currentSong] || ["No Song"])[0].toUpperCase(), Math.round(left) + 0.5, size[1] * 0.75, Math.floor(maxWidth));
+                    canvas.fillText((trackListFlat[currentSong].title || "No Song").toUpperCase(), Math.round(left) + 0.5, size[1] * 0.75, Math.floor(maxWidth));
                 }
             }
         },

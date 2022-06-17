@@ -146,6 +146,62 @@ div{
 #songList div:hover{
     background:rgba(127, 127, 127, 0.25);
 }
+    #trackTable{
+        white-space:nowrap;
+        padding-left:3px;
+        padding-right:3px;
+    }
+    #trackTable tr:not(.hasNestedTable, .tableheader):hover{
+        background-color:rgba(127, 127, 127, 0.25);
+        cursor: pointer;
+    }
+    .nestedTableParentCell{
+        border-left:1px solid #FFF;
+        padding-right:0 !important;
+    }
+    .nestedTableParentCell.collapsedNestedTable{
+        border-left-color:transparent;
+    }
+    .tableheader{
+        cursor: default;
+    }
+    tbody .tableheader{
+        height:0;
+        line-height:0;
+        overflow:hidden;
+    }
+    tbody .tableheader th{
+        padding-top:0 !important;
+        padding-bottom:0 !important;
+        overflow:hidden;
+    }
+    #trackTable td, #trackTable th{
+        padding:3px;
+    }
+    #trackTable thead th{
+        background-color:rgba(127, 127, 127, 0.25);
+        text-align:left;
+        font-weight:normal;
+    }
+    .nestedTableToggle{
+        position:relative;
+    }
+    #tracktable table, #tracktable table tbody{
+        width:100%;
+    }
+    .collapsedNestedTable table{
+        display:none;
+    }
+    .nestedTableToggle .expandTriangle::after{
+        font-size:1.2em;
+        line-height:0;
+        vertical-align:middle;
+        content: "\025BE";
+    }
+    .collapsedNestedTable .nestedTableToggle .expandTriangle::after{
+        content: "\025B8";
+    }
+
 #currentlyPlaying{
     width:100%;
     height:24px;
