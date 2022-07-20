@@ -544,7 +544,7 @@ function setupFiles(fileInput){
 
         fileSort = [];
         for(var i in files){
-            fileSort.push([i, files[i].path]);
+            fileSort.push([i, files[i].path || files[i].webkitRelativePath]);
         }
         fileSort.sort((a, b) => ('' + a[1]).localeCompare('' + b[1]));
 
