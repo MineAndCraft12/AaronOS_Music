@@ -3074,11 +3074,21 @@ var vis = {
                 for(var i = 12; i < 64; i++){
                     trebleAmount = Math.max(trebleAmount, visData[i]);
                 }
-
+                // new pitch alg
                 if(this.settings.middleType.value === "pitch"){
+                    trebleAmount = Math.max(trebleAmount, Math.max(...visData.slice(64, 128)));
+                }
+
+                if(this.settings.middleType.value.indexOf("pitch") === 0){
                     var trebleAvg = this.weightedAverage(visData.slice(12, 64), 0.7) / 52;
                     if(isNaN(trebleAvg)){
                         trebleAvg = 0.5;
+                    }
+                    // new pitch alg
+                    if(this.settings.middleType.value === "pitch"){
+                        var extraBoost = Math.max(...visData.slice(64, 128)) / 255;
+                        var extraFreq = (this.weightedAverage(visData.slice(64, 128), 0.75) / 64) || 0;
+                        trebleAvg += (extraBoost * (extraFreq / 2 + 0.5)) * (1 - trebleAvg);
                     }
                     var moveCap = 0.05 * fpsCompensation;
                     if(trebleAvg > this.centerLasers + moveCap){
@@ -3239,7 +3249,7 @@ var vis = {
                 default: "pitch",
                 title: "Treble Laser Mode",
                 desc: "Select what the Treble lasers react to.",
-                choices: {pitch: "Pitch", volume: "Volume"}
+                choices: {pitch: "Pitch (new)", pitchold: "Pitch (old)", volume: "Volume"}
             },
             separation: {
                 type: "toggle",
@@ -3319,6 +3329,10 @@ var vis = {
                trebleAmount += trebleAmounts[51 - i];
             }
             trebleAmount /= 4;
+            // new pitch alg
+            if(this.settings.pitchType.value === "new"){
+                trebleAmount = Math.max(trebleAmount, Math.max(...visData.slice(64, 128)));
+            }
             //var trebleAmount = 0;
             //for(var i = 12; i < 64; i++){
             //    trebleAmount = Math.max(trebleAmount, visData[i]);
@@ -3331,6 +3345,12 @@ var vis = {
             }
             if(isNaN(trebleAvg)){
                 trebleAvg = 0.5;
+            }
+            if(this.settings.pitchType.value === "new"){
+                var extraBoost = Math.max(...visData.slice(64, 128)) / 255;
+                var extraFreq = (this.weightedAverage(visData.slice(64, 128), 0.75) / 64) || 0;
+                var origAvg = trebleAvg;
+                trebleAvg += (extraBoost * (extraFreq / 2 + 0.5)) * (1 - trebleAvg);
             }
 
             var moveCap = 0.05 * fpsCompensation;
@@ -3489,6 +3509,14 @@ var vis = {
                 title: "Fixed Laser Width",
                 desc: "Lasers are always full-width, even with weak frequency amplitudes."
             },
+            pitchType: {
+                type: "choice",
+                value: "new",
+                default: "new",
+                choices: {new: "New", old: "Old"},
+                title: "Pitch Detection",
+                desc: "What pitch detection algorithm to use?<br><br>\"New\" responds to higher frequencies than \"Old\"."
+            }
             // doubleAngleBias: {
             //     type: "toggle",
             //     value: 0,
@@ -4549,6 +4577,13 @@ var vis = {
                 trebleAvg = 0.5;
             }
 
+            if(this.settings.pitchType.value === "new"){
+                var extraBoost = Math.max(...visData.slice(64, 128)) / 255;
+                var extraFreq = (this.weightedAverage(visData.slice(64, 128), 0.75) / 64) || 0;
+                var origAvg = trebleAvg;
+                trebleAvg += (extraBoost * (extraFreq / 2 + 0.5)) * (1 - trebleAvg);
+            }
+
             var bassAmounts = visData.slice(0, 12);
             bassAmounts.sort((a, b) => a - b);
             var bassAmount = 0;
@@ -4657,6 +4692,9 @@ var vis = {
                 canvas.fillRect(bassAvg * 255 + 9 + 255 / 12 / 2, 30, 2, 10);
                 canvas.fillRect(10, 60, trebleAmount, 10);
                 canvas.fillRect(trebleAvg * 255 + 9 + 255 / 48 / 2, 80, 2, 10);
+                if(this.settings.pitchType.value === "new"){
+                    canvas.fillRect(origAvg * 255 + 9 + 255 / 48 / 2, 80, 2 + (trebleAvg - origAvg) * 255, 1);
+                }
             }
         },
         pos: [0.5, 1],
@@ -4671,6 +4709,14 @@ var vis = {
                 choices: {quarter: "Quarter", half: "Half", normal: "Normal", double: "Double", triple: "Triple", max: "Teleport"},
                 title: "Jitter",
                 desc: "How jittery is the dancer's movement?<br><br>High values make him go very fast. Low values calm him down."
+            },
+            pitchType: {
+                type: "choice",
+                value: "new",
+                default: "new",
+                choices: {new: "New", old: "Old"},
+                title: "Pitch Detection",
+                desc: "Which pitch detection algorithm to use?<br><br>\"New\" can detect higher notes than \"old\"."
             },
             growFreq: {
                 type: "choice",
@@ -4752,6 +4798,9 @@ var vis = {
             var trebleAmount = 0;
             var totalAmount = 0;
             var avgPitch = [];
+            var extraPitch = 0;
+            var extraVolume = 0;
+            var originalPitch = 0;
             for(var i = 0; i < 64; i++){
                 totalAmount += visData[i];
                 if(i < 12){
@@ -4759,7 +4808,7 @@ var vis = {
                     bassAmounts.push(visData[i]);
                 }else{
                     trebleAmount += visData[i];
-                    if(this.settings.oldPitch.value){
+                    if(this.settings.pitchType.value === "legacy"){
                         avgPitch.push([i - 12, visData[i]]);
                     }
                 }
@@ -4776,7 +4825,7 @@ var vis = {
             }
             bassMax /= bassAmounts.length;
 
-            if(this.settings.oldPitch.value){
+            if(this.settings.pitchType.value === "legacy"){
                 avgPitch.sort((a, b) => a[1] - b[1]);
                 avgPitch = avgPitch.slice(-4);
                 if(avgPitch[3][1] === 0){
@@ -4792,6 +4841,12 @@ var vis = {
                 avgPitch /= 4;
             }else{
                 avgPitch = this.weightedAverage(visData.slice(12, 64), 0.7);
+                if(this.settings.pitchType.value === "new"){
+                    originalPitch = (avgPitch || 0) / 52;
+                    extraPitch = this.weightedAverage(visData.slice(64, 128), 0.7);
+                    extraVolume = Math.max(...visData.slice(64, 128));
+                    avgPitch *= 1 + ((extraVolume / 255 * (extraPitch / 64 + 0.5)) || 0);
+                }
             }
             avgPitch /= 52;
             if(isNaN(avgPitch)){
@@ -4802,6 +4857,9 @@ var vis = {
             this.angle -= (trebleAmount / 256) * fpsCompensation;
             if(this.settings.pitchAffectsRotation.value){
                 this.rotation += (trebleAmount / 20 * (1 + avgPitch)) * fpsCompensation;
+                if(this.settings.pitchType.value === "new"){
+                    this.rotation += (extraVolume / 80 * (avgPitch)) * fpsCompensation;
+                }
             }else{
                 this.rotation += (trebleAmount / 20 * (1.25)) * fpsCompensation;
             }
@@ -4887,6 +4945,10 @@ var vis = {
                 canvas.fillRect(10, 40, trebleAmount, 10);
                 canvas.fillRect(10, 70, bassAmount, 10);
                 canvas.fillRect(10, 90, bassMax, 10);
+                if(this.settings.pitchType.value === "new"){
+                    canvas.fillStyle = "#F00";
+                    canvas.fillRect(originalPitch * 255 + 10, 44, avgPitch * 255 - originalPitch * 255, 3);
+                }
                 canvas.fillStyle = "#F00";
                 canvas.fillRect(avgPitch * 255 + 10, 40, 1, 10);
             }
@@ -4950,12 +5012,17 @@ var vis = {
                 title: "Camera Velocity",
                 desc: "The camera falls slightly behind when the orbs are moving very fast."
             },
-            oldPitch: {
-                type: "toggle",
-                value: 0,
-                default: 0,
-                title: "Use Old Pitch Algorithm",
-                desc: "The old pitch algorithm is squirrelly and does not consider the \"whole picture\"."
+            pitchType: {
+                type: "choice",
+                value: "new",
+                default: "new",
+                choices: {
+                    new: "New",
+                    old: "Old",
+                    legacy: "Legacy"
+                },
+                title: "Pitch Detection",
+                desc: 'Select the pitch detection algorithm.<br><br>"New" can detect higher frequencies than "Old".<br>"Old" may help if the orbs are spinning too fast.<br>"Legacy" is inconsistent and inaccurate.'
             },
             pitchAffectsRotation: {
                 type: "toggle",
@@ -5006,6 +5073,9 @@ var vis = {
             var trebleAmount = 0;
             var totalAmount = 0;
             var avgPitch = [];
+            var extraPitch = 0;
+            var extraVolume = 0;
+            var originalPitch = 0;
             for(var i = 0; i < 64; i++){
                 totalAmount += visData[i];
                 if(i < 12){
@@ -5013,7 +5083,7 @@ var vis = {
                     bassAmounts.push(visData[i]);
                 }else{
                     trebleAmount += visData[i];
-                    if(this.settings.oldPitch.value){
+                    if(this.settings.pitchType.value === "legacy"){
                         avgPitch.push([i - 12, visData[i]]);
                     }
                 }
@@ -5030,7 +5100,7 @@ var vis = {
             }
             bassMax /= bassAmounts.length;
 
-            if(this.settings.oldPitch.value){
+            if(this.settings.pitchType.value === "legacy"){
                 avgPitch.sort((a, b) => a[1] - b[1]);
                 avgPitch = avgPitch.slice(-4);
                 if(avgPitch[3][1] === 0){
@@ -5046,6 +5116,12 @@ var vis = {
                 avgPitch /= 4;
             }else{
                 avgPitch = this.weightedAverage(visData.slice(12, 64), 0.7);
+                if(this.settings.pitchType.value === "new"){
+                    originalPitch = (avgPitch || 0) / 52;
+                    extraPitch = this.weightedAverage(visData.slice(64, 128), 0.7);
+                    extraVolume = Math.max(...visData.slice(64, 128));
+                    avgPitch *= 1 + ((extraVolume / 255 * (extraPitch / 255 + 0.75)) || 0);
+                }
             }
             avgPitch /= 52;
             if(isNaN(avgPitch)){
@@ -5057,6 +5133,9 @@ var vis = {
             this.angle = 90;
             if(this.settings.pitchAffectsRotation.value){
                 this.rotation += trebleAmount / 20 * (1 + avgPitch) * fpsCompensation;
+                if(this.settings.pitchType.value === "new"){
+                    this.rotation += (extraVolume / 80 * (avgPitch)) * fpsCompensation;
+                }
             }else{
                 this.rotation += trebleAmount / 20 * (1.25) * fpsCompensation;
             }
@@ -5127,16 +5206,22 @@ var vis = {
                 }
             }
 
+            
             if(debugForce){
                 canvas.fillRect(centerPoint.x - 1, centerPoint.y - 1, 2, 2);
                 canvas.fillStyle = "#111";
-                canvas.fillRect(5, 5, 265, 120);
+                canvas.fillRect(5, 5, 265, 100);
                 canvas.fillStyle = "#FFF";
                 canvas.fillRect(10, 10, totalAmount, 10);
                 canvas.fillRect(10, 40, trebleAmount, 10);
-                canvas.fillRect(10, 60, trebleMax, 10);
-                canvas.fillRect(10, 90, bassAmount, 10);
-                canvas.fillRect(10, 110, bassMax, 10);
+                canvas.fillRect(10, 70, bassAmount, 10);
+                canvas.fillRect(10, 90, bassMax, 10);
+                if(this.settings.pitchType.value === "new"){
+                    canvas.fillStyle = "#F00";
+                    canvas.fillRect(originalPitch * 255 + 10, 44, avgPitch * 255 - originalPitch * 255, 3);
+                }
+                canvas.fillStyle = "#F00";
+                canvas.fillRect(avgPitch * 255 + 10, 40, 1, 10);
             }
 
             canvas.fillStyle = getColor(bassMax, Math.abs(this.angle / 360 - 0.5) * 255 * 2);
@@ -5198,12 +5283,17 @@ var vis = {
                 title: "Camera Velocity",
                 desc: "The camera falls slightly behind when the orbs are moving very fast."
             },
-            oldPitch: {
-                type: "toggle",
-                value: 0,
-                default: 0,
-                title: "Use Old Pitch Algorithm",
-                desc: "The old pitch algorithm is squirrelly and does not consider the \"whole picture\"."
+            pitchType: {
+                type: "choice",
+                value: "new",
+                default: "new",
+                choices: {
+                    new: "New",
+                    old: "Old",
+                    legacy: "Legacy"
+                },
+                title: "Pitch Detection",
+                desc: 'Select the pitch detection algorithm.<br><br>"New" can detect higher frequencies than "Old".<br>"Old" may help if the orbs are spinning too fast.<br>"Legacy" is inconsistent and inaccurate.'
             },
             pitchAffectsRotation: {
                 type: "toggle",
@@ -7770,19 +7860,20 @@ var vis = {
             smoke.clearRect(0, 0, size[0], size[1]);
             var top = 10;
             var left = size[0] / 2;
-            for(var i = 0; i < 64; i++){
-                this.drawLine(i, visData[i], left - (i < 12) * 2 - 23, top);
+            for(var i = 0; i < 128; i++){
+                this.drawLine(i, visData[i], left - (i < 12) * 2 + (i > 64) * 2 - 88, top);
             }
             canvas.fillStyle = "#0F0";
             var bassAvg = this.weightedAverage(visData.slice(0, 12), 0.3) * 2;
             var trebleAvg = this.weightedAverage(visData.slice(12, 64), 0.7) * 2;
-            canvas.fillRect(left - 25 + bassAvg, top + 255, 2, 2);
-            canvas.fillRect(left + 1 + trebleAvg, top + 255, 2, 2);
+            canvas.fillRect(left - 90 + bassAvg, top + 255, 2, 2);
+            canvas.fillRect(left - 64 + trebleAvg, top + 255, 2, 2);
 
             canvas.fillStyle = "#FFF";
-            canvas.fillRect(left - 66, top + 257, 132, 1);
-            canvas.fillRect(left - 1, top + 255, 2, 2);
-            canvas.fillText("Bass Split", left - 300, top + 128);
+            canvas.fillRect(left - 86, top + 257, 152, 1);
+            canvas.fillRect(left - 66, top + 255, 2, 2);
+            canvas.fillRect(left + 42, top + 255, 2, 2);
+            canvas.fillText("Bass / Extra Split", left - 300, top + 128);
 
             top += 260;
             for(var i = 0; i < 64; i++){
@@ -7793,7 +7884,7 @@ var vis = {
             canvas.fillRect(left - 64 + allAvg, top + 255, 2, 2);
 
             canvas.fillStyle = "#FFF";
-            canvas.fillRect(left - 66, top + 257, 132, 1);
+            canvas.fillRect(left - 86, top + 257, 152, 1);
             canvas.fillText("Full Graph", left - 300, top + 128);
             //updateSmoke();
         },
@@ -8310,11 +8401,11 @@ function openSettingsMenu(){
                 'Constant: <input style="width: 50px" type="number" id="delayinput" min="0" max="0.99" value="' + analyser.smoothingTimeConstant + '" step="0.01" onchange="setSmoothingTimeConstant(this.value)"></input>' +
                 "<p>Default: 0.8<br>This value changes how smooth frequency response over time is. High values are smoother.<br>Values too high will make the visualizers feel lethargic.<br>Values too low will make the visualizers too hyper or unreadable.</p>";
                 
-            tempHTML += '<br><br><span style="font-size:2em">Song Info</span><br><br>' +
-                'Info detected: ' + (['No', 'Yes'])[0 + (fileInfo.hasOwnProperty('_default_colors'))] + '<br><br>' +
-                '<button onclick="generateSongInfo()">Generate Info</button><br><br>' +
-                'Select-All + Copy generated info from below, save to "_songInfo.txt" in your music\'s main folder, modify as you see fit.<br><br>' +
-                '<textarea id="songInfoTemplate" style="height:64px;"></textarea>';
+            //tempHTML += '<br><br><span style="font-size:2em">Song Info</span><br><br>' +
+            //    'Info detected: ' + (['No', 'Yes'])[0 + (fileInfo.hasOwnProperty('_default_colors'))] + '<br><br>' +
+            //    '<button onclick="generateSongInfo()">Generate Info</button><br><br>' +
+            //    'Select-All + Copy generated info from below, save to "_songInfo.txt" in your music\'s main folder, modify as you see fit.<br><br>' +
+            //    '<textarea id="songInfoTemplate" style="height:64px;"></textarea>';
         }
 
         tempHTML += "<br><br><br><span style='font-size:2em'>Debug Overlays</span><br><br>" +
