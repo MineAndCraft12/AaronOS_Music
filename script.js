@@ -5146,6 +5146,37 @@ var vis = {
                 this.rotation -= 360;
             }
 
+            var newHue = null;
+            if(this.settings.bassAngle.value !== "disabled"){
+                var bassPitch = this.weightedAverage(visData.slice(0, 12), 0.7);
+                if(isNaN(bassPitch)){
+                    bassPitch = 6;
+                }
+                // newHue = bassPitch * 21.25;
+                if(this.settings.bassAngle.value === "half"){
+                    this.angle += bassPitch / 12 * 45 - 22.5;
+                }else if(this.settings.bassAngle.value === "normal"){
+                    this.angle += bassPitch / 12 * 90 - 45;
+                }else{ // double
+                    this.angle += bassPitch / 12 * 180 - 90;
+                }
+                //if(this.angle - this.lastAngle < -2){
+                //    this.angle = this.lastAngle - 2;
+                //}else if(this.angle - this.lastAngle > 2){
+                //    this.angle = this.lastAngle + 2;
+                //}
+                // fpsCompensation is disabled because i dont know how to make this math work
+                this.angle -= (this.angle - this.lastAngle) * 0.875;
+                this.lastAngle = this.angle;
+                if(this.settings.bassAngle.value === "half"){
+                    newHue = (this.angle - 67.5) * (255 / 45);
+                }else if(this.settings.bassAngle.value === "normal"){
+                    newHue = (this.angle - 45) * (255 / 90);
+                }else{ // double
+                    newHue = this.angle * (255 / 180);
+                }
+            }
+
             var resizeScale = (256 - this.speed) / 256;
             var corner = [
                 size[0] - size[0] * (512 - this.speed) / 512,
@@ -5224,7 +5255,11 @@ var vis = {
                 canvas.fillRect(avgPitch * 255 + 10, 40, 1, 10);
             }
 
-            canvas.fillStyle = getColor(bassMax, Math.abs(this.angle / 360 - 0.5) * 255 * 2);
+            if(newHue !== null){
+                canvas.fillStyle = getColor(bassMax, newHue);
+            }else{
+                canvas.fillStyle = getColor(bassMax, Math.abs(this.angle / 360 - 0.5) * 255 * 2);
+            }
 
             this.degArc2(orb1.x, orb1.y, 32 + bassAmount / 8, 0, 360);
             this.degArc2(orb2.x, orb2.y, 32 + bassAmount / 8, 0, 360);
@@ -5239,6 +5274,7 @@ var vis = {
         },
         speed: 1, // how fast do the circles move? This makes the background shrink faster, and offsets the center point further.
         angle: 90, // what angle are the circles moving? This changes the direction the background fades to, and sets offset angle of center point.
+        lastAngle: 90,
         rotation: 0, // where are the orbs relative to each other? This changes the orbs' position around the center point.
         TAU: Math.PI * 2,
         degArc: function(x, y, r, a, b){
@@ -5301,6 +5337,19 @@ var vis = {
                 default: 1,
                 title: "Pitch Affects Rotation",
                 desc: "Pitch affects how quickly the orbs rotate around each other."
+            },
+            bassAngle: {
+                type: "choice",
+                value: "double",
+                default: "double",
+                choices: {
+                    disabled: "Disabled",
+                    half: "Half - 45&deg;",
+                    normal: "Normal - 90&deg;",
+                    double: "Double - 180&deg;"
+                },
+                title: "Bass Pitch Flight Angle",
+                desc: "How many degrees of flight angle can the Bass Pitch explore?"
             },
             starsToggle: {
                 type: "toggle",
@@ -8190,8 +8239,7 @@ resizeSmoke();
 
 var featuredVis = {
     fubar: 1,
-    reflection: 1,
-    orbsAround: 1,
+    orbsArise: 1,
     bassCircle: 1,
     refraction: 1,
     dancer: 1,
