@@ -12,7 +12,7 @@ var aosToolsConnected = 0;
 try{
     var {
         // remote,
-        ipcRenderer,
+        ipcRenderer, contextBridge,
         // desktopCapturer
     } = require('electron');
     var remote = require('@electron/remote');
@@ -4557,6 +4557,261 @@ var vis = {
             }
         }
     },
+    radar: {
+        name: "RADAR",
+        image: "visualizers/radar.png",
+        bestColor: "rainbowStatic",
+        start: function(){
+            this.angle = 0;
+            this.lastBassAvg = 0.5;
+            this.lastTrebleAvg = 0.5;
+            this.lastBassAmount = 0;
+            this.lastTrebleAmount = 0;
+            canvas.clearRect(0, 0, size[0], size[1]);
+            canvas.fillStyle = getColor(127);
+            canvas.fillRect(0, 0, size[0], size[1]);
+        },
+        sizechange: function(){
+            canvas.clearRect(0, 0, size[0], size[1]);
+            canvas.fillStyle = getColor(127, 127);
+            canvas.fillRect(0, 0, size[0], size[1]);
+        },
+        frame: function(){
+            var bassAvg = this.weightedAverage(visData.slice(0, 16), 0.6) / 16;
+            var trebleAvg = this.weightedAverage(visData.slice(16, 64), 0.75) / 48;
+            if(isNaN(bassAvg)){
+                bassAvg = 0.5;
+            }
+            if(isNaN(trebleAvg)){
+                trebleAvg = 0.5;
+            }
+
+            var extraBoost = Math.max(...visData.slice(64, 128)) / 255;
+            var extraFreq = (this.weightedAverage(visData.slice(64, 128), 0.75) / 64) || 0;
+            var origAvg = trebleAvg;
+            trebleAvg += (extraBoost * (extraFreq / 2 + 0.5)) * (1 - trebleAvg);
+
+            var bassAmounts = visData.slice(0, 12);
+            bassAmounts.sort((a, b) => a - b);
+            var bassAmount = 0;
+            for(var i = 0; i < 12; i++){
+                bassAmount += bassAmounts[11 - i];
+            }
+            bassAmount /= 12;
+
+            var trebleAmount = Math.max(...(visData.slice(12, 64)));
+
+            // six degrees per frame means one rotation per second
+            // 4.35 degrees per frame keeps perfect time with most songs
+            this.speed = this.settings.bpm.value / 40 * fpsCompensation;
+
+            var lastAngle = this.angle;
+            this.angle += this.speed;
+            if(this.angle >= 360){
+                this.angle -= 360;
+            }
+
+            if(this.settings.guides.value !== "none"){
+                if(this.settings.guides.value !== "half"){
+                    this.line(
+                        lastAngle,
+                        1,
+                        this.angle,
+                        1,
+                        '#222'
+                    );
+                    this.line(
+                        lastAngle,
+                        2,
+                        this.angle,
+                        2,
+                        '#222'
+                    );
+                }
+                if(this.settings.guides.value !== "full"){
+                    this.line(
+                        lastAngle,
+                        0.5,
+                        this.angle,
+                        0.5,
+                        '#222'
+                    );
+                    this.line(
+                        lastAngle,
+                        1.5,
+                        this.angle,
+                        1.5,
+                        '#222'
+                    );
+                }
+            }
+
+            // this.sweep(
+            //     lastAngle, 
+            //     2,
+            //     this.angle,
+            //     2,
+            //     '#111'
+            // );
+
+            if(this.settings.bassType.value === "pitch"){
+                this.line(
+                    lastAngle,
+                    this.lastBassAvg,
+                    this.angle,
+                    bassAvg,
+                    getColor(bassAmount, bassAvg * 255)
+                );
+            }else{
+                this.line(
+                    lastAngle,
+                    this.lastBassAmount / 255,
+                    this.angle,
+                    bassAmount / 255,
+                    getColor(bassAmount, bassAvg * 255)
+                );
+            }
+
+            if(this.settings.trebleType.value === "pitch"){
+                this.line(
+                    lastAngle,
+                    this.lastTrebleAvg + 1,
+                    this.angle,
+                    trebleAvg + 1,
+                    getColor(trebleAmount, trebleAvg * 255)
+                );
+            }else{
+                this.line(
+                    lastAngle,
+                    this.lastTrebleAmount / 255 + 1,
+                    this.angle,
+                    trebleAmount / 255 + 1,
+                    getColor(trebleAmount, trebleAvg * 255)
+                );
+            }
+
+            this.lastBassAvg = bassAvg;
+            this.lastTrebleAvg = trebleAvg;
+            this.lastBassAmount = bassAmount;
+            this.lastTrebleAmount = trebleAmount;
+            
+            //if(this.settings.doubleViewDistance.value){
+                canvas.globalAlpha = 0.975 + (1 - fpsCompensation) * 0.025;
+            //}else{
+            //    canvas.globalAlpha = 0.9 + (1 - fpsCompensation) * 0.1;
+            //}
+            canvas.globalCompositeOperation = 'copy';
+            canvas.drawImage(
+                canvasElement,
+                0,
+                0,
+                size[0],
+                size[1]
+            );
+            canvas.globalCompositeOperation = 'source-over';
+            canvas.globalAlpha = 1;
+            
+        },
+        stop: function(){
+
+        },
+        angle: 0,
+        pointFromAngle: function(x, y, deg, dist){
+            return [
+                x + dist * Math.cos(this.deg2rad(deg)),
+                y + dist * Math.sin(this.deg2rad(deg))
+            ];
+        },
+        line: function(deg1, dist1, deg2, dist2, color){
+            var scale = Math.min(size[0], size[1]) / 4;
+            var coord1 = this.pointFromAngle(size[0] / 2, size[1] / 2, deg1, dist1 * scale);
+            var coord2 = this.pointFromAngle(size[0] / 2, size[1] / 2, deg2, dist2 * scale);
+            canvas.strokeStyle = color;
+            canvas.lineWidth = 3 * (scale / 128);
+             canvas.lineCap = "round";
+            canvas.beginPath();
+            canvas.moveTo(coord1[0], coord1[1]);
+            canvas.lineTo(coord2[0], coord2[1]);
+            canvas.stroke();
+        },
+        sweep: function(deg1, dist1, deg2, dist2, color){
+            var scale = Math.min(size[0], size[1]) / 4;
+            var coord1 = this.pointFromAngle(size[0] / 2, size[1] / 2, deg1, dist1 * scale);
+            var coord2 = this.pointFromAngle(size[0] / 2, size[1] / 2, deg2, dist2 * scale);
+            canvas.fillStyle = color;
+            // canvas.lineWidth = 3;
+            // canvas.lineCap = "round";
+            canvas.beginPath();
+            canvas.moveTo(size[0] / 2, size[1] / 2);
+            canvas.lineTo(coord1[0], coord1[1]);
+            canvas.lineTo(coord2[0], coord2[1]);
+            canvas.lineTo(size[0] / 2, size[1] / 2);
+            canvas.fill();
+        },
+        weightedAverage: function(arr, minPcnt){
+            var weight = 0;
+            var total = 0;
+            var minValue = Math.max(...arr) * minPcnt;
+            for(var i in arr){
+                weight += ((arr[i] >= (minValue || 0)) ? arr[i] : 0);
+                total += i * ((arr[i] >= (minValue || 0)) ? arr[i] : 0);
+            }
+            return total / weight;
+        },
+        deg2rad: function(degrees){
+            return degrees * this.piBy180;
+        },
+        piBy180: Math.PI / 180,
+        settings: {
+            bpm: {
+                type: "number",
+                value: "174",
+                default: "174",
+                range: [0, 1020],
+                step: 1,
+                title: "BPM",
+                desc: "Calibrate the radar to match the BPM of your music.<br>Most common seems to be 174 BPM.<br>I recommend multiplying the BPM if it's lower than 174.<br>For example, for 120 BPM you should use 240 BPM.<br>Should be one full rotation every four beats, or every two beats."
+            },
+            reset: {
+                type: "button",
+                content: "Clean it up!",
+                title: "Refresh Graph",
+                desc: "Clean up the lines all over the graph.",
+                func: function(){
+                    vis.radar.sizechange();
+                }
+            },
+            guides: {
+                type: "choice",
+                value: "half",
+                default: "half",
+                choices: {
+                    none: "None",
+                    half: "Midpoint",
+                    full: "Between",
+                    both: "Both"
+                },
+                title: "Guides Type",
+                desc: "Place guides at the midpoint of each line, between each line, or both."
+            },
+            bassType: {
+                type: "choice",
+                value: "volume",
+                default: "volume",
+                choices: {pitch: "Pitch", volume: "Volume"},
+                title: "Bass Needle Type",
+                desc: "What makes the bass needle move? Volume or pitch?"
+            },
+            trebleType: {
+                type: "choice",
+                value: "volume",
+                default: "volume",
+                choices: {pitch: "Pitch", volume: "Volume"},
+                title: "Treble Needle Type",
+                desc: "What makes the treble needle move? Volume or pitch?"
+            },
+        }
+    },
     dancer: {
         name: "Dancing Orb",
         image: "visualizers/dancer.png",
@@ -8241,7 +8496,7 @@ var featuredVis = {
     fubar: 1,
     orbsArise: 1,
     bassCircle: 1,
-    refraction: 1,
+    radar: 1,
     dancer: 1,
     triWave: 1,
     spectrogramStretched: 1
